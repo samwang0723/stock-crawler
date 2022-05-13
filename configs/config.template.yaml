@@ -1,0 +1,23 @@
+# Server configurations
+server:
+  name: "stock-crawler"
+  host: "0.0.0.0"
+  port: 8086
+
+redis:
+  port: 6379
+  host: "redis"
+
+# Logging
+log:
+  level: "ERROR"
+
+# WorkerPool
+workerpool:
+  maxPoolSize: 20
+  maxQueueSize: 40
+
+kafka:
+  port: 9092
+  host: "localhost"
+  topic: "stock-information"
