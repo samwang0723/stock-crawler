@@ -18,11 +18,22 @@ import (
 	"fmt"
 )
 
-func (s *serviceImpl) sendKafka(ctx context.Context, message []byte) error {
-	if s.producer == nil {
-		return fmt.Errorf("No kafka instance being initialized: %+v", s.producer)
+func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byte) error {
+	p := s.producers[topic]
+	if p == nil {
+		return fmt.Errorf("No kafka instance being initialized: %+v, topic: %s", s.producers, topic)
 	}
 
-	s.producer.WriteMessages(ctx, message)
+	p.WriteMessages(ctx, message)
 	return nil
+}
+
+func (s *serviceImpl) StopKafka() error {
+	var err error
+	for _, producer := range s.producers {
+		if res := producer.Close(); res != nil {
+			err = res
+		}
+	}
+	return err
 }

@@ -19,21 +19,29 @@ import (
 
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
+	log "github.com/samwang0723/stock-crawler/internal/logger"
 	"github.com/segmentio/kafka-go"
 )
 
 type kafkaImpl struct {
-	instance *kafka.Writer
+	topic    string
+	instance *kafka.Conn
 }
 
-func New(cfg *config.Config) ikafka.IKafka {
-	return &kafkaImpl{
-		instance: &kafka.Writer{
-			Addr:     kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
-			Topic:    cfg.Kafka.Topic,
-			Balancer: &kafka.LeastBytes{},
-		},
+func New(cfg *config.Config, topic string) ikafka.IKafka {
+	conn, err := kafka.DialLeader(context.Background(), "tcp", fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port), topic, 0)
+	if err != nil {
+		log.Fatal("Failed to dial kafka leader:", err)
 	}
+
+	return &kafkaImpl{
+		topic:    topic,
+		instance: conn,
+	}
+}
+
+func (k *kafkaImpl) GetTopic() string {
+	return k.topic
 }
 
 func (k *kafkaImpl) WriteMessages(ctx context.Context, message []byte) error {
@@ -41,5 +49,17 @@ func (k *kafkaImpl) WriteMessages(ctx context.Context, message []byte) error {
 		Value: message,
 	}
 
-	return k.instance.WriteMessages(ctx, msg)
+	writtenBytes, err := k.instance.WriteMessages(msg)
+	log.Infof("WriteMessages: written bytes: %d", writtenBytes)
+
+	return err
+}
+
+func (k *kafkaImpl) Close() error {
+	log.Infof("Close: topic: %s", k.topic)
+	err := k.instance.Close()
+	if err != nil {
+		log.Errorf("Close failed: %w", err)
+	}
+	return err
 }

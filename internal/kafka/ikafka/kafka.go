@@ -15,6 +15,15 @@ package ikafka
 
 import "context"
 
+const (
+	DailyClosesV1        = "dailycloses-v1"
+	StocksV1             = "stocks-v1"
+	ThreePrimaryV1       = "threeprimary-v1"
+	StakeConcentrationV1 = "stakeconcentration-v1"
+)
+
 type IKafka interface {
+	GetTopic() string
+	Close() error
 	WriteMessages(ctx context.Context, message []byte) error
 }

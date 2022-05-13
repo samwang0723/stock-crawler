@@ -32,12 +32,13 @@ type IService interface {
 	StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error
 	ListBackfillStakeConcentrationStockIds(ctx context.Context, date string) ([]string, error)
 	StopRedis() error
+	StopKafka() error
 }
 
 type serviceImpl struct {
-	cronjob  icronjob.ICronJob
-	producer ikafka.IKafka
-	cache    icache.IRedis
+	cronjob   icronjob.ICronJob
+	producers map[string]ikafka.IKafka
+	cache     icache.IRedis
 }
 
 func New(opts ...Option) IService {

@@ -24,6 +24,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/helper"
+	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
@@ -36,7 +37,7 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 			if err != nil {
 				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, b)
+			s.sendKafka(ctx, ikafka.DailyClosesV1, b)
 		} else {
 			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
 		}
@@ -52,7 +53,7 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 			if err != nil {
 				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, b)
+			s.sendKafka(ctx, ikafka.StocksV1, b)
 		} else {
 			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
 		}
@@ -67,7 +68,7 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 			if err != nil {
 				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, b)
+			s.sendKafka(ctx, ikafka.ThreePrimaryV1, b)
 		} else {
 			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
 		}
@@ -83,7 +84,7 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 			if err != nil {
 				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, b)
+			s.sendKafka(ctx, ikafka.StakeConcentrationV1, b)
 
 			if len(redisKey) == 0 {
 				redisKey = strings.ReplaceAll(val.Date, "-", "")
