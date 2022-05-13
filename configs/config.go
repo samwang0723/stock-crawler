@@ -30,9 +30,8 @@ type Config struct {
 		Port int    `yaml:"port"`
 	} `yaml:"redis"`
 	Kafka struct {
-		Host  string `yaml:"host"`
-		Topic string `yaml:"topic"`
-		Port  int    `yaml:"port"`
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
 	} `yaml:"kafka"`
 	Server struct {
 		Name string `yaml:"name"`

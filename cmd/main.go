@@ -13,8 +13,27 @@
 // limitations under the License.
 package main
 
-import "fmt"
+import (
+	"log"
+	"os"
+	"time"
+
+	"github.com/samwang0723/stock-crawler/internal/app/server"
+)
+
+const (
+	TimeZone = "TZ"
+)
 
 func main() {
-	fmt.Println("stock-crawler")
+	// manually set time zone, docker image may not have preset timezone
+	if tz := os.Getenv(TimeZone); tz != "" {
+		var err error
+		time.Local, err = time.LoadLocation(tz)
+		if err != nil {
+			log.Printf("error loading location '%s': %v\n", tz, err)
+		}
+	}
+
+	server.Serve()
 }

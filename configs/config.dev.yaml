@@ -19,5 +19,4 @@ workerpool:
 
 kafka:
   port: 9092
-  host: "localhost"
-  topic: "stock-information"
+  host: "kafka"
