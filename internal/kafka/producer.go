@@ -24,39 +24,35 @@ import (
 )
 
 type kafkaImpl struct {
-	topic    string
-	instance *kafka.Conn
+	instance *kafka.Writer
 }
 
 func New(cfg *config.Config, topic string) ikafka.IKafka {
-	conn, err := kafka.DialLeader(context.Background(), "tcp", fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port), topic, 0)
-	if err != nil {
-		log.Fatal("Failed to dial kafka leader:", err)
-	}
-
 	return &kafkaImpl{
-		topic:    topic,
-		instance: conn,
+		instance: &kafka.Writer{
+			Addr:     kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
+			Topic:    topic,
+			Balancer: &kafka.LeastBytes{},
+		},
 	}
 }
 
 func (k *kafkaImpl) GetTopic() string {
-	return k.topic
+	return k.instance.Topic
 }
 
 func (k *kafkaImpl) WriteMessages(ctx context.Context, message []byte) error {
 	msg := kafka.Message{
 		Value: message,
 	}
-
-	writtenBytes, err := k.instance.WriteMessages(msg)
-	log.Infof("WriteMessages: written bytes: %d", writtenBytes)
+	err := k.instance.WriteMessages(ctx, msg)
+	log.Infof("WriteMessages: written bytes: %d", len(message))
 
 	return err
 }
 
 func (k *kafkaImpl) Close() error {
-	log.Infof("Close: topic: %s", k.topic)
+	log.Infof("Close: topic: %s", k.instance.Topic)
 	err := k.instance.Close()
 	if err != nil {
 		log.Errorf("Close failed: %w", err)
