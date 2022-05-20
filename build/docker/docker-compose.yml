@@ -11,10 +11,50 @@ services:
       - KAFKA_CREATE_TOPICS=dailycloses-v1:3:1,stocks-v1:3:1,threeprimary-v1:3:1,stakeconcentration-v1:3:1
     ports:
       - "9092:9092"
-  redis:
-    image: redis:5.0.5-alpine
-      # volumes:
-      #      - ./redis.conf:/usr/local/etc/redis/redis.conf
-    container_name: redis
+  redis-master:
+    image: amd64/redis:5.0-alpine
+    container_name: redis-master
     ports: 
       - "6379:6379"
+  redis-slave:
+    container_name: redis-slave
+    image: amd64/redis:5.0-alpine
+    command: redis-server --slaveof redis-master 6379
+    depends_on:
+      - redis-master
+    ports:
+      - "6380:6379"
+  redis-sentinel-1:
+    container_name: redis-sentinel-1
+    image: samwang0723/redis-sentinel
+    ports:
+      - "26379:26379"
+    depends_on:
+      - redis-master
+  redis-sentinel-2:
+    container_name: redis-sentinel-2
+    image: samwang0723/redis-sentinel
+    ports:
+      - "26380:26379"
+    depends_on:
+      - redis-master
+  redis-sentinel-3:
+    container_name: redis-sentinel-3
+    image: samwang0723/redis-sentinel
+    ports:
+      - "26381:26379"
+    depends_on:
+      - redis-master
+  stock-crawler:
+    container_name: stock-crawler
+    image: samwang0723/stock-crawler:m1
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    depends_on:
+      - kafka
+      - redis-sentinel-1
+      - redis-sentinel-2
+      - redis-sentinel-3
+      - redis-master
+      - redis-slave

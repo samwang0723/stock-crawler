@@ -80,7 +80,7 @@ func Serve() {
 	// Our app is not ready if we can't resolve our upstream dependency in DNS.
 	health.AddReadinessCheck(
 		"upstream-redis-dns",
-		healthcheck.DNSResolveCheck(cfg.RedisCache.Host, 200*time.Millisecond))
+		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, 200*time.Millisecond))
 	healthServer := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler: health,

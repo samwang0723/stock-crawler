@@ -15,7 +15,6 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	log "github.com/samwang0723/stock-crawler/internal/logger"
@@ -31,9 +30,17 @@ const (
 
 func ObtainLock(key string, expire time.Duration) *redislock.Lock {
 	cfg := config.GetCurrentConfig().RedisCache
+	sentinel := redis.NewSentinelClient(&redis.Options{
+		Addr: cfg.Ports[0],
+	})
+	addr, err := sentinel.GetMasterAddrByName(context.Background(), cfg.Master).Result()
+	if err != nil {
+		log.Fatal(err)
+	}
+	// connect to master through sentinel
 	client := redis.NewClient(&redis.Options{
 		Network: "tcp",
-		Addr:    fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
+		Addr:    addr[0],
 	})
 	defer client.Close()
 

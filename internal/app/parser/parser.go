@@ -17,38 +17,26 @@ package parser
 import (
 	"bytes"
 	"fmt"
+	"io"
 
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 )
 
-type Source int
-
-//go:generate stringer -type=Source
-const (
-	TwseDailyClose Source = iota
-	TwseThreePrimary
-	TpexDailyClose
-	TpexThreePrimary
-	TwseStockList
-	TpexStockList
-	StakeConcentration
-)
-
 type IParser interface {
-	Parse(config Config, in []byte) error
+	SetStrategy(source convert.Source, additional ...string)
+	Execute(in []byte, additional ...string) error
 	Flush() *[]interface{}
 }
 
-type parserImpl struct {
-	result *[]interface{}
+type IStrategy interface {
+	Parse(in io.Reader, additional ...string) ([]interface{}, error)
 }
 
-type Config struct {
-	ParseDay  *string
-	SourceURL string
-	Capacity  int
-	Type      Source
+type parserImpl struct {
+	strategy IStrategy
+	result   *[]interface{}
 }
 
 func New() IParser {
@@ -58,22 +46,60 @@ func New() IParser {
 	return res
 }
 
-func (p *parserImpl) Parse(config Config, in []byte) error {
+func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
+	switch source {
+	case convert.TpexStockList, convert.TwseStockList:
+		p.strategy = &htmlStrategy{
+			capacity:  6,
+			source:    source,
+			converter: convert.NewConvertStock(),
+		}
+	case convert.TwseDailyClose, convert.TpexDailyClose:
+		p.strategy = &csvStrategy{
+			capacity:  17,
+			source:    source,
+			converter: convert.NewConvertDailyClose(),
+			date:      additional[0],
+		}
+	case convert.TwseThreePrimary:
+		p.strategy = &csvStrategy{
+			capacity:  19,
+			source:    source,
+			converter: convert.NewConvertThreePrimary(),
+			date:      additional[0],
+		}
+	case convert.TpexThreePrimary:
+		p.strategy = &csvStrategy{
+			capacity:  24,
+			source:    source,
+			converter: convert.NewConvertThreePrimary(),
+			date:      additional[0],
+		}
+	case convert.StakeConcentration:
+		p.strategy = &concentrationStrategy{
+			capacity:  7,
+			date:      additional[0],
+			converter: convert.NewConvertConcentration(),
+		}
+	}
+}
+
+func (p *parserImpl) Execute(in []byte, additional ...string) error {
 	if p.result == nil {
 		return fmt.Errorf("didn't initialized the result map\n")
 	}
 
-	raw := bytes.NewBuffer(in)
-	reader := transform.NewReader(raw, traditionalchinese.Big5.NewDecoder())
+	reader := transform.NewReader(
+		bytes.NewBuffer(in),
+		traditionalchinese.Big5.NewDecoder(),
+	)
 
-	switch config.Type {
-	case TwseStockList, TpexStockList:
-		return p.parseHtml(config, reader)
-	case TwseDailyClose, TpexDailyClose, TwseThreePrimary, TpexThreePrimary:
-		return p.parseCsv(config, reader)
-	case StakeConcentration:
-		return p.parseConcentration(config, reader)
+	res, err := p.strategy.Parse(reader, additional...)
+	if err != nil {
+		return err
 	}
+
+	*p.result = append(*p.result, res...)
 	return nil
 }
 

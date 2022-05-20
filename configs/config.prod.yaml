@@ -5,8 +5,8 @@ server:
   port: 8086
 
 redis:
-  port: 6379
-  host: "redis-cache"
+  ports: [":26379", ":26380", ":26381"]
+  master: "redis-master"
 
 # Logging
 log:

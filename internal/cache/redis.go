@@ -15,7 +15,6 @@ package cache
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	config "github.com/samwang0723/stock-crawler/configs"
@@ -26,14 +25,15 @@ import (
 )
 
 type redisImpl struct {
-	instance *redis.Client
+	instance *redis.ClusterClient
 }
 
 func New(cfg *config.Config) icache.IRedis {
 	impl := &redisImpl{
-		instance: redis.NewClient(&redis.Options{
-			Network: "tcp",
-			Addr:    fmt.Sprintf("%s:%d", cfg.RedisCache.Host, cfg.RedisCache.Port),
+		instance: redis.NewFailoverClusterClient(&redis.FailoverOptions{
+			MasterName:     cfg.RedisCache.Master,
+			SentinelAddrs:  cfg.RedisCache.Ports,
+			RouteByLatency: true,
 		}),
 	}
 	impl.ping()
