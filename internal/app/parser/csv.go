@@ -20,111 +20,57 @@ import (
 	"io"
 	"strings"
 
-	"github.com/samwang0723/stock-crawler/internal/app/entity"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-func (p *parserImpl) parseCsv(config Config, in io.Reader) error {
-	if config.ParseDay == nil {
-		return fmt.Errorf("parse day missing\n")
+type csvStrategy struct {
+	converter convert.IConvert
+	date      string
+	source    convert.Source
+	capacity  int
+}
+
+func (s *csvStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, error) {
+	if len(s.date) == 0 {
+		return nil, fmt.Errorf("parse day missing")
 	}
 
-	originLen := len(*p.result)
-	updatedLen := originLen
+	var output []interface{}
+	updatedLen := 0
 
 	reader := csv.NewReader(in)
 	reader.Comma = ','
 	reader.FieldsPerRecord = -1
 
 	//override to standarize date string (20211123)
-	date := helper.UnifiedDateFormatToTwse(*config.ParseDay)
+	date := helper.UnifiedDateFormatToTwse(s.date)
 
 	for {
-		record, err := reader.Read()
+		records, err := reader.Read()
 		if err == io.EOF {
 			break
-		} else if len(record) == 0 || config.Capacity > len(record) {
+		} else if len(records) == 0 || s.capacity > len(records) {
 			continue
 		}
 
 		// make sure only parse recognized stock_id
-		record[0] = strings.TrimSpace(record[0])
-		if len(record[0]) > 0 && len(record[0]) < 6 && helper.IsInteger(record[0][0:2]) {
-			switch config.Type {
-			case TwseDailyClose:
-				*p.result = append(*p.result, twseToEntity(date, record))
-				updatedLen++
-			case TwseThreePrimary:
-				*p.result = append(*p.result, twseThreePrimaryToEntity(date, record))
-				updatedLen++
-			case TpexDailyClose:
-				*p.result = append(*p.result, tpexToEntity(date, record))
-				updatedLen++
-			case TpexThreePrimary:
-				*p.result = append(*p.result, tpexThreePrimaryToEntity(date, record))
-				updatedLen++
-			}
+		records[0] = strings.TrimSpace(records[0])
+		if len(records[0]) > 0 && len(records[0]) < 6 && helper.IsInteger(records[0][0:2]) {
+			output = append(
+				output,
+				s.converter.Execute(&convert.ConvertData{
+					ParseDate: date,
+					RawData:   records,
+					Target:    s.source,
+				}),
+			)
+			updatedLen++
 		}
 	}
-	if updatedLen <= originLen {
-		return fmt.Errorf("empty parsing results\n")
+	if updatedLen == 0 {
+		return nil, NoParseResults
 	}
 
-	return nil
-}
-
-func twseThreePrimaryToEntity(day string, data []string) *entity.ThreePrimary {
-	threePrimary := &entity.ThreePrimary{
-		StockID:            data[0],
-		Date:               day,
-		ForeignTradeShares: helper.ToInt64(strings.Replace(data[4], ",", "", -1)),
-		TrustTradeShares:   helper.ToInt64(strings.Replace(data[10], ",", "", -1)),
-		DealerTradeShares:  helper.ToInt64(strings.Replace(data[14], ",", "", -1)),
-		HedgingTradeShares: helper.ToInt64(strings.Replace(data[17], ",", "", -1)),
-	}
-	return threePrimary
-}
-
-func twseToEntity(day string, data []string) *entity.DailyClose {
-	dailyClose := &entity.DailyClose{
-		StockID:      data[0],
-		Date:         day,
-		TradedShares: helper.ToUint64(strings.Replace(data[2], ",", "", -1)),
-		Transactions: helper.ToUint64(strings.Replace(data[3], ",", "", -1)),
-		Turnover:     helper.ToUint64(strings.Replace(data[4], ",", "", -1)),
-		Open:         helper.ToFloat32(data[5]),
-		High:         helper.ToFloat32(data[6]),
-		Low:          helper.ToFloat32(data[7]),
-		Close:        helper.ToFloat32(data[8]),
-		PriceDiff:    helper.ToFloat32(fmt.Sprintf("%s%s", data[9], data[10])),
-	}
-	return dailyClose
-}
-
-func tpexThreePrimaryToEntity(day string, data []string) *entity.ThreePrimary {
-	threePrimary := &entity.ThreePrimary{
-		StockID:            data[0],
-		Date:               day,
-		ForeignTradeShares: helper.ToInt64(strings.Replace(data[10], ",", "", -1)),
-		TrustTradeShares:   helper.ToInt64(strings.Replace(data[13], ",", "", -1)),
-		DealerTradeShares:  helper.ToInt64(strings.Replace(data[16], ",", "", -1)),
-		HedgingTradeShares: helper.ToInt64(strings.Replace(data[19], ",", "", -1)),
-	}
-	return threePrimary
-}
-
-func tpexToEntity(day string, data []string) *entity.DailyClose {
-	dailyClose := &entity.DailyClose{
-		StockID:      data[0],
-		Date:         day,
-		TradedShares: helper.ToUint64(strings.Replace(data[8], ",", "", -1)),
-		Transactions: helper.ToUint64(strings.Replace(data[10], ",", "", -1)),
-		Turnover:     helper.ToUint64(strings.Replace(data[9], ",", "", -1)),
-		Open:         helper.ToFloat32(data[4]),
-		High:         helper.ToFloat32(data[5]),
-		Low:          helper.ToFloat32(data[6]),
-		Close:        helper.ToFloat32(data[2]),
-		PriceDiff:    helper.ToFloat32(data[3]),
-	}
-	return dailyClose
+	return output, nil
 }

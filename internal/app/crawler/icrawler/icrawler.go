@@ -18,8 +18,6 @@ import (
 )
 
 const (
-	All                = "ALL"
-	StockOnly          = "ALLBUT0999"
 	TwseDailyClose     = "https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=%s&type=ALLBUT0999"
 	TwseThreePrimary   = "http://www.tse.com.tw/fund/T86?response=csv&date=%s&selectType=ALLBUT0999"
 	OperatingDays      = "https://www.twse.com.tw/holidaySchedule/holidaySchedule?response=csv&queryYear=%d"
@@ -27,7 +25,6 @@ const (
 	TpexThreePrimary   = "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d=%s"
 	TWSEStocks         = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"
 	TPEXStocks         = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4"
-	StakeConcentration = "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco.djhtm?a=%s&e=%s&f=%s"
 	ConcentrationDays  = "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_%s_%d.djhtm"
 )
 

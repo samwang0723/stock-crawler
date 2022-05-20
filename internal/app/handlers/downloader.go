@@ -22,7 +22,7 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
-	"github.com/samwang0723/stock-crawler/internal/app/parser"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/cache"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
@@ -83,16 +83,16 @@ func (h *handlerImpl) BatchingDownload(ctx context.Context, req *dto.DownloadReq
 	for _, t := range req.Types {
 		switch t {
 		case dto.DailyClose:
-			go h.generateJob(ctx, parser.TwseDailyClose, req, dailyCloseChan)
-			go h.generateJob(ctx, parser.TpexDailyClose, req, dailyCloseChan)
+			go h.generateJob(ctx, convert.TwseDailyClose, req, dailyCloseChan)
+			go h.generateJob(ctx, convert.TpexDailyClose, req, dailyCloseChan)
 		case dto.ThreePrimary:
-			go h.generateJob(ctx, parser.TwseThreePrimary, req, threePrimaryChan)
-			go h.generateJob(ctx, parser.TpexThreePrimary, req, threePrimaryChan)
+			go h.generateJob(ctx, convert.TwseThreePrimary, req, threePrimaryChan)
+			go h.generateJob(ctx, convert.TpexThreePrimary, req, threePrimaryChan)
 		case dto.Concentration:
-			go h.generateJob(ctx, parser.StakeConcentration, req, stakeConcentrationChan)
+			go h.generateJob(ctx, convert.StakeConcentration, req, stakeConcentrationChan)
 		case dto.StockList:
-			go h.generateJob(ctx, parser.TwseStockList, req, stockListChan)
-			go h.generateJob(ctx, parser.TpexStockList, req, stockListChan)
+			go h.generateJob(ctx, convert.TwseStockList, req, stockListChan)
+			go h.generateJob(ctx, convert.TpexStockList, req, stockListChan)
 		}
 	}
 
@@ -148,7 +148,7 @@ func (h *handlerImpl) BatchingDownload(ctx context.Context, req *dto.DownloadReq
 					sc.Diff = diff
 					err := h.dataService.StakeConcentrationThroughKafka(ctx, &[]interface{}{sc})
 					if err != nil {
-						log.Errorf("Error inserting stake_concentration: %w", err)
+						log.Errorf("Error sending stake_concentration: %w", err)
 					}
 				}
 			}

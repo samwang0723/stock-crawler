@@ -26,6 +26,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/crawler/icrawler"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler/proxy"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/concurrent"
 	"github.com/samwang0723/stock-crawler/internal/helper"
@@ -36,7 +37,7 @@ import (
 type downloadJob struct {
 	ctx       context.Context
 	rateLimit int32
-	origin    parser.Source
+	origin    convert.Source
 	date      string
 	stockId   string
 	respChan  chan *[]interface{}
@@ -45,78 +46,52 @@ type downloadJob struct {
 func (job *downloadJob) Do() error {
 	var c icrawler.ICrawler
 	p := parser.New()
-	var config parser.Config
 
 	switch job.origin {
-	case parser.TwseDailyClose:
-		config = parser.Config{
-			ParseDay: &job.date,
-			Capacity: 17,
-			Type:     job.origin,
-		}
+	case convert.TwseDailyClose:
 		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
 		url := fmt.Sprintf(icrawler.TwseDailyClose, job.date)
 		c.AppendURL(url)
+		p.SetStrategy(job.origin, job.date)
 
-	case parser.TpexDailyClose:
-		config = parser.Config{
-			ParseDay: &job.date,
-			Capacity: 17,
-			Type:     job.origin,
-		}
+	case convert.TpexDailyClose:
 		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
 		url := fmt.Sprintf(icrawler.TpexDailyClose, job.date)
 		c.AppendURL(url)
 
-	case parser.TwseThreePrimary:
-		config = parser.Config{
-			ParseDay: &job.date,
-			Capacity: 19,
-			Type:     job.origin,
-		}
+		p.SetStrategy(job.origin, job.date)
+
+	case convert.TwseThreePrimary:
 		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
 		url := fmt.Sprintf(icrawler.TwseThreePrimary, job.date)
 		c.AppendURL(url)
+		p.SetStrategy(job.origin, job.date)
 
-	case parser.TpexThreePrimary:
-		config = parser.Config{
-			ParseDay: &job.date,
-			Capacity: 24,
-			Type:     job.origin,
-		}
+	case convert.TpexThreePrimary:
 		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
 		url := fmt.Sprintf(icrawler.TpexThreePrimary, job.date)
 		c.AppendURL(url)
+		p.SetStrategy(job.origin, job.date)
 
-	case parser.TwseStockList:
-		config = parser.Config{
-			Capacity: 6,
-			Type:     job.origin,
-		}
+	case convert.TwseStockList:
 		c = crawler.New(nil)
 		c.AppendURL(icrawler.TWSEStocks)
+		p.SetStrategy(job.origin)
 
-	case parser.TpexStockList:
-		config = parser.Config{
-			Capacity: 6,
-			Type:     job.origin,
-		}
+	case convert.TpexStockList:
 		c = crawler.New(nil)
 		c.AppendURL(icrawler.TPEXStocks)
+		p.SetStrategy(job.origin)
 
-	case parser.StakeConcentration:
-		config = parser.Config{
-			ParseDay: &job.date,
-			Type:     job.origin,
-		}
+	case convert.StakeConcentration:
 		c = crawler.New(&proxy.Proxy{Type: proxy.Concentration})
-
 		// in order to get accurate data, we must query each page https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
 		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
 		indexes := []int{1, 2, 3, 4, 6}
 		for _, idx := range indexes {
 			c.AppendURL(fmt.Sprintf(icrawler.ConcentrationDays, job.stockId, idx))
 		}
+		p.SetStrategy(job.origin, job.date)
 
 	default:
 		return fmt.Errorf("no recognized job source being specified: %s", job.origin)
@@ -134,8 +109,7 @@ func (job *downloadJob) Do() error {
 			sentry.CaptureException(err)
 			return fmt.Errorf("(%s/%s): %+v", job.origin, job.date, err)
 		}
-		config.SourceURL = sourceURL
-		err = p.Parse(config, bytes)
+		err = p.Execute(bytes, sourceURL)
 		if err != nil {
 			sentry.CaptureException(err)
 			return fmt.Errorf("(%s/%s): %+v", job.origin, job.date, err)
@@ -154,7 +128,7 @@ func (job *downloadJob) Do() error {
 	return nil
 }
 
-func (h *handlerImpl) generateJob(ctx context.Context, origin parser.Source, req *dto.DownloadRequest, respChan chan *[]interface{}) {
+func (h *handlerImpl) generateJob(ctx context.Context, origin convert.Source, req *dto.DownloadRequest, respChan chan *[]interface{}) {
 	for _, d := range getParseDates(origin, req) {
 		if err := h.queueJobs(ctx, origin, d, req.RateLimit, respChan); err != nil {
 			log.Error(err)
@@ -164,17 +138,17 @@ func (h *handlerImpl) generateJob(ctx context.Context, origin parser.Source, req
 	log.Debug("(BatchingDownload): all download jobs sent!")
 }
 
-func getParseDates(origin parser.Source, req *dto.DownloadRequest) []string {
+func getParseDates(origin convert.Source, req *dto.DownloadRequest) []string {
 	var dates []string
 	if len(req.UTCTimestamp) > 0 {
 		// parsing for specific date
 		var date string
 		switch origin {
-		case parser.TwseDailyClose, parser.TwseThreePrimary:
+		case convert.TwseDailyClose, convert.TwseThreePrimary:
 			date = helper.GetDateFromUTC(req.UTCTimestamp, helper.TwseDateFormat)
-		case parser.TpexDailyClose, parser.TpexThreePrimary:
+		case convert.TpexDailyClose, convert.TpexThreePrimary:
 			date = helper.GetDateFromUTC(req.UTCTimestamp, helper.TpexDateFormat)
-		case parser.StakeConcentration:
+		case convert.StakeConcentration:
 			date = helper.GetDateFromUTC(req.UTCTimestamp, helper.StakeConcentrationFormat)
 		}
 		dates = append(dates, date)
@@ -183,11 +157,11 @@ func getParseDates(origin parser.Source, req *dto.DownloadRequest) []string {
 		for i := req.RewindLimit * -1; i <= 0; i++ {
 			var date string
 			switch origin {
-			case parser.TwseDailyClose, parser.TwseThreePrimary:
+			case convert.TwseDailyClose, convert.TwseThreePrimary:
 				date = helper.GetDateFromOffset(i, helper.TwseDateFormat)
-			case parser.TpexDailyClose, parser.TpexThreePrimary:
+			case convert.TpexDailyClose, convert.TpexThreePrimary:
 				date = helper.GetDateFromOffset(i, helper.TpexDateFormat)
-			case parser.StakeConcentration:
+			case convert.StakeConcentration:
 				date = helper.GetDateFromOffset(i, helper.StakeConcentrationFormat)
 			}
 			dates = append(dates, date)
@@ -196,9 +170,9 @@ func getParseDates(origin parser.Source, req *dto.DownloadRequest) []string {
 	return dates
 }
 
-func (h *handlerImpl) queueJobs(ctx context.Context, origin parser.Source, date string, rateLimit int32, respChan chan *[]interface{}) error {
+func (h *handlerImpl) queueJobs(ctx context.Context, origin convert.Source, date string, rateLimit int32, respChan chan *[]interface{}) error {
 	var jobs []*downloadJob
-	if len(date) > 0 && origin == parser.StakeConcentration {
+	if len(date) > 0 && origin == convert.StakeConcentration {
 		// align the date format to be 20220107, but remains the query date as 2022-01-07
 		//TODO: use redis to replace database query
 		res, err := h.dataService.ListBackfillStakeConcentrationStockIds(ctx, strings.ReplaceAll(date, "-", ""))

@@ -14,13 +14,18 @@
 package helper
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 	"unsafe"
+
+	"golang.org/x/text/encoding/traditionalchinese"
+	"golang.org/x/text/transform"
 )
 
 const (
@@ -33,6 +38,25 @@ const (
 	TpexDateFormat           = "2006/01/02"
 	StakeConcentrationFormat = "2006-01-02"
 )
+
+func ReadFromFile(fileName string) (string, error) {
+	bs, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		return "", err
+	}
+
+	return string(bs), nil
+}
+
+func EncodeBig5(s []byte) ([]byte, error) {
+	I := bytes.NewReader(s)
+	O := transform.NewReader(I, traditionalchinese.Big5.NewEncoder())
+	d, e := ioutil.ReadAll(O)
+	if e != nil {
+		return nil, e
+	}
+	return d, nil
+}
 
 func IsInteger(v string) bool {
 	if _, err := strconv.Atoi(v); err == nil {
