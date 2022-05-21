@@ -24,7 +24,7 @@ import (
 type threePrimaryImpl struct {
 }
 
-func NewConvertThreePrimary() IConvert {
+func ThreePrimary() IConvert {
 	return &threePrimaryImpl{}
 }
 

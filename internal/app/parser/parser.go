@@ -52,34 +52,34 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 		p.strategy = &htmlStrategy{
 			capacity:  6,
 			source:    source,
-			converter: convert.NewConvertStock(),
+			converter: convert.Stock(),
 		}
 	case convert.TwseDailyClose, convert.TpexDailyClose:
 		p.strategy = &csvStrategy{
 			capacity:  17,
 			source:    source,
-			converter: convert.NewConvertDailyClose(),
+			converter: convert.DailyClose(),
 			date:      additional[0],
 		}
 	case convert.TwseThreePrimary:
 		p.strategy = &csvStrategy{
 			capacity:  19,
 			source:    source,
-			converter: convert.NewConvertThreePrimary(),
+			converter: convert.ThreePrimary(),
 			date:      additional[0],
 		}
 	case convert.TpexThreePrimary:
 		p.strategy = &csvStrategy{
 			capacity:  24,
 			source:    source,
-			converter: convert.NewConvertThreePrimary(),
+			converter: convert.ThreePrimary(),
 			date:      additional[0],
 		}
 	case convert.StakeConcentration:
 		p.strategy = &concentrationStrategy{
 			capacity:  7,
 			date:      additional[0],
-			converter: convert.NewConvertConcentration(),
+			converter: convert.Concentration(),
 		}
 	}
 }
