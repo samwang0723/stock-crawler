@@ -16,7 +16,6 @@ package parser
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -85,10 +84,6 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 }
 
 func (p *parserImpl) Execute(in []byte, additional ...string) error {
-	if p.result == nil {
-		return fmt.Errorf("didn't initialized the result map\n")
-	}
-
 	reader := transform.NewReader(
 		bytes.NewBuffer(in),
 		traditionalchinese.Big5.NewDecoder(),

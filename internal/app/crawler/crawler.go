@@ -56,8 +56,8 @@ func (c *crawlerImpl) GetURLs() []string {
 }
 
 func (c *crawlerImpl) Fetch(ctx context.Context) (string, []byte, error) {
-	if len(c.urls) <= 0 {
-		return "", nil, fmt.Errorf("no url to parse")
+	if len(c.urls) == 0 {
+		return "", nil, NoUrlToParse
 	}
 	source := c.urls[0]
 	uri := source
@@ -80,7 +80,7 @@ func (c *crawlerImpl) Fetch(ctx context.Context) (string, []byte, error) {
 func download(ctx context.Context, client *http.Client, uri string) ([]byte, error) {
 	req, err := http.NewRequest("GET", uri, nil)
 	if err != nil {
-		return nil, fmt.Errorf("new fetch request initialize error: %v", err)
+		return nil, FetchError("NewRequest initialized failed", uri, err)
 	}
 	req.Header = http.Header{
 		"Content-Type": []string{"text/csv;charset=ms950"},
@@ -92,18 +92,18 @@ func download(ctx context.Context, client *http.Client, uri string) ([]byte, err
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch request error: %v, url: %s", err, uri)
+		return nil, FetchError("client.Do", uri, err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetch status error: %v, url: %s", resp.StatusCode, uri)
+		return nil, FetchError(fmt.Sprintf("Status = %d", resp.StatusCode), uri, err)
 	}
 
 	// copy stream from response body, although it consumes memory but
 	// better helps on concurrent handling in goroutine.
 	f, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("fetch unable to read body: %v, url: %s", err, uri)
+		return nil, FetchError("Unable to read body", uri, err)
 	}
 
 	log.Debugf("download completed (%s), URL: %s", helper.GetReadableSize(len(f), 2), uri)

@@ -153,8 +153,8 @@ func Test_FormalizeValidTimeWithLocation(t *testing.T) {
 	tests := []struct {
 		name   string
 		ti     time.Time
-		offset int
 		want   *time.Time
+		offset int
 	}{
 		{
 			name:   "regular time",
@@ -298,4 +298,7 @@ func Test_GetReadableSize(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_String2Bytes(t *testing.T) {
 }

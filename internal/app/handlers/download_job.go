@@ -35,12 +35,12 @@ import (
 
 // download job to run in workerpool
 type downloadJob struct {
-	ctx       context.Context
-	rateLimit int32
-	origin    convert.Source
 	date      string
 	stockId   string
 	respChan  chan *[]interface{}
+	origin    convert.Source
+	ctx       context.Context
+	rateLimit int32
 }
 
 func (job *downloadJob) Do() error {
@@ -100,7 +100,7 @@ func (job *downloadJob) Do() error {
 	// looping to download all URLs
 	for {
 		urls := c.GetURLs()
-		if len(urls) <= 0 {
+		if len(urls) == 0 {
 			break
 		}
 

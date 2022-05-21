@@ -20,6 +20,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/samwang0723/stock-crawler/internal/helper"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
 )
@@ -40,7 +41,7 @@ func Test_Fetch(t *testing.T) {
 			name: "Regular http fetch",
 			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte("Success"))
+				w.Write(helper.String2Bytes("Success"))
 			})),
 			want: false,
 		},
