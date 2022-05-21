@@ -35,7 +35,6 @@ func (s *concentrationStrategy) Parse(in io.Reader, additional ...string) ([]int
 	var output []interface{}
 	var isColumn, isTitle, startParsing bool
 
-	//TODO: can try to find a better way of parsing all concentration and calulate
 	s.url = additional[0]
 	l := len(s.url)
 	if l > 7 && strings.HasSuffix(s.url, ".djhtm") {

@@ -48,8 +48,13 @@ var (
 	instance Config
 )
 
-func Load() {
-	yamlFile := fmt.Sprintf("./configs/config.%s.yaml", helper.GetCurrentEnv())
+func Load(loc ...string) {
+	var yamlFile string
+	if len(loc) > 0 {
+		yamlFile = loc[0]
+	} else {
+		yamlFile = fmt.Sprintf("./configs/config.%s.yaml", helper.GetCurrentEnv())
+	}
 	f, err := os.Open(yamlFile)
 	if err != nil {
 		panic(err)

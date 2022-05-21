@@ -11,17 +11,15 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package entity
+package cache
 
-type DailyClose struct {
-	StockID      string  `json:"stockId"`
-	Date         string  `json:"date"`
-	TradedShares uint64  `json:"tradeShares"`  // Total volumes of shares being traded.
-	Transactions uint64  `json:"transactions"` // Total numbers of transaction.
-	Turnover     uint64  `json:"turnover"`     // Total traded dollar volume
-	Open         float32 `json:"open"`
-	Close        float32 `json:"close"`
-	High         float32 `json:"high"`
-	Low          float32 `json:"low"`
-	PriceDiff    float32 `json:"price_diff"`
+import (
+	"testing"
+
+	redismock "github.com/go-redis/redismock/v8"
+)
+
+func Test_ObtainLock(t *testing.T) {
+	_, mock := redismock.NewClientMock()
+	mock.ExpectGet(CronjobLock).RedisNil()
 }
