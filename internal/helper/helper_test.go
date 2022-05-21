@@ -227,23 +227,25 @@ func Test_GetDateFromUTC(t *testing.T) {
 
 func Test_GetDateFromOffset(t *testing.T) {
 	l, _ := time.LoadLocation(TimeZone)
+	expTime := time.Date(2021, time.December, 22, 12, 0, 0, 0, l)
+
 	tests := []struct {
 		name   string
-		offset int
 		format string
 		want   string
+		offset int
 	}{
 		{
 			name:   "convert current timestamp to Twse",
 			offset: 0,
 			format: TwseDateFormat,
-			want:   time.Now().In(l).Format(TwseDateFormat),
+			want:   expTime.Format(TwseDateFormat),
 		},
 		{
 			name:   "convert current timestamp to Tpex",
 			offset: 0,
 			format: TpexDateFormat,
-			want:   UnifiedDateFormatToTpex(time.Now().In(l).Format(TpexDateFormat)),
+			want:   UnifiedDateFormatToTpex(expTime.Format(TpexDateFormat)),
 		},
 	}
 
@@ -252,7 +254,7 @@ func Test_GetDateFromOffset(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := GetDateFromOffset(int32(tt.offset), tt.format); got != tt.want {
+			if got := GetDateFromOffset(int32(tt.offset), tt.format, expTime); got != tt.want {
 				t.Errorf("GetDateFromOffset(t.offset, tt.format) = %v, want %v", got, tt.want)
 			}
 		})
@@ -262,9 +264,9 @@ func Test_GetDateFromOffset(t *testing.T) {
 func Test_GetReadableSize(t *testing.T) {
 	tests := []struct {
 		name    string
+		want    string
 		length  int
 		decimal int
-		want    string
 	}{
 		{
 			name:    "convert bytes to MB",

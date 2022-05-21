@@ -124,8 +124,12 @@ func GetDateFromUTC(timestamp string, format string) string {
 	return s
 }
 
-func GetDateFromOffset(offset int32, format string) string {
-	t := FormalizeValidTimeWithLocation(time.Now(), offset)
+func GetDateFromOffset(offset int32, format string, input ...time.Time) string {
+	current := time.Now()
+	if len(input) > 0 {
+		current = input[0]
+	}
+	t := FormalizeValidTimeWithLocation(current, offset)
 	if t == nil {
 		return ""
 	}
