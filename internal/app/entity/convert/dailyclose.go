@@ -25,7 +25,7 @@ import (
 type dailyCloseImpl struct {
 }
 
-func NewConvertDailyClose() IConvert {
+func DailyClose() IConvert {
 	return &dailyCloseImpl{}
 }
 

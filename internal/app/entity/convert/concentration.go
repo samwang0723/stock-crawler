@@ -21,7 +21,7 @@ import (
 type concentrationImpl struct {
 }
 
-func NewConvertConcentration() IConvert {
+func Concentration() IConvert {
 	return &concentrationImpl{}
 }
 

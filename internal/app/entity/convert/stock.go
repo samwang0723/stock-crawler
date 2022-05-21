@@ -23,7 +23,7 @@ import (
 type stockImpl struct {
 }
 
-func NewConvertStock() IConvert {
+func Stock() IConvert {
 	return &stockImpl{}
 }
 
