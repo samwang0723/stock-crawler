@@ -38,12 +38,12 @@ func Warnf(s string, args ...interface{}) {
 	instance.RawLogger().Warnf(s, args...)
 }
 
-func Fatal(args ...interface{}) {
-	instance.RawLogger().Fatal(args...)
+func Panic(args ...interface{}) {
+	instance.RawLogger().Panic(args...)
 }
 
-func Fatalf(s string, args ...interface{}) {
-	instance.RawLogger().Fatalf(s, args...)
+func Panicf(s string, args ...interface{}) {
+	instance.RawLogger().Panicf(s, args...)
 }
 
 func Error(args ...interface{}) {
@@ -52,8 +52,4 @@ func Error(args ...interface{}) {
 
 func Errorf(s string, args ...interface{}) {
 	instance.RawLogger().Errorf(s, args...)
-}
-
-func Flush() {
-	instance.Flush()
 }

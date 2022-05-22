@@ -15,10 +15,6 @@
 package structuredlog
 
 import (
-	"log"
-	"time"
-
-	"github.com/getsentry/sentry-go"
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/sirupsen/logrus"
 
@@ -31,7 +27,6 @@ var (
 
 type ILogger interface {
 	RawLogger() *logrus.Logger
-	Flush()
 }
 
 type structuredLogger struct {
@@ -68,7 +63,6 @@ func Logger(cfg *config.Config) ILogger {
 		})
 
 		initialize(slog)
-		initSentry()
 	}
 	return instance
 }
@@ -81,23 +75,6 @@ func NullLogger() ILogger {
 	return instance
 }
 
-func initSentry() {
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:         "https://f3fb4890176c442aafef411fcf812312@o1049557.ingest.sentry.io/6030819",
-		Environment: "development",
-		// Specify a fixed sample rate:
-		TracesSampleRate: 0.2,
-	})
-	if err != nil {
-		log.Fatalf("sentry.Init: %s", err)
-	}
-}
-
 func (l *structuredLogger) RawLogger() *logrus.Logger {
 	return l.logger
-}
-
-func (log *structuredLogger) Flush() {
-	// Flush buffered events before the program terminates.
-	sentry.Flush(2 * time.Second)
 }

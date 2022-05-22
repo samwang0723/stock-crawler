@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
@@ -28,6 +29,16 @@ import (
 func setup() {
 	logger := logtest.NullLogger()
 	log.Initialize(logger)
+}
+
+func shutdown() {
+}
+
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	shutdown()
+	os.Exit(code)
 }
 
 func Test_Fetch(t *testing.T) {

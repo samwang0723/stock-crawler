@@ -16,6 +16,8 @@ package icache
 import (
 	"context"
 	"time"
+
+	"github.com/bsm/redislock"
 )
 
 type IRedis interface {
@@ -23,4 +25,5 @@ type IRedis interface {
 	LPush(ctx context.Context, key string, value string) error
 	LRange(ctx context.Context, key string) ([]string, error)
 	Close() error
+	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
 }

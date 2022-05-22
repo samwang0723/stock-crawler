@@ -47,7 +47,7 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 	err = h.dataService.AddJob(longLiveCtx, req.Schedule, func() {
 		// since we will have multiple daemonSet in nodes, need to make sure same cronjob
 		// only running once at a time, here we use distrubted lock through Redis.
-		lock := cache.ObtainLock(cache.CronjobLock, 2*time.Minute)
+		lock := h.dataService.ObtainLock(longLiveCtx, cache.CronjobLock, 2*time.Minute)
 		if lock != nil {
 			h.BatchingDownload(longLiveCtx, &dto.DownloadRequest{
 				RewindLimit: 0,

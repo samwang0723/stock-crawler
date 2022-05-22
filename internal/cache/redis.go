@@ -21,7 +21,12 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/cache/icache"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 
+	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
+)
+
+const (
+	CronjobLock = "cronjob-lock"
 )
 
 type redisImpl struct {
@@ -45,7 +50,7 @@ func (r *redisImpl) ping() {
 	pong, err := r.instance.Ping(context.Background()).Result()
 	log.Infof("Ping redis instance: %s", pong)
 	if err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
 
@@ -68,4 +73,21 @@ func (r *redisImpl) LRange(ctx context.Context, key string) ([]string, error) {
 
 func (r *redisImpl) Close() error {
 	return r.instance.Close()
+}
+
+func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
+	// Create a new lock client.
+	locker := redislock.New(r.instance)
+
+	// Try to obtain lock.
+	lock, err := locker.Obtain(ctx, key, expire, nil)
+	if err == redislock.ErrNotObtained {
+		log.Errorf("Could not obtain lock! reason: %s", err)
+		return nil
+	} else if err != nil {
+		log.Panic(err)
+	}
+
+	log.Debugf("(%s) redis lock obtained successfully!", key)
+	return lock
 }

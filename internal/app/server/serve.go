@@ -204,10 +204,6 @@ func (s *server) Run(ctx context.Context) error {
 	childCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if s.Logger() != nil {
-		defer s.Logger().Flush()
-	}
-
 	if err := s.Start(childCtx); err != nil {
 		return err
 	}

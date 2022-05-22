@@ -13,6 +13,17 @@
 // limitations under the License.
 package services
 
+import (
+	"context"
+	"time"
+
+	"github.com/bsm/redislock"
+)
+
+func (s *serviceImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
+	return s.cache.ObtainLock(ctx, key, expire)
+}
+
 func (s *serviceImpl) StopRedis() error {
 	return s.cache.Close()
 }

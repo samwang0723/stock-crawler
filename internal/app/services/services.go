@@ -16,7 +16,9 @@ package services
 
 import (
 	"context"
+	"time"
 
+	"github.com/bsm/redislock"
 	"github.com/samwang0723/stock-crawler/internal/cache/icache"
 	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
 	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
@@ -31,6 +33,7 @@ type IService interface {
 	ThreePrimaryThroughKafka(ctx context.Context, objs *[]interface{}) error
 	StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error
 	ListBackfillStakeConcentrationStockIds(ctx context.Context, date string) ([]string, error)
+	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
 	StopRedis() error
 	StopKafka() error
 }
