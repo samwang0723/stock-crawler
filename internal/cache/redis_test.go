@@ -19,13 +19,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bsm/redislock"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
-	"github.com/stretchr/testify/assert"
 
+	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
 	redismock "github.com/go-redis/redismock/v8"
+	"github.com/stretchr/testify/assert"
 )
 
 func setup() {
@@ -75,7 +75,6 @@ func Test_ObtainLock(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
 			switch tt.err {
 			case redislock.ErrNotObtained:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(tt.err)
