@@ -300,5 +300,47 @@ func Test_GetReadableSize(t *testing.T) {
 	}
 }
 
-func Test_String2Bytes(t *testing.T) {
+func Test_StringNBytes(t *testing.T) {
+	assert.Equal(t, []byte("abcde"), String2Bytes("abcde"))
+	assert.Equal(t, "abcde", Bytes2String([]byte("abcde")))
+}
+
+func Test_Difference(t *testing.T) {
+	tests := []struct {
+		name string
+		ary1 []string
+		ary2 []string
+		want []string
+	}{
+		{
+			name: "Difference with slice has unique elements",
+			ary1: []string{"a", "b", "c"},
+			ary2: []string{"b", "c", "d"},
+			want: []string{"a", "d"},
+		},
+		{
+			name: "Difference with slice not contains unique elements",
+			ary1: []string{"a", "b", "c"},
+			ary2: []string{"a", "b", "c"},
+			want: []string{},
+		},
+		{
+			name: "Difference with empty slice",
+			ary1: []string{},
+			ary2: []string{},
+			want: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := Difference(tt.ary1, tt.ary2); assert.ElementsMatch(t, tt.want, got) == false {
+				t.Errorf("Difference = %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+
 }
