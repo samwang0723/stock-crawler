@@ -20,6 +20,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
@@ -35,11 +36,14 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 		if val, ok := v.(*entity.DailyClose); ok {
 			b, err := json.Marshal(val)
 			if err != nil {
-				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
+				return fmt.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, ikafka.DailyClosesV1, b)
+			err = s.sendKafka(ctx, ikafka.DailyClosesV1, b)
+			if err != nil {
+				return fmt.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
+			}
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
+			return fmt.Errorf("Cannot cast interface to *dto.DailyClose: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
 	return nil
@@ -51,9 +55,12 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 		if val, ok := v.(*entity.Stock); ok {
 			b, err := json.Marshal(val)
 			if err != nil {
-				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
+				return fmt.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, ikafka.StocksV1, b)
+			err = s.sendKafka(ctx, ikafka.StocksV1, b)
+			if err != nil {
+				return fmt.Errorf("StockThroughKafka: sendKafka failed: %w", err)
+			}
 		} else {
 			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
 		}
@@ -66,33 +73,42 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 		if val, ok := v.(*entity.ThreePrimary); ok {
 			b, err := json.Marshal(val)
 			if err != nil {
-				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
+				return fmt.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, ikafka.ThreePrimaryV1, b)
+			err = s.sendKafka(ctx, ikafka.ThreePrimaryV1, b)
+			if err != nil {
+				return fmt.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
+			}
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
+			return fmt.Errorf("Cannot cast interface to *dto.ThreePrimary: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
 	return nil
 }
 
 func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error {
-	var redisKey string
 	for _, v := range *objs {
 		if val, ok := v.(*entity.StakeConcentration); ok {
 			b, err := json.Marshal(val)
 			if err != nil {
-				return fmt.Errorf("DeliverStocks: json.Marshal failed: %w", err)
+				return fmt.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
 			}
-			s.sendKafka(ctx, ikafka.StakeConcentrationV1, b)
-
-			if len(redisKey) == 0 {
-				redisKey = strings.ReplaceAll(val.Date, "-", "")
+			err = s.sendKafka(ctx, ikafka.StakeConcentrationV1, b)
+			if err != nil {
+				return fmt.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
 			}
-			// record parsed records to prevent duplicate parsing
-			s.cache.LPush(ctx, redisKey, val.StockID)
+			// record parsed records to prevent duplicate parsing, default expire the key after 6 hours
+			key := strings.ReplaceAll(val.Date, "-", "")
+			err = s.cache.SAdd(ctx, key, val.StockID)
+			if err != nil {
+				return fmt.Errorf("StakeConcentrationThroughKafka: redis(SAdd) failed: %w", err)
+			}
+			err = s.cache.SetExpire(ctx, key, time.Now().Add(6*time.Hour))
+			if err != nil {
+				return fmt.Errorf("StakeConcentrationThroughKafka: redis(SetExpure) failed: %w", err)
+			}
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
+			return fmt.Errorf("Cannot cast interface to *dto.StakeConcentration: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
 	return nil
@@ -103,7 +119,7 @@ func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	res, err := s.cache.LRange(ctx, date)
+	res, err := s.cache.SMembers(ctx, date)
 	if err != nil {
 		return nil, err
 	}

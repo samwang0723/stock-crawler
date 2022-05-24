@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	config "github.com/samwang0723/stock-crawler/configs"
+	"github.com/samwang0723/stock-crawler/internal/helper"
 	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 	"github.com/segmentio/kafka-go"
@@ -46,13 +47,13 @@ func (k *kafkaImpl) WriteMessages(ctx context.Context, message []byte) error {
 		Value: message,
 	}
 	err := k.instance.WriteMessages(ctx, msg)
-	log.Infof("WriteMessages: written bytes: %d", len(message))
+	log.Infof("Kafka:WriteMessages: written bytes: %d, data: %s, err: %s", len(message), helper.Bytes2String(message), err)
 
 	return err
 }
 
 func (k *kafkaImpl) Close() error {
-	log.Infof("Close: topic: %s", k.instance.Topic)
+	log.Infof("Kafka:Close: topic: %s", k.instance.Topic)
 	err := k.instance.Close()
 	if err != nil {
 		log.Errorf("Close failed: %w", err)

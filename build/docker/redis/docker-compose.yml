@@ -1,21 +1,12 @@
-version: '3'
+version: '3.5'
 services:
-  kafka:
-    build:
-      context: ./kafka/
-      dockerfile: Dockerfile
-    container_name: kafka
-    user: root
-    image: samwang0723/kraft-kafka:v1
-    environment:
-      - KAFKA_CREATE_TOPICS=dailycloses-v1:3:1,stocks-v1:3:1,threeprimary-v1:3:1,stakeconcentration-v1:3:1
-    ports:
-      - "9092:9092"
   redis-master:
     image: amd64/redis:5.0-alpine
     container_name: redis-master
     ports: 
       - "6379:6379"
+    networks:
+      - jarvis-infra
   redis-slave:
     container_name: redis-slave
     image: amd64/redis:5.0-alpine
@@ -24,11 +15,15 @@ services:
       - redis-master
     ports:
       - "6380:6379"
+    networks:
+      - jarvis-infra
   redis-sentinel-1:
     container_name: redis-sentinel-1
     image: samwang0723/redis-sentinel
     ports:
       - "26379:26379"
+    networks:
+      - jarvis-infra
     depends_on:
       - redis-master
   redis-sentinel-2:
@@ -36,6 +31,8 @@ services:
     image: samwang0723/redis-sentinel
     ports:
       - "26380:26379"
+    networks:
+      - jarvis-infra
     depends_on:
       - redis-master
   redis-sentinel-3:
@@ -43,18 +40,10 @@ services:
     image: samwang0723/redis-sentinel
     ports:
       - "26381:26379"
+    networks:
+      - jarvis-infra
     depends_on:
       - redis-master
-  stock-crawler:
-    container_name: stock-crawler
-    image: samwang0723/stock-crawler:m1
-    ports:
-      - "8080:8080"
-      - "8081:8081"
-    depends_on:
-      - kafka
-      - redis-sentinel-1
-      - redis-sentinel-2
-      - redis-sentinel-3
-      - redis-master
-      - redis-slave
+networks:
+  jarvis-infra:
+    driver: bridge

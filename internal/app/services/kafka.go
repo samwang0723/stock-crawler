@@ -24,8 +24,7 @@ func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byt
 		return fmt.Errorf("No kafka instance being initialized: %+v, topic: %s", s.producers, topic)
 	}
 
-	p.WriteMessages(ctx, message)
-	return nil
+	return p.WriteMessages(ctx, message)
 }
 
 func (s *serviceImpl) StopKafka() error {

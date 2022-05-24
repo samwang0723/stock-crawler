@@ -30,28 +30,18 @@ const (
 )
 
 type redisImpl struct {
-	instance *redis.ClusterClient
+	instance *redis.Client
 }
 
 func New(cfg *config.Config) icache.IRedis {
 	impl := &redisImpl{
-		instance: redis.NewFailoverClusterClient(&redis.FailoverOptions{
-			MasterName:     cfg.RedisCache.Master,
-			SentinelAddrs:  cfg.RedisCache.Ports,
-			RouteByLatency: true,
+		instance: redis.NewFailoverClient(&redis.FailoverOptions{
+			MasterName:    cfg.RedisCache.Master,
+			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
 		}),
 	}
-	impl.ping()
 
 	return impl
-}
-
-func (r *redisImpl) ping() {
-	pong, err := r.instance.Ping(context.Background()).Result()
-	log.Infof("Ping redis instance: %s", pong)
-	if err != nil {
-		log.Panic(err)
-	}
 }
 
 func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time) error {
@@ -59,16 +49,20 @@ func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time
 	if err != nil {
 		return err
 	}
-	log.Infof("Redis Key: %s ExpiredAt: %s", key, expire)
+	log.Infof("Redis:SetExpire: key: %s expiredAt: %s", key, expire)
 	return nil
 }
 
-func (r *redisImpl) LPush(ctx context.Context, key string, value string) error {
-	return r.instance.LPush(ctx, key, value).Err()
+func (r *redisImpl) SAdd(ctx context.Context, key string, value string) error {
+	err := r.instance.SAdd(ctx, key, value).Err()
+	log.Infof("Redis:SAdd: key: %s, value: %s, err: %w", key, value, err)
+	return err
 }
 
-func (r *redisImpl) LRange(ctx context.Context, key string) ([]string, error) {
-	return r.instance.LRange(ctx, key, 0, -1).Result()
+func (r *redisImpl) SMembers(ctx context.Context, key string) ([]string, error) {
+	res, err := r.instance.SMembers(ctx, key).Result()
+	log.Infof("Redis:SMembers: res: %+v, err: %w", res, err)
+	return res, err
 }
 
 func (r *redisImpl) Close() error {
@@ -82,12 +76,12 @@ func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Dura
 	// Try to obtain lock.
 	lock, err := locker.Obtain(ctx, key, expire, nil)
 	if err == redislock.ErrNotObtained {
-		log.Errorf("Could not obtain lock! reason: %s", err)
+		log.Errorf("Redis:ObtainLock: Could not obtain lock! reason: %w", err)
 		return nil
 	} else if err != nil {
 		log.Panic(err)
 	}
 
-	log.Debugf("(%s) redis lock obtained successfully!", key)
+	log.Debugf("Redis:ObtainLock: (%s) lock obtained successfully!", key)
 	return lock
 }
