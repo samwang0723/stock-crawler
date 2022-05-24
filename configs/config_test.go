@@ -33,17 +33,17 @@ func Test_ConfigLoad(t *testing.T) {
 					Level: "DEBUG",
 				},
 				RedisCache: struct {
-					Master string   "yaml:\"master\""
-					Ports  []string "yaml:\"ports\""
+					Master        string   "yaml:\"master\""
+					SentinelAddrs []string "yaml:\"sentinelAddrs\""
 				}{
-					Master: "redis-master",
-					Ports:  []string{":26379", ":26380", ":26381"},
+					Master:        "redis-master",
+					SentinelAddrs: []string{"redis-sentinel-1:26379", "redis-sentinel-2:26380", "redis-sentinel-3:26381"},
 				},
 				Kafka: struct {
 					Host string "yaml:\"host\""
 					Port int    "yaml:\"port\""
 				}{
-					Host: "kafka",
+					Host: "kafka-1",
 					Port: 9092,
 				},
 				Server: struct {

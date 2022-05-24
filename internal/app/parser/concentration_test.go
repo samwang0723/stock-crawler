@@ -44,7 +44,7 @@ func Test_parseConcentration(t *testing.T) {
 			shares:  []uint64{12449, 40221},
 			price:   []float32{63.45, 63.53},
 			stockId: "6727",
-			hidden:  "1",
+			hidden:  "0",
 			date:    "20211029",
 		},
 		{

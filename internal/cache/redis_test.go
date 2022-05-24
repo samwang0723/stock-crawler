@@ -46,7 +46,7 @@ func TestMain(m *testing.M) {
 func Test_ObtainLock(t *testing.T) {
 	ctx := context.TODO()
 	duration := 10 * time.Second
-	client, mock := redismock.NewClusterMock()
+	client, mock := redismock.NewClientMock()
 	impl := &redisImpl{
 		instance: client,
 	}

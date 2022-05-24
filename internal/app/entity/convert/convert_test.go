@@ -11,19 +11,4 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package icache
-
-import (
-	"context"
-	"time"
-
-	"github.com/bsm/redislock"
-)
-
-type IRedis interface {
-	SetExpire(ctx context.Context, key string, expired time.Time) error
-	SAdd(ctx context.Context, key string, value string) error
-	SMembers(ctx context.Context, key string) ([]string, error)
-	Close() error
-	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
-}
+package convert

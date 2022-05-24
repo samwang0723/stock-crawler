@@ -26,8 +26,8 @@ type Config struct {
 		Level string `yaml:"level"`
 	} `yaml:"log"`
 	RedisCache struct {
-		Master string   `yaml:"master"`
-		Ports  []string `yaml:"ports"`
+		Master        string   `yaml:"master"`
+		SentinelAddrs []string `yaml:"sentinelAddrs"`
 	} `yaml:"redis"`
 	Kafka struct {
 		Host string `yaml:"host"`

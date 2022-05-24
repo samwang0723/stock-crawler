@@ -1,0 +1,20 @@
+version: '3.5'
+services:
+  stock-crawler:
+    container_name: stock-crawler
+    image: samwang0723/stock-crawler:m1
+    ports:
+      - "8086:8086"
+    env_file:
+      - ../../../.env
+    networks:
+      - default
+      - kafka_jarvis-infra
+      - redis_jarvis-infra
+networks:
+  default:
+    driver: bridge
+  kafka_jarvis-infra:
+    external: true
+  redis_jarvis-infra:
+    external: true

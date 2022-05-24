@@ -125,19 +125,12 @@ func (h *handlerImpl) BatchingDownload(ctx context.Context, req *dto.DownloadReq
 					var sc *entity.StakeConcentration
 					for _, obj := range *objs {
 						if val, ok := obj.(*entity.StakeConcentration); ok {
-							switch val.HiddenField {
-							case "1":
+							idx, _ := strconv.Atoi(val.HiddenField)
+							// make sure to cover latest concentration data
+							if idx == 0 {
 								sc = val
-								diff[0] = int32(val.SumBuyShares - val.SumSellShares)
-							case "2":
-								diff[1] = int32(val.SumBuyShares - val.SumSellShares)
-							case "3":
-								diff[2] = int32(val.SumBuyShares - val.SumSellShares)
-							case "4":
-								diff[3] = int32(val.SumBuyShares - val.SumSellShares)
-							case "6":
-								diff[4] = int32(val.SumBuyShares - val.SumSellShares)
 							}
+							diff[idx] = int32(val.SumBuyShares - val.SumSellShares)
 						}
 					}
 					if sc == nil {
