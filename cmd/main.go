@@ -15,24 +15,18 @@ package main
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"github.com/samwang0723/stock-crawler/internal/app/server"
-)
-
-const (
-	TimeZone = "TZ"
+	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
 func main() {
 	// manually set time zone, docker image may not have preset timezone
-	if tz := os.Getenv(TimeZone); tz != "" {
-		var err error
-		time.Local, err = time.LoadLocation(tz)
-		if err != nil {
-			log.Printf("error loading location '%s': %v\n", tz, err)
-		}
+	var err error
+	time.Local, err = time.LoadLocation(helper.TimeZone)
+	if err != nil {
+		log.Printf("error loading location '%s': %v\n", helper.TimeZone, err)
 	}
 
 	server.Serve()
