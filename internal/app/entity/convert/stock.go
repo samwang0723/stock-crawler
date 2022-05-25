@@ -28,7 +28,11 @@ func Stock() IConvert {
 }
 
 func (c *stockImpl) Execute(data *ConvertData) interface{} {
-	var output interface{}
+	var output *entity.Stock
+	if data == nil || len(data.RawData) < 6 {
+		return output
+	}
+
 	s := strings.Split(data.RawData[0], "　")
 	output = &entity.Stock{
 		StockID:  strings.TrimSpace(s[0]),

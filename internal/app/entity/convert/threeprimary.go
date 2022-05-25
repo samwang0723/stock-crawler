@@ -29,7 +29,10 @@ func ThreePrimary() IConvert {
 }
 
 func (c *threePrimaryImpl) Execute(data *ConvertData) interface{} {
-	var output interface{}
+	var output *entity.ThreePrimary
+	if data == nil || len(data.RawData) < 19 {
+		return output
+	}
 	switch data.Target {
 	case TpexThreePrimary:
 		output = &entity.ThreePrimary{

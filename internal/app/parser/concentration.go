@@ -82,10 +82,13 @@ func (s *concentrationStrategy) Parse(in io.Reader, additional ...string) ([]int
 
 					// reached the row capacity limit, flush the cache data
 					if s.capacity == len(records) {
-						output = append(output, s.converter.Execute(&convert.ConvertData{
+						res := s.converter.Execute(&convert.ConvertData{
 							RawData: records,
 							Target:  convert.StakeConcentration,
-						}))
+						})
+						if res != nil {
+							output = append(output, res)
+						}
 
 						// truncate the temporary cache
 						records = []string{}

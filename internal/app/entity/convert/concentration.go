@@ -28,6 +28,11 @@ func Concentration() IConvert {
 }
 
 func (c *concentrationImpl) Execute(data *ConvertData) interface{} {
+	var output *entity.StakeConcentration
+	if data == nil || len(data.RawData) < 7 {
+		return output
+	}
+
 	return &entity.StakeConcentration{
 		HiddenField:   c.convertHiddenIndex(data.RawData[0]),
 		Date:          data.RawData[1],

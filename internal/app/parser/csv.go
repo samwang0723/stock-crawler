@@ -37,7 +37,6 @@ func (s *csvStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, 
 	}
 
 	var output []interface{}
-	updatedLen := 0
 
 	reader := csv.NewReader(in)
 	reader.Comma = ','
@@ -57,18 +56,17 @@ func (s *csvStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, 
 		// make sure only parse recognized stock_id
 		records[0] = strings.TrimSpace(records[0])
 		if len(records[0]) > 0 && len(records[0]) < 6 && helper.IsInteger(records[0][0:2]) {
-			output = append(
-				output,
-				s.converter.Execute(&convert.ConvertData{
-					ParseDate: date,
-					RawData:   records,
-					Target:    s.source,
-				}),
-			)
-			updatedLen++
+			res := s.converter.Execute(&convert.ConvertData{
+				ParseDate: date,
+				RawData:   records,
+				Target:    s.source,
+			})
+			if res != nil {
+				output = append(output, res)
+			}
 		}
 	}
-	if updatedLen == 0 {
+	if len(output) == 0 {
 		return nil, NoParseResults
 	}
 
