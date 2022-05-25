@@ -12,3 +12,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 package convert
+
+import (
+	"testing"
+
+	"github.com/samwang0723/stock-crawler/internal/app/entity"
+	"github.com/stretchr/testify/assert"
+)
+
+func Test_Concentration(t *testing.T) {
+	tests := []struct {
+		name string
+		val  *ConvertData
+		exp  *entity.StakeConcentration
+	}{
+		{
+			name: "convert StakeConcentration",
+			val: &ConvertData{
+				RawData: []string{"1", "20220525", "2330", "1000", "2000", "523", "518"},
+				Target:  StakeConcentration,
+			},
+			exp: &entity.StakeConcentration{
+				StockID:       "2330",
+				Date:          "20220525",
+				HiddenField:   "0",
+				SumBuyShares:  1000,
+				SumSellShares: 2000,
+				AvgBuyPrice:   523,
+				AvgSellPrice:  518,
+			},
+		},
+		{
+			name: "empty ConvertData",
+			val:  nil,
+			exp:  nil,
+		},
+		{
+			name: "missing elements in ConvertData",
+			val: &ConvertData{
+				RawData: []string{"1", "20220525", "2330", "1000"},
+				Target:  StakeConcentration,
+			},
+			exp: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := Concentration()
+			res := c.Execute(tt.val)
+			if val, ok := res.(*entity.StakeConcentration); ok {
+				assert.Equal(t, tt.exp, val)
+			} else {
+				t.Errorf("cannot convert StakeConcentration: %+v", res)
+			}
+		})
+	}
+}

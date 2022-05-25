@@ -30,7 +30,10 @@ func DailyClose() IConvert {
 }
 
 func (c *dailyCloseImpl) Execute(data *ConvertData) interface{} {
-	var output interface{}
+	var output *entity.DailyClose
+	if data == nil || len(data.RawData) < 17 {
+		return output
+	}
 	switch data.Target {
 	case TpexDailyClose:
 		output = &entity.DailyClose{

@@ -60,7 +60,7 @@ func (w *Worker) Start() {
 			select {
 			case job := <-w.jobChannel:
 				if err := retry.Retry(3, 2000*time.Millisecond, job.Do); err != nil {
-					log.Errorf("worker(%d) job execution with failure: %+v", w.id, err)
+					log.Errorf("worker(%d) job execution with failure: %w", w.id, err)
 				}
 			// received quit event and terminate worker
 			case <-w.quit:

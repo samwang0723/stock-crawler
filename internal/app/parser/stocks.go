@@ -47,10 +47,13 @@ func (s *htmlStrategy) Parse(in io.Reader, additional ...string) ([]interface{},
 			if t.Data == "tr" {
 				if s.capacity == len(records) {
 					// flush the temporary cache into output queue
-					output = append(output, s.converter.Execute(&convert.ConvertData{
+					res := s.converter.Execute(&convert.ConvertData{
 						Target:  s.source,
 						RawData: records,
-					}))
+					})
+					if res != nil {
+						output = append(output, res)
+					}
 				}
 				// reset the buffer to parse next row
 				records = []string{}
