@@ -39,9 +39,9 @@ type IService interface {
 }
 
 type serviceImpl struct {
-	cronjob   icronjob.ICronJob
-	producers map[string]ikafka.IKafka
-	cache     icache.IRedis
+	cronjob  icronjob.ICronJob
+	producer ikafka.IKafka
+	cache    icache.IRedis
 }
 
 func New(opts ...Option) IService {

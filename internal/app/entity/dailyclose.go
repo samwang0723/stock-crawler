@@ -23,5 +23,5 @@ type DailyClose struct {
 	Close        float32 `json:"close"`
 	High         float32 `json:"high"`
 	Low          float32 `json:"low"`
-	PriceDiff    float32 `json:"price_diff"`
+	PriceDiff    float32 `json:"priceDiff"`
 }

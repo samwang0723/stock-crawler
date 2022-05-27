@@ -28,32 +28,28 @@ type kafkaImpl struct {
 	instance *kafka.Writer
 }
 
-func New(cfg *config.Config, topic string) ikafka.IKafka {
+func New(cfg *config.Config) ikafka.IKafka {
 	return &kafkaImpl{
 		instance: &kafka.Writer{
 			Addr:     kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
-			Topic:    topic,
 			Balancer: &kafka.LeastBytes{},
 		},
 	}
 }
 
-func (k *kafkaImpl) GetTopic() string {
-	return k.instance.Topic
-}
-
-func (k *kafkaImpl) WriteMessages(ctx context.Context, message []byte) error {
+func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []byte) error {
 	msg := kafka.Message{
+		Topic: topic,
 		Value: message,
 	}
 	err := k.instance.WriteMessages(ctx, msg)
-	log.Infof("Kafka:WriteMessages: written bytes: %d, data: %s, err: %s", len(message), helper.Bytes2String(message), err)
+	log.Infof("Kafka:WriteMessages: written bytes: %d, topic: %s, data: %s, err: %s", len(message), topic, helper.Bytes2String(message), err)
 
 	return err
 }
 
 func (k *kafkaImpl) Close() error {
-	log.Infof("Kafka:Close: topic: %s", k.instance.Topic)
+	log.Info("Kafka:Close")
 	err := k.instance.Close()
 	if err != nil {
 		log.Errorf("Close failed: %w", err)

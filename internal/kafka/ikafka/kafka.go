@@ -23,7 +23,6 @@ const (
 )
 
 type IKafka interface {
-	GetTopic() string
 	Close() error
-	WriteMessages(ctx context.Context, message []byte) error
+	WriteMessages(ctx context.Context, topic string, message []byte) error
 }

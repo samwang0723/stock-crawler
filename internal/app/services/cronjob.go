@@ -16,24 +16,16 @@ package services
 
 import (
 	"context"
-	"fmt"
 )
 
 func (s *serviceImpl) StartCron() {
-	if s.cronjob != nil {
-		s.cronjob.Start()
-	}
+	s.cronjob.Start()
 }
 
 func (s *serviceImpl) StopCron() {
-	if s.cronjob != nil {
-		s.cronjob.Stop()
-	}
+	s.cronjob.Stop()
 }
 
 func (s *serviceImpl) AddJob(ctx context.Context, spec string, job func()) error {
-	if s.cronjob == nil {
-		return fmt.Errorf("No cronjob instance being initialized: %+v", s.cronjob)
-	}
 	return s.cronjob.AddJob(ctx, spec, job)
 }

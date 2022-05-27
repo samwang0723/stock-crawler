@@ -30,10 +30,7 @@ func WithCronJob(cronjob icronjob.ICronJob) Option {
 
 func WithKafka(producer ikafka.IKafka) Option {
 	return func(i *serviceImpl) {
-		if i.producers == nil {
-			i.producers = make(map[string]ikafka.IKafka)
-		}
-		i.producers[producer.GetTopic()] = producer
+		i.producer = producer
 	}
 }
 

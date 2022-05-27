@@ -33,7 +33,6 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/cronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 )
@@ -64,10 +63,7 @@ func Serve() {
 	// bind DAL layer with service
 	dataService := services.New(
 		services.WithCronJob(cronjob.New(logger)),
-		services.WithKafka(kafka.New(cfg, ikafka.StocksV1)),
-		services.WithKafka(kafka.New(cfg, ikafka.DailyClosesV1)),
-		services.WithKafka(kafka.New(cfg, ikafka.ThreePrimaryV1)),
-		services.WithKafka(kafka.New(cfg, ikafka.StakeConcentrationV1)),
+		services.WithKafka(kafka.New(cfg)),
 		services.WithRedis(cache.New(cfg)),
 	)
 	// associate service with handler

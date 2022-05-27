@@ -15,24 +15,12 @@ package services
 
 import (
 	"context"
-	"fmt"
 )
 
 func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byte) error {
-	p := s.producers[topic]
-	if p == nil {
-		return fmt.Errorf("No kafka instance being initialized: %+v, topic: %s", s.producers, topic)
-	}
-
-	return p.WriteMessages(ctx, message)
+	return s.producer.WriteMessages(ctx, topic, message)
 }
 
 func (s *serviceImpl) StopKafka() error {
-	var err error
-	for _, producer := range s.producers {
-		if res := producer.Close(); res != nil {
-			err = res
-		}
-	}
-	return err
+	return s.producer.Close()
 }
