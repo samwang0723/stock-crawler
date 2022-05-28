@@ -17,7 +17,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/text v0.3.7
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
 
 require (
@@ -40,5 +40,4 @@ require (
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )

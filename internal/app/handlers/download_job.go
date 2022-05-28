@@ -49,26 +49,26 @@ func (job *downloadJob) Do() error {
 
 	switch job.origin {
 	case convert.TwseDailyClose:
-		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
+		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
 		url := fmt.Sprintf(icrawler.TwseDailyClose, job.date)
 		c.AppendURL(url)
 		p.SetStrategy(job.origin, job.date)
 
 	case convert.TpexDailyClose:
-		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
+		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
 		url := fmt.Sprintf(icrawler.TpexDailyClose, job.date)
 		c.AppendURL(url)
 
 		p.SetStrategy(job.origin, job.date)
 
 	case convert.TwseThreePrimary:
-		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
+		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
 		url := fmt.Sprintf(icrawler.TwseThreePrimary, job.date)
 		c.AppendURL(url)
 		p.SetStrategy(job.origin, job.date)
 
 	case convert.TpexThreePrimary:
-		c = crawler.New(&proxy.Proxy{Type: proxy.DailyClose})
+		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
 		url := fmt.Sprintf(icrawler.TpexThreePrimary, job.date)
 		c.AppendURL(url)
 		p.SetStrategy(job.origin, job.date)
@@ -84,7 +84,7 @@ func (job *downloadJob) Do() error {
 		p.SetStrategy(job.origin)
 
 	case convert.StakeConcentration:
-		c = crawler.New(&proxy.Proxy{Type: proxy.Concentration})
+		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
 		// in order to get accurate data, we must query each page https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
 		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
 		indexes := []int{1, 2, 3, 4, 6}

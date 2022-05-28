@@ -15,16 +15,16 @@ package proxy
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
 )
 
 const (
-	DailyClose    = "DAILYCLOSE_PROXY"
-	Concentration = "CONCENTRATION_PROXY"
+	WebScraping    = "WEB_SCRAPING"
+	WebScrapingUrl = "https://api.webscrapingapi.com/v1?api_key=%s"
+	ProxyCrawl     = "PROXY_CRAWL"
+	ProxyCrawlUrl  = "https://api.proxycrawl.com/?token=%s"
 )
 
 type Proxy struct {
@@ -32,16 +32,14 @@ type Proxy struct {
 	RequireClient bool
 }
 
-func (p *Proxy) Client() *http.Client {
-	proxyURL, _ := url.Parse("http://109.127.82.34:8080")
-	return &http.Client{
-		Transport: &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
-		},
-	}
-}
-
 func (p *Proxy) URI() string {
+	var url string
+	switch p.Type {
+	case ProxyCrawl:
+		url = ProxyCrawlUrl
+	case WebScraping:
+		url = WebScrapingUrl
+	}
 	token := os.Getenv(p.Type)
-	return fmt.Sprintf("https://api.proxycrawl.com/?token=%s", token)
+	return fmt.Sprintf(url, token)
 }

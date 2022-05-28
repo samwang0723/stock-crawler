@@ -18,7 +18,7 @@ import (
 	"os"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
