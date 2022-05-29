@@ -95,11 +95,14 @@ func FormalizeValidTimeWithLocation(input time.Time, offset ...int32) *time.Time
 		t = t.AddDate(0, 0, int(offset[0]))
 	}
 
-	// only within workday will be valid
-	wkDay := t.Weekday()
-	if wkDay == time.Saturday || wkDay == time.Sunday {
-		return nil
+	if IsTesting() == false {
+		// only within workday will be valid
+		wkDay := t.Weekday()
+		if wkDay == time.Saturday || wkDay == time.Sunday {
+			return nil
+		}
 	}
+
 	return &t
 }
 
@@ -222,6 +225,15 @@ func GetCurrentEnv() string {
 		output = "prod"
 	}
 	return output
+}
+
+func IsTesting() bool {
+	testing := os.Getenv("TESTING")
+	isTest, err := strconv.ParseBool(testing)
+	if err != nil {
+		return false
+	}
+	return isTest
 }
 
 func String2Bytes(s string) []byte {

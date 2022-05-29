@@ -163,7 +163,9 @@ func getParseDates(origin convert.Source, req *dto.DownloadRequest) []string {
 				date = helper.GetDateFromOffset(i, helper.TpexDateFormat)
 			case convert.StakeConcentration:
 				date = helper.GetDateFromOffset(i, helper.StakeConcentrationFormat)
+				fmt.Printf("-----------date: %s\n", date)
 			}
+
 			dates = append(dates, date)
 		}
 	}
