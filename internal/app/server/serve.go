@@ -143,7 +143,7 @@ Stand-alone stock data crawling service
 Environment (%s)
 _______________________________________________
 `
-	signatureOut := fmt.Sprintf(signature, "v0.0.1", helper.GetCurrentEnv())
+	signatureOut := fmt.Sprintf(signature, "v1.0.0", helper.GetCurrentEnv())
 	fmt.Println(signatureOut)
 
 	// starting the workerpool
@@ -152,19 +152,27 @@ _______________________________________________
 	// by default starting cronjob for regular daily updates pulling
 	// cronjob using redis distrubted lock to prevent multiple instances
 	// pulling same content
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 16 * * 1-5",
-		Types:    []dto.DownloadType{dto.DailyClose, dto.ThreePrimary},
-	})
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 18 * * 1-5",
-		Types:    []dto.DownloadType{dto.Concentration},
-	})
-	// backfill failed concentration records
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "20 19 * * 1-5",
-		Types:    []dto.DownloadType{dto.Concentration},
-	})
+	if helper.IsTesting() == false {
+		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 16 * * 1-5",
+			Types:    []dto.DownloadType{dto.DailyClose, dto.ThreePrimary},
+		})
+		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 18 * * 1-5",
+			Types:    []dto.DownloadType{dto.Concentration},
+		})
+		// backfill failed concentration records
+		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "20 19 * * 1-5",
+			Types:    []dto.DownloadType{dto.Concentration},
+		})
+	} else {
+		s.Handler().BatchingDownload(ctx, &dto.DownloadRequest{
+			Types:       []dto.DownloadType{dto.Concentration},
+			RewindLimit: 0,
+			RateLimit:   3000,
+		})
+	}
 
 	// start healthcheck specific server
 	go func() {

@@ -128,13 +128,17 @@ func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context
 }
 
 func loadStockList() ([]string, error) {
+	loc := "./configs/stock_ids.json"
+	if helper.IsTesting() {
+		loc = "./configs/stock_ids.test.json"
+	}
 	// Open stock list jsonFile
-	jsonFile, err := os.Open("./configs/stock_ids.test.json")
+	jsonFile, err := os.Open(loc)
 	// if we os.Open returns an error then handle it
 	if err != nil {
 		return nil, err
 	}
-	log.Info("Successfully Opened stock_ids.json")
+	log.Infof("Successfully Opened %s", loc)
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 

@@ -14,8 +14,8 @@ log:
 
 # WorkerPool
 workerpool:
-  maxPoolSize: 20
-  maxQueueSize: 40
+  maxPoolSize: 10
+  maxQueueSize: 20
 
 kafka:
   port: 9092
