@@ -1,16 +1,20 @@
 version: '3.5'
 services:
   redis-master:
-    image: amd64/redis:5.0-alpine
+    image: redis:5.0.3-alpine3.9
     container_name: redis-master
+    environment:
+      TZ: "Asia/Taipei"
     ports: 
       - "6379:6379"
     networks:
       - jarvis-infra
   redis-slave:
     container_name: redis-slave
-    image: amd64/redis:5.0-alpine
+    image: redis:5.0.3-alpine3.9
     command: redis-server --slaveof redis-master 6379
+    environment:
+      TZ: "Asia/Taipei"
     depends_on:
       - redis-master
     ports:
@@ -20,6 +24,8 @@ services:
   redis-sentinel-1:
     container_name: redis-sentinel-1
     image: samwang0723/redis-sentinel
+    environment:
+      TZ: "Asia/Taipei"
     ports:
       - "26379:26379"
     networks:
@@ -29,6 +35,8 @@ services:
   redis-sentinel-2:
     container_name: redis-sentinel-2
     image: samwang0723/redis-sentinel
+    environment:
+      TZ: "Asia/Taipei"
     ports:
       - "26380:26379"
     networks:
@@ -38,6 +46,8 @@ services:
   redis-sentinel-3:
     container_name: redis-sentinel-3
     image: samwang0723/redis-sentinel
+    environment:
+      TZ: "Asia/Taipei"
     ports:
       - "26381:26379"
     networks:

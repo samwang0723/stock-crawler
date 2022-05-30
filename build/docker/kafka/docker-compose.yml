@@ -9,10 +9,10 @@ services:
     networks:
       - jarvis-infra
     environment:
+      - TZ=Asia/Taipei
       - CLUSTER_ID=5Yr1SIgYQz-b-dgRabWx4g
       - BROKER_ID=1
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
-      - jarvis
   kafka-2:
     image: debezium/kafka:1.9.2.Final
     container_name: kafka-2
@@ -22,6 +22,7 @@ services:
     networks:
       - jarvis-infra
     environment:
+      - TZ=Asia/Taipei
       - CLUSTER_ID=5Yr1SIgYQz-b-dgRabWx4g
       - BROKER_ID=2
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
@@ -34,6 +35,7 @@ services:
     networks:
       - jarvis-infra
     environment:
+      - TZ=Asia/Taipei
       - CLUSTER_ID=5Yr1SIgYQz-b-dgRabWx4g
       - BROKER_ID=3
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
