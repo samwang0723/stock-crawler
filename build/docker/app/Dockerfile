@@ -5,6 +5,7 @@ FROM golang:1.17-alpine AS build_base
 LABEL maintainer="Sam Wang <sam.wang.0723@gmail.com>"
 
 RUN apk add --no-cache git
+RUN apk update && apk add ca-certificates && apk add tzdata
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -22,15 +23,18 @@ COPY . .
 RUN CGO_ENABLED=0 go test -v -tags all_tests -coverprofile=coverage.txt -covermode=atomic $(go list ./... | grep -v /third_party/)
 
 # Build the Go app
-RUN go build -o /stock-crawler cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /stock-crawler cmd/main.go
 
 # Start fresh from a smaller image
-FROM alpine:3.9
+FROM scratch
 
-RUN apk add ca-certificates
-RUN apk add --no-cache tzdata
+#RUN apk add ca-certificates
+#RUN apk add --no-cache tzdata
 
 WORKDIR /
+
+COPY --from=build_base /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=build_base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=build_base /app/configs/config.dev.yaml /configs/config.dev.yaml
 COPY --from=build_base /app/configs/stock_ids.test.json /configs/stock_ids.test.json
@@ -47,5 +51,3 @@ ENV TZ=Asia/Taipei
 # Run the binary program
 ENTRYPOINT [ "/stock-crawler" ]
 
-# docker build -t samwang0723/stock-crawler:m1 -f Dockerfile.local .
-# docker run -p 8086:8086 --name stock-crawler-container --env-file=./.env samwang0723/stock-crawler:m1

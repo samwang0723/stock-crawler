@@ -49,26 +49,26 @@ func (job *downloadJob) Do() error {
 
 	switch job.origin {
 	case convert.TwseDailyClose:
-		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
+		c = crawler.New(nil)
 		url := fmt.Sprintf(icrawler.TwseDailyClose, job.date)
 		c.AppendURL(url)
 		p.SetStrategy(job.origin, job.date)
 
 	case convert.TpexDailyClose:
-		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
+		c = crawler.New(nil)
 		url := fmt.Sprintf(icrawler.TpexDailyClose, job.date)
 		c.AppendURL(url)
 
 		p.SetStrategy(job.origin, job.date)
 
 	case convert.TwseThreePrimary:
-		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
+		c = crawler.New(nil)
 		url := fmt.Sprintf(icrawler.TwseThreePrimary, job.date)
 		c.AppendURL(url)
 		p.SetStrategy(job.origin, job.date)
 
 	case convert.TpexThreePrimary:
-		c = crawler.New(&proxy.Proxy{Type: proxy.WebScraping})
+		c = crawler.New(nil)
 		url := fmt.Sprintf(icrawler.TpexThreePrimary, job.date)
 		c.AppendURL(url)
 		p.SetStrategy(job.origin, job.date)
