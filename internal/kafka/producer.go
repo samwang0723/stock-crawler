@@ -16,6 +16,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"time"
 
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/helper"
@@ -31,8 +32,10 @@ type kafkaImpl struct {
 func New(cfg *config.Config) ikafka.IKafka {
 	return &kafkaImpl{
 		instance: &kafka.Writer{
-			Addr:     kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
-			Balancer: &kafka.LeastBytes{},
+			Addr:         kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
+			Balancer:     &kafka.LeastBytes{},
+			BatchSize:    100,
+			BatchTimeout: 100 * time.Millisecond,
 		},
 	}
 }
