@@ -59,8 +59,8 @@ func Test_ConfigLoad(t *testing.T) {
 					MaxPoolSize  int "yaml:\"maxPoolSize\""
 					MaxQueueSize int "yaml:\"maxQueueSize\""
 				}{
-					MaxPoolSize:  20,
-					MaxQueueSize: 40,
+					MaxPoolSize:  10,
+					MaxQueueSize: 20,
 				},
 			},
 		},

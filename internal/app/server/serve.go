@@ -163,7 +163,7 @@ _______________________________________________
 		})
 		// backfill failed concentration records
 		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "04 22 * * 1-5",
+			Schedule: "30 19 * * 1-5",
 			Types:    []dto.DownloadType{dto.Concentration},
 		})
 	} else {
