@@ -71,6 +71,6 @@ func (d *Dispatcher) dispatch(ctx context.Context) {
 	}
 }
 
-func (d *Dispatcher) WaitGroup() *sync.WaitGroup {
-	return d.waitGroup
+func (d *Dispatcher) Shutdown() {
+	d.waitGroup.Wait()
 }

@@ -191,7 +191,7 @@ func (s *server) Stop() error {
 	}
 
 	// graceful shutdown workerpool
-	s.Dispatcher().WaitGroup().Wait()
+	s.Dispatcher().Shutdown()
 
 	// shutdown healthcheck server
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownPeriod)
