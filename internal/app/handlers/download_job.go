@@ -175,7 +175,6 @@ func (h *handlerImpl) queueJobs(ctx context.Context, origin convert.Source, date
 	var jobs []*downloadJob
 	if len(date) > 0 && origin == convert.StakeConcentration {
 		// align the date format to be 20220107, but remains the query date as 2022-01-07
-		//TODO: use redis to replace database query
 		res, err := h.dataService.ListBackfillStakeConcentrationStockIds(ctx, strings.ReplaceAll(date, "-", ""))
 		if err != nil {
 			return fmt.Errorf("ListBackfillStakeConcentrationStockIds error: %+v", err)
