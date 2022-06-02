@@ -34,9 +34,3 @@ type StartCronjobRequest struct {
 	Schedule string         `json:"schedule"`
 	Types    []DownloadType `json:"types"`
 }
-
-type StartCronjobResponse struct {
-	Error    string `json:"error"`
-	Messages string `json:"messages"`
-	Code     int32  `json:"code"`
-}

@@ -21,7 +21,7 @@ import (
 )
 
 type IHandler interface {
-	CronDownload(ctx context.Context, req *dto.StartCronjobRequest) (*dto.StartCronjobResponse, error)
+	CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error
 	BatchingDownload(ctx context.Context, req *dto.DownloadRequest)
 }
 

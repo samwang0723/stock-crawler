@@ -15,8 +15,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"strconv"
 	"time"
 
@@ -31,25 +29,13 @@ const (
 	StartCronjob = "START_CRON"
 )
 
-func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) (*dto.StartCronjobResponse, error) {
-	envCron := os.Getenv(StartCronjob)
-	startCron, err := strconv.ParseBool(envCron)
-	if err != nil || !startCron {
-		return &dto.StartCronjobResponse{
-			Code:     401,
-			Error:    "Unauthorized",
-			Messages: "Environment not allowed to trigger Cronjob",
-		}, err
-	}
-
-	// create a separate context since it's not rely on parent grpc.Dial()
-	longLiveCtx := context.Background()
-	err = h.dataService.AddJob(longLiveCtx, req.Schedule, func() {
+func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error {
+	return h.dataService.AddJob(ctx, req.Schedule, func() {
 		// since we will have multiple daemonSet in nodes, need to make sure same cronjob
 		// only running once at a time, here we use distrubted lock through Redis.
-		lock := h.dataService.ObtainLock(longLiveCtx, cache.CronjobLock, 2*time.Minute)
+		lock := h.dataService.ObtainLock(ctx, cache.CronjobLock, 2*time.Minute)
 		if lock != nil {
-			h.BatchingDownload(longLiveCtx, &dto.DownloadRequest{
+			h.BatchingDownload(ctx, &dto.DownloadRequest{
 				RewindLimit: 0,
 				RateLimit:   3000,
 				Types:       req.Types,
@@ -58,19 +44,6 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 			log.Error("CronDownload: Redis distributed lock obtain failed.")
 		}
 	})
-
-	if err != nil {
-		return &dto.StartCronjobResponse{
-			Code:     400,
-			Error:    "Bad Request",
-			Messages: fmt.Sprintf("Failed to start the schedule: %s with Types: %+v", req.Schedule, req.Types),
-		}, err
-	}
-
-	return &dto.StartCronjobResponse{
-		Code:     200,
-		Messages: fmt.Sprintf("Successfully started the schedule: %s with Types: %+v", req.Schedule, req.Types),
-	}, nil
 }
 
 // batching download all the historical stock data

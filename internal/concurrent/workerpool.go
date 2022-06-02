@@ -54,6 +54,7 @@ func NewWorker(id int, workerPool chan JobChan, wg *sync.WaitGroup) *Worker {
 
 func (w *Worker) Start() {
 	go func() {
+		defer w.waitGroup.Done()
 		for {
 			// keep register available job channel back to worker pool
 			w.workerPool <- w.jobChannel
@@ -65,7 +66,6 @@ func (w *Worker) Start() {
 			// received quit event and terminate worker
 			case <-w.quit:
 				log.Warnf("worker(%d) terminated: context cancelled!", w.id)
-				w.waitGroup.Done()
 				return
 			}
 		}

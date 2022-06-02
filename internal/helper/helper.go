@@ -95,7 +95,7 @@ func FormalizeValidTimeWithLocation(input time.Time, offset ...int32) *time.Time
 		t = t.AddDate(0, 0, int(offset[0]))
 	}
 
-	if IsTesting() == false {
+	if IncludeWeekend() == false {
 		// only within workday will be valid
 		wkDay := t.Weekday()
 		if wkDay == time.Saturday || wkDay == time.Sunday {
@@ -227,9 +227,9 @@ func GetCurrentEnv() string {
 	return output
 }
 
-func IsTesting() bool {
-	testing := os.Getenv("TESTING")
-	isTest, err := strconv.ParseBool(testing)
+func IncludeWeekend() bool {
+	includeWeekend := os.Getenv("INCLUDE_WEEKEND")
+	isTest, err := strconv.ParseBool(includeWeekend)
 	if err != nil {
 		return false
 	}
