@@ -50,6 +50,5 @@ $ docker-compose -p stock-crawler -f build/docker/app/docker-compose.yml up
 Please configure `.env` under project root folder
 1. Concentration data crawling need to use proxy to prevent rate limiting from source website, recommend to use https://app.webscrapingapi.com,
 can set `WEB_SCRAPING={API_KEY}`, or https://proxycrawl.com, set `PROXY_CRAWL={API_KEY}`
-2. Make sure cron_job to execute, use `START_CRON=true`
-3. If want to testing the functionality, use `TESTING=true`, otherwise please set to `false`, 
-enabling the testing mode allows you to not skip weekend dates and limited the parsing stocks inside `stock_ids.test.json`
+2. If want to test the functionality, use `INCLUDE_WEEKEND=true`, otherwise please set to `false`, 
+enabling the testing mode allows you to not skip weekend dates

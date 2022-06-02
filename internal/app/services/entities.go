@@ -129,9 +129,7 @@ func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context
 
 func loadStockList() ([]string, error) {
 	loc := "./configs/stock_ids.json"
-	if helper.IsTesting() {
-		loc = "./configs/stock_ids.test.json"
-	}
+
 	// Open stock list jsonFile
 	jsonFile, err := os.Open(loc)
 	// if we os.Open returns an error then handle it
