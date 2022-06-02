@@ -37,7 +37,6 @@ COPY --from=build_base /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=build_base /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 COPY --from=build_base /app/configs/config.dev.yaml /configs/config.dev.yaml
-COPY --from=build_base /app/configs/stock_ids.test.json /configs/stock_ids.test.json
 COPY --from=build_base /app/configs/stock_ids.json /configs/stock_ids.json
 COPY --from=build_base /stock-crawler /stock-crawler
 
