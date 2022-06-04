@@ -18,13 +18,18 @@ import (
 	"context"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
+
+type Cronjob interface {
+	Start()
+	Stop()
+	AddJob(ctx context.Context, spec string, job func()) error
+}
 
 type cronjobImpl struct {
 	instance *cron.Cron
@@ -47,7 +52,7 @@ func (l *cronLog) Error(err error, msg string, keysAndValues ...interface{}) {
 	}).Warn(msg)
 }
 
-func New(l structuredlog.ILogger) icronjob.ICronJob {
+func New(l structuredlog.ILogger) Cronjob {
 	logger := &cronLog{clog: l}
 	logger.clog.RawLogger().SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,

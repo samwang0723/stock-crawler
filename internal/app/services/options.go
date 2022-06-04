@@ -15,26 +15,26 @@
 package services
 
 import (
-	"github.com/samwang0723/stock-crawler/internal/cache/icache"
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
+	"github.com/samwang0723/stock-crawler/internal/cache"
+	"github.com/samwang0723/stock-crawler/internal/cronjob"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 )
 
 type Option func(o *serviceImpl)
 
-func WithCronJob(cronjob icronjob.ICronJob) Option {
+func WithCronJob(cronjob cronjob.Cronjob) Option {
 	return func(i *serviceImpl) {
 		i.cronjob = cronjob
 	}
 }
 
-func WithKafka(producer ikafka.IKafka) Option {
+func WithKafka(producer kafka.Kafka) Option {
 	return func(i *serviceImpl) {
 		i.producer = producer
 	}
 }
 
-func WithRedis(redis icache.IRedis) Option {
+func WithRedis(redis cache.Redis) Option {
 	return func(i *serviceImpl) {
 		i.cache = redis
 	}

@@ -20,16 +20,27 @@ import (
 
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 	"github.com/segmentio/kafka-go"
 )
+
+const (
+	DailyClosesV1        = "dailycloses-v1"
+	StocksV1             = "stocks-v1"
+	ThreePrimaryV1       = "threeprimary-v1"
+	StakeConcentrationV1 = "stakeconcentration-v1"
+)
+
+type Kafka interface {
+	Close() error
+	WriteMessages(ctx context.Context, topic string, message []byte) error
+}
 
 type kafkaImpl struct {
 	instance *kafka.Writer
 }
 
-func New(cfg *config.Config) ikafka.IKafka {
+func New(cfg *config.Config) Kafka {
 	return &kafkaImpl{
 		instance: &kafka.Writer{
 			Addr:         kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),

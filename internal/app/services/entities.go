@@ -25,7 +25,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
@@ -38,7 +38,7 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 			if err != nil {
 				return fmt.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.DailyClosesV1, b)
+			err = s.sendKafka(ctx, kafka.DailyClosesV1, b)
 			if err != nil {
 				return fmt.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
 			}
@@ -57,7 +57,7 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 			if err != nil {
 				return fmt.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.StocksV1, b)
+			err = s.sendKafka(ctx, kafka.StocksV1, b)
 			if err != nil {
 				return fmt.Errorf("StockThroughKafka: sendKafka failed: %w", err)
 			}
@@ -75,7 +75,7 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 			if err != nil {
 				return fmt.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.ThreePrimaryV1, b)
+			err = s.sendKafka(ctx, kafka.ThreePrimaryV1, b)
 			if err != nil {
 				return fmt.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
 			}
@@ -93,7 +93,7 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.StakeConcentrationV1, b)
+			err = s.sendKafka(ctx, kafka.StakeConcentrationV1, b)
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
 			}

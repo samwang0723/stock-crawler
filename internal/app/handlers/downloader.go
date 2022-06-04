@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -25,9 +26,11 @@ import (
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
-const (
-	StartCronjob = "START_CRON"
-)
+type downloader struct {
+	crawler crawler.Crawler
+	sink    chan<- dto.Payload
+	errs    chan<- error
+}
 
 func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error {
 	return h.dataService.AddJob(ctx, req.Schedule, func() {

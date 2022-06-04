@@ -22,21 +22,39 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/app/crawler/icrawler"
-	"github.com/samwang0723/stock-crawler/internal/app/crawler/proxy"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
+const (
+	TwseDailyClose    = "https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=%s&type=ALLBUT0999"
+	TwseThreePrimary  = "http://www.tse.com.tw/fund/T86?response=csv&date=%s&selectType=ALLBUT0999"
+	OperatingDays     = "https://www.twse.com.tw/holidaySchedule/holidaySchedule?response=csv&queryYear=%d"
+	TpexDailyClose    = "http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_download.php?l=zh-tw&d=%s&s=0,asc,0"
+	TpexThreePrimary  = "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d=%s"
+	TWSEStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"
+	TPEXStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4"
+	ConcentrationDays = "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_%s_%d.djhtm"
+)
+
+type Crawler interface {
+	Fetch(ctx context.Context, sink chan<- dto.Payload, errs chan<- error)
+}
+
+// URLGetter is implemented by objects that can perform HTTP GET requests.
+type URLGetter interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type crawlerImpl struct {
-	client icrawler.URLGetter
-	proxy  *proxy.Proxy
+	client URLGetter
+	proxy  *proxy
 	it     graph.LinkIterator
 }
 
-func New(links []*graph.Link) icrawler.ICrawler {
+func New(links []*graph.Link) Crawler {
 	res := &crawlerImpl{
 		client: &http.Client{
 			Timeout: time.Second * 60,
@@ -44,7 +62,7 @@ func New(links []*graph.Link) icrawler.ICrawler {
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		},
-		proxy: *proxy.Proxy{Type: proxy.WebScraping},
+		proxy: &proxy{Type: WebScraping},
 		it:    &linkIterator{links: links},
 	}
 	return res

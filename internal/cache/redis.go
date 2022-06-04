@@ -18,7 +18,6 @@ import (
 	"time"
 
 	config "github.com/samwang0723/stock-crawler/configs"
-	"github.com/samwang0723/stock-crawler/internal/cache/icache"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 
 	"github.com/bsm/redislock"
@@ -29,11 +28,19 @@ const (
 	CronjobLock = "cronjob-lock"
 )
 
+type Redis interface {
+	SetExpire(ctx context.Context, key string, expired time.Time) error
+	SAdd(ctx context.Context, key string, value string) error
+	SMembers(ctx context.Context, key string) ([]string, error)
+	Close() error
+	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
+}
+
 type redisImpl struct {
 	instance *redis.Client
 }
 
-func New(cfg *config.Config) icache.IRedis {
+func New(cfg *config.Config) Redis {
 	impl := &redisImpl{
 		instance: redis.NewFailoverClient(&redis.FailoverOptions{
 			MasterName:    cfg.RedisCache.Master,

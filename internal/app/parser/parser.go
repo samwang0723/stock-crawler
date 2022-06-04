@@ -23,22 +23,22 @@ import (
 	"golang.org/x/text/transform"
 )
 
-type IParser interface {
+type Parser interface {
 	SetStrategy(source convert.Source, additional ...string)
 	Execute(in []byte, additional ...string) error
 	Flush() *[]interface{}
 }
 
-type IStrategy interface {
+type Strategy interface {
 	Parse(in io.Reader, additional ...string) ([]interface{}, error)
 }
 
 type parserImpl struct {
-	strategy IStrategy
+	strategy Strategy
 	result   *[]interface{}
 }
 
-func New() IParser {
+func New() Parser {
 	res := &parserImpl{
 		result: &[]interface{}{},
 	}

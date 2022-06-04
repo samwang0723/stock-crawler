@@ -19,9 +19,9 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/samwang0723/stock-crawler/internal/cache/icache"
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
+	"github.com/samwang0723/stock-crawler/internal/cache"
+	"github.com/samwang0723/stock-crawler/internal/cronjob"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 )
 
 type IService interface {
@@ -39,9 +39,9 @@ type IService interface {
 }
 
 type serviceImpl struct {
-	cronjob  icronjob.ICronJob
-	producer ikafka.IKafka
-	cache    icache.IRedis
+	cronjob  cronjob.Cronjob
+	producer kafka.Kafka
+	cache    cache.Redis
 }
 
 func New(opts ...Option) IService {
