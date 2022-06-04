@@ -17,24 +17,26 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/samwang0723/stock-crawler/internal/app/crawler/icrawler"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler/proxy"
+	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
 type crawlerImpl struct {
-	client *http.Client
+	client icrawler.URLGetter
 	proxy  *proxy.Proxy
-	urls   []string
+	it     graph.LinkIterator
 }
 
-func New(p *proxy.Proxy) icrawler.ICrawler {
+func New(links []*graph.Link) icrawler.ICrawler {
 	res := &crawlerImpl{
 		client: &http.Client{
 			Timeout: time.Second * 60,
@@ -42,70 +44,53 @@ func New(p *proxy.Proxy) icrawler.ICrawler {
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		},
-		proxy: p,
+		proxy: *proxy.Proxy{Type: proxy.WebScraping},
+		it:    &linkIterator{links: links},
 	}
 	return res
 }
 
-func (c *crawlerImpl) AppendURL(url string) {
-	c.urls = append(c.urls, url)
-}
+func (c *crawlerImpl) Fetch(ctx context.Context, sink chan<- dto.Payload, errs chan<- error) {
+	for c.it.Next() {
+		link := c.it.Link()
+		uri := link.URL
+		if link.UseProxy {
+			uri = fmt.Sprintf("%s&url=%s", c.proxy.URI(), url.QueryEscape(link.URL))
+		}
 
-func (c *crawlerImpl) GetURLs() []string {
-	return c.urls
-}
+		req, err := http.NewRequest("GET", uri, nil)
+		if err != nil {
+			errs <- FetchError("NewRequest initialized failed", uri, err)
+		}
+		req.Header = http.Header{
+			"Content-Type": []string{"text/csv;charset=ms950"},
+			// It is important to close the connection otherwise fd count will overhead
+			"Connection": []string{"close"},
+		}
+		req = req.WithContext(ctx)
+		log.Debugf("download started: %s", uri)
 
-func (c *crawlerImpl) Fetch(ctx context.Context) (string, []byte, error) {
-	if len(c.urls) == 0 {
-		return "", nil, NoUrlToParse
-	}
-	source := c.urls[0]
-	uri := source
-	if c.proxy != nil {
-		uri = fmt.Sprintf("%s&url=%s", c.proxy.URI(), url.QueryEscape(source))
-	}
+		resp, err := c.client.Do(req)
+		if err != nil {
+			errs <- FetchError("client.Do", uri, err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			errs <- FetchError(fmt.Sprintf("Status = %d", resp.StatusCode), uri, err)
+		}
 
-	res, err := download(ctx, c.client, uri)
-	if err != nil {
-		return source, nil, err
-	}
+		p := payloadPool.Get().(*crawlerPayload)
+		p.URL = link.URL
+		p.RetrievedAt = time.Now()
 
-	// dequeue the first element
-	if len(c.urls) > 0 {
-		c.urls = c.urls[1:]
-	}
-	return source, res, nil
-}
+		// copy stream from response body, although it consumes memory but
+		// better helps on concurrent handling in goroutine.
+		_, err = io.Copy(&p.RawContent, resp.Body)
+		if err != nil {
+			errs <- FetchError("Unable to io.Copy", link.URL, err)
+		}
+		log.Debugf("download completed (%s), URL: %s", helper.GetReadableSize(p.RawContent.Len(), 2), link.URL)
 
-func download(ctx context.Context, client *http.Client, uri string) ([]byte, error) {
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return nil, FetchError("NewRequest initialized failed", uri, err)
+		sink <- p
 	}
-	req.Header = http.Header{
-		"Content-Type": []string{"text/csv;charset=ms950"},
-		// It is important to close the connection otherwise fd count will overhead
-		"Connection": []string{"close"},
-	}
-	req = req.WithContext(ctx)
-	log.Debugf("download started: %s", uri)
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, FetchError("client.Do", uri, err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, FetchError(fmt.Sprintf("Status = %d", resp.StatusCode), uri, err)
-	}
-
-	// copy stream from response body, although it consumes memory but
-	// better helps on concurrent handling in goroutine.
-	f, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, FetchError("Unable to read body", uri, err)
-	}
-
-	log.Debugf("download completed (%s), URL: %s", helper.GetReadableSize(len(f), 2), uri)
-	return f, nil
 }

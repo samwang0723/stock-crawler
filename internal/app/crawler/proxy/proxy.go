@@ -28,8 +28,7 @@ const (
 )
 
 type Proxy struct {
-	Type          string
-	RequireClient bool
+	Type string
 }
 
 func (p *Proxy) URI() string {

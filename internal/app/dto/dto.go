@@ -23,6 +23,17 @@ const (
 	StockList
 )
 
+// Payload is implemented by values that can be sent through a pipeline.
+type Payload interface {
+	// Clone returns a new Payload that is a deep-copy of the original.
+	Clone() Payload
+
+	// MarkAsProcessed is invoked by the consumer when the Payload either
+	// reaches the parser or it gets discarded by one of the
+	// consumer.
+	MarkAsProcessed()
+}
+
 type DownloadRequest struct {
 	UTCTimestamp string         `json:"utcTimestamp"`
 	Types        []DownloadType `json:"types"`

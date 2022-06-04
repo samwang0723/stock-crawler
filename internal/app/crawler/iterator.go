@@ -1,0 +1,47 @@
+// Copyright 2021 Wei (Sam) Wang <sam.wang.0723@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+package crawler
+
+import (
+	"sync"
+	"sync/atomic"
+
+	"github.com/samwang0723/stock-crawler/internal/app/graph"
+)
+
+type linkIterator struct {
+	mu    sync.RWMutex
+	links []*graph.Link
+	index int32
+}
+
+// Next implements graph.LinkIterator.
+func (i *linkIterator) Next() bool {
+	if atomic.LoadInt32(&i.index) >= int32(len(i.links)) {
+		return false
+	}
+	atomic.AddInt32(&i.index, 1)
+	return true
+}
+
+// Link implements graph.LinkIterator.
+func (i *linkIterator) Link() *graph.Link {
+	// The link pointer contents may be overwritten by an update; to
+	// avoid data-races we acquire the read lock first and clone the link
+	i.mu.RLock()
+	link := new(graph.Link)
+	*link = *i.links[i.index-1]
+	i.mu.RUnlock()
+	return link
+}

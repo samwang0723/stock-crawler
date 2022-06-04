@@ -104,7 +104,7 @@ func (job *downloadJob) Do() error {
 			break
 		}
 
-		sourceURL, bytes, err := c.Fetch(job.ctx)
+		payload, err := c.Fetch(job.ctx)
 		if err != nil {
 			sentry.CaptureException(err)
 			return fmt.Errorf("(%s/%s): %+v", job.origin, job.date, err)
