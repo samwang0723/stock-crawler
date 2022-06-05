@@ -38,7 +38,7 @@ func initialize(l ILogger) {
 	instance.RawLogger().Info("initialized logger")
 }
 
-func Logger(cfg *config.Config) ILogger {
+func Logger(cfg *config.SystemConfig) ILogger {
 	if instance == nil {
 		var level logrus.Level
 		switch cfg.Log.Level {

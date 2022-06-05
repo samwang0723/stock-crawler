@@ -40,7 +40,7 @@ type kafkaImpl struct {
 	instance *kafka.Writer
 }
 
-func New(cfg *config.Config) Kafka {
+func New(cfg *config.SystemConfig) Kafka {
 	return &kafkaImpl{
 		instance: &kafka.Writer{
 			Addr:         kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),

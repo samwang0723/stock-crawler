@@ -22,7 +22,6 @@ import (
 
 type IHandler interface {
 	CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error
-	BatchingDownload(ctx context.Context, req *dto.DownloadRequest)
 }
 
 type handlerImpl struct {

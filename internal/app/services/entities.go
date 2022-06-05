@@ -23,6 +23,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
@@ -114,8 +115,8 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 	return nil
 }
 
-func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context, date string) ([]string, error) {
-	defaultList, err := loadStockList()
+func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error) {
+	defaultList, err := listStocks()
 	if err != nil {
 		return nil, err
 	}
@@ -124,10 +125,21 @@ func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context
 		return nil, err
 	}
 
-	return helper.Difference(res, defaultList), nil
+	var urls []string
+	stockIds := helper.Difference(res, defaultList)
+	for _, sid := range stockIds {
+		// in order to get accurate data, we must query each page https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
+		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
+		indexes := []int{1, 2, 3, 4, 6}
+		for _, idx := range indexes {
+			urls = append(urls, fmt.Sprintf(crawler.ConcentrationDays, sid, idx))
+		}
+	}
+
+	return urls, nil
 }
 
-func loadStockList() ([]string, error) {
+func listStocks() ([]string, error) {
 	loc := "./configs/stock_ids.json"
 
 	// Open stock list jsonFile

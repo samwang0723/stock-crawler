@@ -11,37 +11,41 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package crawler
+package handlers
 
 import (
 	"sync"
-	"sync/atomic"
 
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 )
 
 type linkIterator struct {
-	mu    sync.RWMutex
-	links []*graph.Link
-	index int32
+	mu       sync.RWMutex
+	links    []*graph.Link
+	curIndex int
 }
 
 // Next implements graph.LinkIterator.
 func (i *linkIterator) Next() bool {
-	if atomic.LoadInt32(&i.index) >= int32(len(i.links)) {
+	if i.curIndex >= len(i.links) {
 		return false
 	}
-	atomic.AddInt32(&i.index, 1)
+	i.curIndex++
 	return true
+}
+
+// Error implements graph.LinkIterator.
+func (i *linkIterator) Error() error {
+	return nil
 }
 
 // Link implements graph.LinkIterator.
 func (i *linkIterator) Link() *graph.Link {
-	// The link pointer contents may be overwritten by an update; to
+	// The link pointer contents may be overwritten by external update; to
 	// avoid data-races we acquire the read lock first and clone the link
 	i.mu.RLock()
 	link := new(graph.Link)
-	*link = *i.links[i.index-1]
+	*link = *i.links[i.curIndex-1]
 	i.mu.RUnlock()
 	return link
 }

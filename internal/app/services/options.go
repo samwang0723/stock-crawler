@@ -15,6 +15,7 @@
 package services
 
 import (
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/cache"
 	"github.com/samwang0723/stock-crawler/internal/cronjob"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
@@ -37,5 +38,15 @@ func WithKafka(producer kafka.Kafka) Option {
 func WithRedis(redis cache.Redis) Option {
 	return func(i *serviceImpl) {
 		i.cache = redis
+	}
+}
+
+func WithCrawler(cfg CrawlerConfig) Option {
+	return func(i *serviceImpl) {
+		i.crawler = crawler.New(crawler.Config{
+			URLGetter:         cfg.URLGetter,
+			FetchWorkers:      cfg.FetchWorkers,
+			RateLimitInterval: cfg.RateLimitInterval,
+		})
 	}
 }

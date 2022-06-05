@@ -40,7 +40,7 @@ type redisImpl struct {
 	instance *redis.Client
 }
 
-func New(cfg *config.Config) Redis {
+func New(cfg *config.SystemConfig) Redis {
 	impl := &redisImpl{
 		instance: redis.NewFailoverClient(&redis.FailoverOptions{
 			MasterName:    cfg.RedisCache.Master,

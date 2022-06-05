@@ -26,10 +26,10 @@ import (
 	"github.com/heptiolabs/healthcheck"
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
 	"github.com/samwang0723/stock-crawler/internal/cache"
-	"github.com/samwang0723/stock-crawler/internal/concurrent"
 	"github.com/samwang0723/stock-crawler/internal/cronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
@@ -45,8 +45,7 @@ type IServer interface {
 	Name() string
 	Logger() structuredlog.ILogger
 	Handler() handlers.IHandler
-	Config() *config.Config
-	Dispatcher() *concurrent.Dispatcher
+	Config() *config.SystemConfig
 	Run(context.Context) error
 	Start(context.Context) error
 	Stop() error
@@ -65,6 +64,10 @@ func Serve() {
 		services.WithCronJob(cronjob.New(logger)),
 		services.WithKafka(kafka.New(cfg)),
 		services.WithRedis(cache.New(cfg)),
+		services.WithCrawler(services.CrawlerConfig{
+			FetchWorkers:      10,
+			RateLimitInterval: 3000,
+		}),
 	)
 	// associate service with handler
 	handler := handlers.New(dataService)
@@ -77,6 +80,9 @@ func Serve() {
 	health.AddReadinessCheck(
 		"upstream-redis-dns",
 		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, 200*time.Millisecond))
+	health.AddReadinessCheck(
+		"upstream-kafka-dns",
+		healthcheck.DNSResolveCheck(cfg.Kafka.Host, 200*time.Millisecond))
 	healthServer := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler: health,
@@ -87,11 +93,8 @@ func Serve() {
 		Config(cfg),
 		Logger(logger),
 		Handler(handler),
-		Dispatcher(concurrent.NewDispatcher(cfg.WorkerPool.MaxPoolSize)),
 		HealthCheck(healthServer),
 		BeforeStart(func() error {
-			// initialize global job queue
-			concurrent.JobQueue = make(concurrent.JobChan, cfg.WorkerPool.MaxQueueSize)
 			dataService.StartCron()
 			return nil
 		}),
@@ -99,8 +102,6 @@ func Serve() {
 			dataService.StopCron()
 			dataService.StopRedis()
 			dataService.StopKafka()
-			//no need to explictly close a channel, it will be garbage collected
-			//close(concurrent.JobQueue)
 			return nil
 		}),
 	)
@@ -143,27 +144,29 @@ Stand-alone stock data crawling service
 Environment (%s)
 _______________________________________________
 `
-	signatureOut := fmt.Sprintf(signature, "v1.0.0", helper.GetCurrentEnv())
+	signatureOut := fmt.Sprintf(signature, "v1.1.0", helper.GetCurrentEnv())
 	fmt.Println(signatureOut)
-
-	// starting the workerpool
-	s.Dispatcher().Run(ctx)
 
 	// by default starting cronjob for regular daily updates pulling
 	// cronjob using redis distrubted lock to prevent multiple instances
 	// pulling same content
 	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 		Schedule: "30 16 * * 1-5",
-		Types:    []dto.DownloadType{dto.DailyClose, dto.ThreePrimary},
+		Types: []convert.Source{
+			convert.TwseDailyClose,
+			convert.TpexDailyClose,
+			convert.TwseThreePrimary,
+			convert.TpexThreePrimary,
+		},
 	})
 	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 		Schedule: "30 18 * * 1-5",
-		Types:    []dto.DownloadType{dto.Concentration},
+		Types:    []convert.Source{convert.StakeConcentration},
 	})
 	// backfill failed concentration records
 	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 		Schedule: "30 19 * * 1-5",
-		Types:    []dto.DownloadType{dto.Concentration},
+		Types:    []convert.Source{convert.StakeConcentration},
 	})
 
 	// start healthcheck specific server
@@ -181,9 +184,6 @@ func (s *server) Stop() error {
 			break
 		}
 	}
-
-	// graceful shutdown workerpool
-	s.Dispatcher().Shutdown()
 
 	// shutdown healthcheck server
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownPeriod)
@@ -228,12 +228,8 @@ func (s *server) Handler() handlers.IHandler {
 	return s.opts.Handler
 }
 
-func (s *server) Config() *config.Config {
+func (s *server) Config() *config.SystemConfig {
 	return s.opts.Config
-}
-
-func (s *server) Dispatcher() *concurrent.Dispatcher {
-	return s.opts.Dispatcher
 }
 
 func (s *server) HealthCheck() *http.Server {

@@ -20,11 +20,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
+	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 )
 
 var (
-	_ dto.Payload = (*crawlerPayload)(nil)
+	_ pipeline.Payload = (*crawlerPayload)(nil)
 
 	payloadPool = sync.Pool{
 		New: func() interface{} { return new(crawlerPayload) },
@@ -32,15 +33,21 @@ var (
 )
 
 type crawlerPayload struct {
-	URL         string
-	RetrievedAt time.Time
-	RawContent  bytes.Buffer
+	URL           string
+	Date          string
+	Strategy      convert.Source
+	RetrievedAt   time.Time
+	RawContent    bytes.Buffer
+	ParsedContent *[]interface{}
 }
 
-func (p *crawlerPayload) Clone() dto.Payload {
+func (p *crawlerPayload) Clone() pipeline.Payload {
 	newP := payloadPool.Get().(*crawlerPayload)
 	newP.URL = p.URL
+	newP.Strategy = p.Strategy
+	newP.Date = p.Date
 	newP.RetrievedAt = p.RetrievedAt
+	newP.ParsedContent = p.ParsedContent
 
 	_, err := io.Copy(&newP.RawContent, &p.RawContent)
 	if err != nil {
@@ -51,6 +58,9 @@ func (p *crawlerPayload) Clone() dto.Payload {
 
 func (p *crawlerPayload) MarkAsProcessed() {
 	p.URL = p.URL[:0]
+	p.Date = p.Date[:0]
+	p.Strategy = -1
+	p.ParsedContent = nil
 	p.RawContent.Reset()
 
 	payloadPool.Put(p)

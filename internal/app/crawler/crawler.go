@@ -16,22 +16,18 @@ package crawler
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
-	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
+	"github.com/samwang0723/stock-crawler/internal/app/parser"
+	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 )
 
 const (
 	TwseDailyClose    = "https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=%s&type=ALLBUT0999"
 	TwseThreePrimary  = "http://www.tse.com.tw/fund/T86?response=csv&date=%s&selectType=ALLBUT0999"
-	OperatingDays     = "https://www.twse.com.tw/holidaySchedule/holidaySchedule?response=csv&queryYear=%d"
 	TpexDailyClose    = "http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_download.php?l=zh-tw&d=%s&s=0,asc,0"
 	TpexThreePrimary  = "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d=%s"
 	TWSEStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"
@@ -39,8 +35,27 @@ const (
 	ConcentrationDays = "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_%s_%d.djhtm"
 )
 
+var (
+	DefaultHttpClient = &http.Client{
+		Timeout: time.Second * 60,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	TypeLinkMapping = map[string]string{
+		convert.TpexStockList.String():      TPEXStocks,
+		convert.TwseStockList.String():      TWSEStocks,
+		convert.TwseDailyClose.String():     TwseDailyClose,
+		convert.TpexDailyClose.String():     TpexDailyClose,
+		convert.TwseThreePrimary.String():   TwseThreePrimary,
+		convert.TpexThreePrimary.String():   TpexThreePrimary,
+		convert.StakeConcentration.String(): ConcentrationDays,
+	}
+)
+
 type Crawler interface {
-	Fetch(ctx context.Context, sink chan<- dto.Payload, errs chan<- error)
+	Crawl(ctx context.Context, linkIt graph.LinkIterator) (int, error)
 }
 
 // URLGetter is implemented by objects that can perform HTTP GET requests.
@@ -48,67 +63,83 @@ type URLGetter interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
+type Config struct {
+	// A URLGetter instance to fetch links.
+	URLGetter URLGetter
+
+	// A Proxy instance for avoiding remote rate limiting
+	Proxy *Proxy
+
+	// The number of concurrent workers used for retrieving links.
+	FetchWorkers int
+
+	// Rate limit interval to prevent remote site blocking
+	RateLimitInterval int
+}
+
+// crawlerImpl implements a stock information crawling pipeline consisting of following stages:
+//
+// - Given an URL, retrieve content from remote server
+// - Extract useful trading information from retrieved pages
 type crawlerImpl struct {
-	client URLGetter
-	proxy  *proxy
-	it     graph.LinkIterator
+	p *pipeline.Pipeline
 }
 
-func New(links []*graph.Link) Crawler {
-	res := &crawlerImpl{
-		client: &http.Client{
-			Timeout: time.Second * 60,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
-		},
-		proxy: &proxy{Type: WebScraping},
-		it:    &linkIterator{links: links},
+func New(cfg Config) Crawler {
+	return &crawlerImpl{
+		p: assembleCrawlerPipeline(cfg),
 	}
-	return res
 }
 
-func (c *crawlerImpl) Fetch(ctx context.Context, sink chan<- dto.Payload, errs chan<- error) {
-	for c.it.Next() {
-		link := c.it.Link()
-		uri := link.URL
-		if link.UseProxy {
-			uri = fmt.Sprintf("%s&url=%s", c.proxy.URI(), url.QueryEscape(link.URL))
-		}
+// assembleCrawlerPipeline creates the various stages of a crawler pipeline
+// using the options in cfg and assembles them into a pipeline instance.
+func assembleCrawlerPipeline(cfg Config) *pipeline.Pipeline {
+	return pipeline.New(
+		pipeline.DynamicWorkerPool(
+			newLinkFetcher(cfg.URLGetter, cfg.Proxy),
+			cfg.FetchWorkers,
+		),
+		pipeline.FIFO(newTextExtractor(parser.New())),
+	)
+}
 
-		req, err := http.NewRequest("GET", uri, nil)
-		if err != nil {
-			errs <- FetchError("NewRequest initialized failed", uri, err)
-		}
-		req.Header = http.Header{
-			"Content-Type": []string{"text/csv;charset=ms950"},
-			// It is important to close the connection otherwise fd count will overhead
-			"Connection": []string{"close"},
-		}
-		req = req.WithContext(ctx)
-		log.Debugf("download started: %s", uri)
+// Crawl iterates linkIt and sends each link through the crawler pipeline
+// returning the total count of links that went through the pipeline. Calls to
+// Crawl block until the link iterator is exhausted, an error occurs or the
+// context is cancelled.
+func (c *crawlerImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator) (int, error) {
+	sink := new(countingSink)
+	err := c.p.Process(ctx, &linkSource{linkIt: linkIt}, sink)
+	return sink.getCount(), err
+}
 
-		resp, err := c.client.Do(req)
-		if err != nil {
-			errs <- FetchError("client.Do", uri, err)
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			errs <- FetchError(fmt.Sprintf("Status = %d", resp.StatusCode), uri, err)
-		}
+type linkSource struct {
+	linkIt graph.LinkIterator
+}
 
-		p := payloadPool.Get().(*crawlerPayload)
-		p.URL = link.URL
-		p.RetrievedAt = time.Now()
+func (ls *linkSource) Error() error              { return ls.linkIt.Error() }
+func (ls *linkSource) Next(context.Context) bool { return ls.linkIt.Next() }
+func (ls *linkSource) Payload() pipeline.Payload {
+	link := ls.linkIt.Link()
+	p := payloadPool.Get().(*crawlerPayload)
 
-		// copy stream from response body, although it consumes memory but
-		// better helps on concurrent handling in goroutine.
-		_, err = io.Copy(&p.RawContent, resp.Body)
-		if err != nil {
-			errs <- FetchError("Unable to io.Copy", link.URL, err)
-		}
-		log.Debugf("download completed (%s), URL: %s", helper.GetReadableSize(p.RawContent.Len(), 2), link.URL)
+	p.URL = link.URL
+	p.Strategy = link.Strategy
+	p.Date = link.Date
+	p.RetrievedAt = time.Now()
 
-		sink <- p
-	}
+	return p
+}
+
+type countingSink struct {
+	count int
+}
+
+func (s *countingSink) Consume(_ context.Context, p pipeline.Payload) error {
+	s.count++
+	return nil
+}
+
+func (s *countingSink) getCount() int {
+	return s.count
 }

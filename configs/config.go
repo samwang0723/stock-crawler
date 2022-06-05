@@ -21,7 +21,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
+type SystemConfig struct {
 	Log struct {
 		Level string `yaml:"level"`
 	} `yaml:"log"`
@@ -45,7 +45,7 @@ type Config struct {
 }
 
 var (
-	instance Config
+	instance SystemConfig
 )
 
 func Load(loc ...string) {
@@ -67,6 +67,6 @@ func Load(loc ...string) {
 	}
 }
 
-func GetCurrentConfig() *Config {
+func GetCurrentConfig() *SystemConfig {
 	return &instance
 }

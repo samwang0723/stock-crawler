@@ -25,7 +25,7 @@ import (
 
 type Parser interface {
 	SetStrategy(source convert.Source, additional ...string)
-	Execute(in []byte, additional ...string) error
+	Execute(in bytes.Buffer, additional ...string) error
 	Flush() *[]interface{}
 }
 
@@ -83,12 +83,8 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 	}
 }
 
-func (p *parserImpl) Execute(in []byte, additional ...string) error {
-	reader := transform.NewReader(
-		bytes.NewBuffer(in),
-		traditionalchinese.Big5.NewDecoder(),
-	)
-
+func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
+	reader := transform.NewReader(in, traditionalchinese.Big5.NewDecoder())
 	res, err := p.strategy.Parse(reader, additional...)
 	if err != nil {
 		return err

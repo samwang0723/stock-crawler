@@ -22,11 +22,11 @@ import (
 func Test_ConfigLoad(t *testing.T) {
 	tests := []struct {
 		name string
-		want Config
+		want SystemConfig
 	}{
 		{
 			name: "load configuration",
-			want: Config{
+			want: SystemConfig{
 				Log: struct {
 					Level string "yaml:\"level\""
 				}{

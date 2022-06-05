@@ -19,7 +19,6 @@ import (
 
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
-	"github.com/samwang0723/stock-crawler/internal/concurrent"
 	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 )
 
@@ -28,8 +27,7 @@ type Options struct {
 	Logger  structuredlog.ILogger
 	Handler handlers.IHandler
 
-	Config      *config.Config
-	Dispatcher  *concurrent.Dispatcher
+	Config      *config.SystemConfig
 	HealthCheck *http.Server
 
 	// Before funcs
@@ -65,7 +63,7 @@ func Logger(logger structuredlog.ILogger) Option {
 	}
 }
 
-func Config(cfg *config.Config) Option {
+func Config(cfg *config.SystemConfig) Option {
 	return func(o *Options) {
 		o.Config = cfg
 	}
@@ -74,12 +72,6 @@ func Config(cfg *config.Config) Option {
 func Name(name string) Option {
 	return func(o *Options) {
 		o.Name = name
-	}
-}
-
-func Dispatcher(dispatcher *concurrent.Dispatcher) Option {
-	return func(o *Options) {
-		o.Dispatcher = dispatcher
 	}
 }
 

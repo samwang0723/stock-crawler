@@ -15,6 +15,7 @@ package crawler
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -27,18 +28,18 @@ const (
 	ProxyCrawlUrl  = "https://api.proxycrawl.com/?token=%s"
 )
 
-type proxy struct {
+type Proxy struct {
 	Type string
 }
 
-func (p *proxy) URI() string {
-	var url string
+func (p *Proxy) URI(source string) string {
+	var prefix string
 	switch p.Type {
 	case ProxyCrawl:
-		url = ProxyCrawlUrl
+		prefix = ProxyCrawlUrl
 	case WebScraping:
-		url = WebScrapingUrl
+		prefix = WebScrapingUrl
 	}
 	token := os.Getenv(p.Type)
-	return fmt.Sprintf(url, token)
+	return fmt.Sprintf("%s&url=%s", fmt.Sprintf(prefix, token), url.QueryEscape(source))
 }

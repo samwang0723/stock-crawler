@@ -22,6 +22,9 @@ type Iterator interface {
 	// Next advances the iterator. If no more items are available or an
 	// error occurs, calls to Next() return bool.
 	Next() bool
+
+	// Error returns the last error encountered by the iterator.
+	Error() error
 }
 
 // LinkIterator is implemented by objects that can iterate the graph links.
@@ -32,15 +35,14 @@ type LinkIterator interface {
 	Link() *Link
 }
 
-// Link encapsulates all information about a link discovered by the Links 'R'
-// Us crawler.
+// Link encapsulates all necessary setup used as source.
 type Link struct {
 	// The link target.
 	URL string
 
+	// Parsing target date
+	Date string
+
 	// Use which strategy for parsing
 	Strategy convert.Source
-
-	// Proxy needed
-	UseProxy bool
 }
