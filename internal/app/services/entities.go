@@ -25,7 +25,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
-	"github.com/samwang0723/stock-crawler/internal/helper"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
@@ -120,13 +119,13 @@ func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date st
 	if err != nil {
 		return nil, err
 	}
-	res, err := s.cache.SMembers(ctx, date)
-	if err != nil {
-		return nil, err
-	}
+	//	res, err := s.cache.SMembers(ctx, date)
+	//	if err != nil {
+	//		return nil, err
+	//	}
 
 	var urls []string
-	stockIds := helper.Difference(res, defaultList)
+	stockIds := defaultList //helper.Difference(res, defaultList)
 	for _, sid := range stockIds {
 		// in order to get accurate data, we must query each page https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
 		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data

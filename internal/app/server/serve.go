@@ -18,21 +18,18 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"sync"
 	"time"
 
 	"github.com/heptiolabs/healthcheck"
 	config "github.com/samwang0723/stock-crawler/configs"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
-	"github.com/samwang0723/stock-crawler/internal/cache"
 	"github.com/samwang0723/stock-crawler/internal/cronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/samwang0723/stock-crawler/internal/kafka"
 	log "github.com/samwang0723/stock-crawler/internal/logger"
 	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 )
@@ -55,18 +52,19 @@ type server struct {
 	opts Options
 }
 
-func Serve() {
+func Serve(ctx context.Context) {
 	config.Load()
 	cfg := config.GetCurrentConfig()
 	logger := structuredlog.Logger(cfg)
 	// bind DAL layer with service
 	dataService := services.New(
 		services.WithCronJob(cronjob.New(logger)),
-		services.WithKafka(kafka.New(cfg)),
-		services.WithRedis(cache.New(cfg)),
+		//services.WithKafka(kafka.New(cfg)),
+		//services.WithRedis(cache.New(cfg)),
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      10,
 			RateLimitInterval: 3000,
+			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
 		}),
 	)
 	// associate service with handler
@@ -100,14 +98,14 @@ func Serve() {
 		}),
 		BeforeStop(func() error {
 			dataService.StopCron()
-			dataService.StopRedis()
-			dataService.StopKafka()
+			//dataService.StopRedis()
+			//dataService.StopKafka()
 			return nil
 		}),
 	)
 
 	log.Initialize(s.Logger())
-	err := s.Run(context.Background())
+	err := s.Run(ctx)
 	if err != nil && s.Logger() != nil {
 		log.Errorf("error returned by service.Run(): %s\n", err.Error())
 	}
@@ -130,47 +128,11 @@ func (s *server) Start(ctx context.Context) error {
 			return err
 		}
 	}
-
-	signature := `
- _____ _             _                                  _           
-/  ___| |           | |                                | |          
-\ '--.| |_ ___   ___| | ________ ___ _ __ __ ___      _| | ___ _ __ 
- '--. \ __/ _ \ / __| |/ /______/ __| '__/ _' \ \ /\ / / |/ _ \ '__|
-/\__/ / || (_) | (__|   <      | (__| | | (_| |\ V  V /| |  __/ |   
-\____/ \__\___/ \___|_|\_\      \___|_|  \__,_| \_/\_/ |_|\___|_|
-
-                                                        Version (%s)
-Stand-alone stock data crawling service
-Environment (%s)
-_______________________________________________
-`
-	signatureOut := fmt.Sprintf(signature, "v1.1.0", helper.GetCurrentEnv())
+	signatureOut := fmt.Sprintf(helper.Signature, "v1.1.0", helper.GetCurrentEnv())
 	fmt.Println(signatureOut)
 
-	// by default starting cronjob for regular daily updates pulling
-	// cronjob using redis distrubted lock to prevent multiple instances
-	// pulling same content
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 16 * * 1-5",
-		Types: []convert.Source{
-			convert.TwseDailyClose,
-			convert.TpexDailyClose,
-			convert.TwseThreePrimary,
-			convert.TpexThreePrimary,
-		},
-	})
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 18 * * 1-5",
-		Types:    []convert.Source{convert.StakeConcentration},
-	})
-	// backfill failed concentration records
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 19 * * 1-5",
-		Types:    []convert.Source{convert.StakeConcentration},
-	})
-
-	// start healthcheck specific server
 	go func() {
+		// start healthcheck specific server
 		err = s.HealthCheck().ListenAndServe()
 	}()
 
@@ -197,22 +159,21 @@ func (s *server) Stop() error {
 
 // Run starts the server and shut down gracefully afterwards
 func (s *server) Run(ctx context.Context) error {
-	childCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	if err := s.Start(childCtx); err != nil {
+	if err := s.Start(ctx); err != nil {
 		return err
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-quit:
-		log.Warn("singal interrupt")
-		cancel()
-	case <-childCtx.Done():
-		log.Warn("main context being cancelled")
-	}
+	// Execute logics
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func(s *server) {
+		defer wg.Done()
+		s.Handler().Download(ctx, &dto.StartCronjobRequest{
+			Types: []convert.Source{convert.StakeConcentration},
+		})
+	}(s)
+	wg.Wait()
+
 	return s.Stop()
 }
 

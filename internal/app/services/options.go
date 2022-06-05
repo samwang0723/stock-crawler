@@ -43,10 +43,12 @@ func WithRedis(redis cache.Redis) Option {
 
 func WithCrawler(cfg CrawlerConfig) Option {
 	return func(i *serviceImpl) {
+		cfg.validate()
 		i.crawler = crawler.New(crawler.Config{
 			URLGetter:         cfg.URLGetter,
 			FetchWorkers:      cfg.FetchWorkers,
 			RateLimitInterval: cfg.RateLimitInterval,
+			Proxy:             cfg.Proxy,
 		})
 	}
 }

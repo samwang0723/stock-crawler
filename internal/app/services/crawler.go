@@ -33,6 +33,9 @@ type CrawlerConfig struct {
 
 	// The time between subsequent crawler passes.
 	RateLimitInterval int
+
+	// Proxy for preventing remote site's rate limiting
+	Proxy *crawler.Proxy
 }
 
 func (cfg *CrawlerConfig) validate() error {

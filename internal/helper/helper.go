@@ -37,6 +37,19 @@ const (
 	TwseDateFormat           = "20060102"
 	TpexDateFormat           = "2006/01/02"
 	StakeConcentrationFormat = "2006-01-02"
+	Signature                = `
+ _____ _             _                                  _           
+/  ___| |           | |                                | |          
+\ '--.| |_ ___   ___| | ________ ___ _ __ __ ___      _| | ___ _ __ 
+ '--. \ __/ _ \ / __| |/ /______/ __| '__/ _' \ \ /\ / / |/ _ \ '__|
+/\__/ / || (_) | (__|   <      | (__| | | (_| |\ V  V /| |  __/ |   
+\____/ \__\___/ \___|_|\_\      \___|_|  \__,_| \_/\_/ |_|\___|_|
+
+                                                        Version (%s)
+Stand-alone stock data crawling service
+Environment (%s)
+_______________________________________________
+`
 )
 
 func ReadFromFile(fileName string) (string, error) {

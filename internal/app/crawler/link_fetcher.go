@@ -58,7 +58,6 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		"Connection": []string{"close"},
 	}
 	log.Debugf("download started (%s)", payload.URL)
-
 	resp, err := lf.urlGetter.Do(req)
 	if err != nil {
 		return nil, nil

@@ -40,6 +40,10 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 	})
 }
 
+func (h *handlerImpl) Download(ctx context.Context, req *dto.StartCronjobRequest) {
+	h.batchingDownload(ctx, 0, req.Types)
+}
+
 // batching download all the historical stock data
 func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types []convert.Source) {
 	var links []*graph.Link
