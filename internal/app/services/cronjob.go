@@ -16,7 +16,26 @@ package services
 
 import (
 	"context"
+	"io/ioutil"
+
+	"github.com/sirupsen/logrus"
 )
+
+// Config encapsulates the settings for configuring the redis service.
+type CronjobConfig struct {
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *logrus.Entry
+}
+
+func (cfg *CronjobConfig) validate() error {
+	var err error
+	if cfg.Logger == nil {
+		cfg.Logger = logrus.NewEntry(&logrus.Logger{Out: ioutil.Discard})
+	}
+
+	return err
+}
 
 func (s *serviceImpl) StartCron() {
 	s.cronjob.Start()

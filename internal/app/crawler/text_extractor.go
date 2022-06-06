@@ -18,8 +18,6 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
-
-	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
 type textExtractor struct {
@@ -36,7 +34,7 @@ func (te *textExtractor) Process(ctx context.Context, p pipeline.Payload) (pipel
 	payload := p.(*crawlerPayload)
 	te.parser.SetStrategy(payload.Strategy, payload.Date)
 	// Bypass the parsing error
-	err := te.parser.Execute(payload.RawContent, payload.URL)
-	log.Infof("textExtractor:Process: url: %s, err: %v", payload.URL, err)
+	te.parser.Execute(payload.RawContent, payload.URL)
+
 	return p, nil
 }

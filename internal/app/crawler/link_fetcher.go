@@ -20,8 +20,6 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
-	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
 var _ pipeline.Processor = (*linkFetcher)(nil)
@@ -57,7 +55,6 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		// It is important to close the connection otherwise fd count will overhead
 		"Connection": []string{"close"},
 	}
-	log.Debugf("download started (%s)", payload.URL)
 	resp, err := lf.urlGetter.Do(req)
 	if err != nil {
 		return nil, nil
@@ -75,7 +72,6 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, nil
 	}
-	log.Debugf("download completed (%s), URL: %s", helper.GetReadableSize(payload.RawContent.Len(), 2), payload.URL)
 
 	return payload, nil
 }

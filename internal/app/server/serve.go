@@ -28,10 +28,8 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
-	"github.com/samwang0723/stock-crawler/internal/cronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -40,7 +38,6 @@ const (
 
 type IServer interface {
 	Name() string
-	Logger() structuredlog.ILogger
 	Handler() handlers.IHandler
 	Config() *config.SystemConfig
 	Run(context.Context) error
@@ -52,19 +49,28 @@ type server struct {
 	opts Options
 }
 
-func Serve(ctx context.Context) {
+func Serve(ctx context.Context, logger *logrus.Entry) {
 	config.Load()
 	cfg := config.GetCurrentConfig()
-	logger := structuredlog.Logger(cfg)
 	// bind DAL layer with service
 	dataService := services.New(
-		services.WithCronJob(cronjob.New(logger)),
-		//services.WithKafka(kafka.New(cfg)),
-		//services.WithRedis(cache.New(cfg)),
+		services.WithCronJob(services.CronjobConfig{
+			Logger: logger.WithField("service", "cronjob"),
+		}),
+		//		services.WithKafka(services.KafkaConfig{
+		//			Controller: cfg.Kafka.Controller,
+		//			Logger:     logger.WithField("service", "kafka"),
+		//		}),
+		//		services.WithRedis(services.RedisConfig{
+		//			Master:        cfg.RedisCache.Master,
+		//			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
+		//			Logger:        logger.WithField("service", "redis"),
+		//		}),
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      10,
 			RateLimitInterval: 3000,
 			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
+			Logger:            logger.WithField("service", "crawler"),
 		}),
 	)
 	// associate service with handler
@@ -80,7 +86,7 @@ func Serve(ctx context.Context) {
 		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, 200*time.Millisecond))
 	health.AddReadinessCheck(
 		"upstream-kafka-dns",
-		healthcheck.DNSResolveCheck(cfg.Kafka.Host, 200*time.Millisecond))
+		healthcheck.DNSResolveCheck(cfg.Kafka.Controller, 200*time.Millisecond))
 	healthServer := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler: health,
@@ -89,7 +95,6 @@ func Serve(ctx context.Context) {
 	s := newServer(
 		Name(cfg.Server.Name),
 		Config(cfg),
-		Logger(logger),
 		Handler(handler),
 		HealthCheck(healthServer),
 		BeforeStart(func() error {
@@ -104,10 +109,9 @@ func Serve(ctx context.Context) {
 		}),
 	)
 
-	log.Initialize(s.Logger())
 	err := s.Run(ctx)
-	if err != nil && s.Logger() != nil {
-		log.Errorf("error returned by service.Run(): %s\n", err.Error())
+	if err != nil {
+		logger.Errorf("error returned by service.Run(): %s\n", err.Error())
 	}
 }
 
@@ -152,8 +156,6 @@ func (s *server) Stop() error {
 	defer cancel()
 	err = s.HealthCheck().Shutdown(ctx)
 
-	log.Warn("server being gracefully shuted down")
-
 	return err
 }
 
@@ -175,10 +177,6 @@ func (s *server) Run(ctx context.Context) error {
 	wg.Wait()
 
 	return s.Stop()
-}
-
-func (s *server) Logger() structuredlog.ILogger {
-	return s.opts.Logger
 }
 
 func (s *server) Name() string {

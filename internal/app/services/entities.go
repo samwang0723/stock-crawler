@@ -26,7 +26,6 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -125,7 +124,7 @@ func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date st
 	//	}
 
 	var urls []string
-	stockIds := defaultList //helper.Difference(res, defaultList)
+	stockIds := defaultList //helper.Diff(res, defaultList)
 	for _, sid := range stockIds {
 		// in order to get accurate data, we must query each page https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
 		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
@@ -147,7 +146,6 @@ func listStocks() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Successfully Opened %s", loc)
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 

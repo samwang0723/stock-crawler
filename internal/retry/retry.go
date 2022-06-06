@@ -17,21 +17,21 @@ package retry
 import (
 	"time"
 
-	log "github.com/samwang0723/stock-crawler/internal/logger"
+	"github.com/sirupsen/logrus"
 )
 
 // Retry mechanism
-func Retry(attempts int, sleep time.Duration, fn func() error) error {
+func Retry(attempts int, sleep time.Duration, logger *logrus.Entry, fn func() error) error {
 	if err := fn(); err != nil {
 		if s, ok := err.(Stop); ok {
 			return s.error
 		}
 
 		if attempts--; attempts > 0 {
-			log.Warnf("retry func error: %s. attemps #%d after %s.", err.Error(), attempts, sleep)
+			logger.Warnf("retry func error: %s. attemps #%d after %s.", err.Error(), attempts, sleep)
 			time.Sleep(sleep)
 			// if continue to fail on retry, double the interval
-			return Retry(attempts, 2*sleep, fn)
+			return Retry(attempts, 2*sleep, logger, fn)
 		}
 		return err
 	}

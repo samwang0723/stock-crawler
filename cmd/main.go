@@ -33,6 +33,10 @@ var (
 func main() {
 	host, _ := os.Hostname()
 	rootLogger := logrus.New()
+	rootLogger.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
 	logger := rootLogger.WithFields(logrus.Fields{
 		"app":  appName,
 		"host": host,
@@ -59,6 +63,6 @@ func main() {
 		}
 	}()
 
-	server.Serve(ctx)
+	server.Serve(ctx, rootLogger)
 	logger.Info("shutdown complete")
 }

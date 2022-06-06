@@ -19,12 +19,10 @@ import (
 
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
-	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 )
 
 type Options struct {
 	Name    string
-	Logger  structuredlog.ILogger
 	Handler handlers.IHandler
 
 	Config      *config.SystemConfig
@@ -54,12 +52,6 @@ func BeforeStop(fn func() error) Option {
 func Handler(handler handlers.IHandler) Option {
 	return func(o *Options) {
 		o.Handler = handler
-	}
-}
-
-func Logger(logger structuredlog.ILogger) Option {
-	return func(o *Options) {
-		o.Logger = logger
 	}
 }
 

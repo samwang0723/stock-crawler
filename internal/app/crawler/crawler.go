@@ -23,6 +23,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -75,6 +76,8 @@ type Config struct {
 
 	// Rate limit interval to prevent remote site blocking
 	RateLimitInterval int
+
+	Logger *logrus.Entry
 }
 
 // crawlerImpl implements a stock information crawling pipeline consisting of following stages:
@@ -82,12 +85,14 @@ type Config struct {
 // - Given an URL, retrieve content from remote server
 // - Extract useful trading information from retrieved pages
 type crawlerImpl struct {
-	p *pipeline.Pipeline
+	cfg Config
+	p   *pipeline.Pipeline
 }
 
 func New(cfg Config) Crawler {
 	return &crawlerImpl{
-		p: assembleCrawlerPipeline(cfg),
+		cfg: cfg,
+		p:   assembleCrawlerPipeline(cfg),
 	}
 }
 
@@ -99,7 +104,11 @@ func assembleCrawlerPipeline(cfg Config) *pipeline.Pipeline {
 			newLinkFetcher(cfg.URLGetter, cfg.Proxy),
 			cfg.FetchWorkers,
 		),
-		pipeline.FIFO(newTextExtractor(parser.New())),
+		pipeline.FIFO(
+			newTextExtractor(
+				parser.New(parser.Config{Logger: cfg.Logger}),
+			),
+		),
 	)
 }
 

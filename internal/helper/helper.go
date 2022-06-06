@@ -263,7 +263,7 @@ func Bytes2String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-func Difference(slice1 []string, slice2 []string) []string {
+func Diff(slice1 []string, slice2 []string) []string {
 	diffStr := []string{}
 	m := map[string]int{}
 

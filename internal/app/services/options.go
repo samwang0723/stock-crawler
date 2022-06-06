@@ -23,21 +23,33 @@ import (
 
 type Option func(o *serviceImpl)
 
-func WithCronJob(cronjob cronjob.Cronjob) Option {
+func WithCronJob(cfg CronjobConfig) Option {
 	return func(i *serviceImpl) {
-		i.cronjob = cronjob
+		cfg.validate()
+		i.cronjob = cronjob.New(cronjob.Config{
+			Logger: cfg.Logger,
+		})
 	}
 }
 
-func WithKafka(producer kafka.Kafka) Option {
+func WithKafka(cfg KafkaConfig) Option {
 	return func(i *serviceImpl) {
-		i.producer = producer
+		cfg.validate()
+		i.producer = kafka.New(kafka.Config{
+			Controller: cfg.Controller,
+			Logger:     cfg.Logger,
+		})
 	}
 }
 
-func WithRedis(redis cache.Redis) Option {
+func WithRedis(cfg RedisConfig) Option {
 	return func(i *serviceImpl) {
-		i.cache = redis
+		cfg.validate()
+		i.cache = cache.New(cache.Config{
+			Master:        cfg.Master,
+			SentinelAddrs: cfg.SentinelAddrs,
+			Logger:        cfg.Logger,
+		})
 	}
 }
 
@@ -49,6 +61,7 @@ func WithCrawler(cfg CrawlerConfig) Option {
 			FetchWorkers:      cfg.FetchWorkers,
 			RateLimitInterval: cfg.RateLimitInterval,
 			Proxy:             cfg.Proxy,
+			Logger:            cfg.Logger,
 		})
 	}
 }

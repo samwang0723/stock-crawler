@@ -15,10 +15,42 @@ package services
 
 import (
 	"context"
+	"io/ioutil"
 	"time"
 
 	"github.com/bsm/redislock"
+	"github.com/hashicorp/go-multierror"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/xerrors"
 )
+
+// Config encapsulates the settings for configuring the redis service.
+type RedisConfig struct {
+	// Redis master node DNS hostname
+	Master string
+
+	// Redis sentinel addresses
+	SentinelAddrs []string
+
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *logrus.Entry
+}
+
+func (cfg *RedisConfig) validate() error {
+	var err error
+	if cfg.Master == "" {
+		err = multierror.Append(err, xerrors.Errorf("invalid value for master hostname"))
+	}
+	if len(cfg.SentinelAddrs) == 0 {
+		err = multierror.Append(err, xerrors.Errorf("invalid value for sentinel addresses"))
+	}
+	if cfg.Logger == nil {
+		cfg.Logger = logrus.NewEntry(&logrus.Logger{Out: ioutil.Discard})
+	}
+
+	return err
+}
 
 func (s *serviceImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
 	return s.cache.ObtainLock(ctx, key, expire)

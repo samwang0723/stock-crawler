@@ -22,26 +22,18 @@ import (
 )
 
 type SystemConfig struct {
-	Log struct {
-		Level string `yaml:"level"`
-	} `yaml:"log"`
 	RedisCache struct {
 		Master        string   `yaml:"master"`
 		SentinelAddrs []string `yaml:"sentinelAddrs"`
 	} `yaml:"redis"`
 	Kafka struct {
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Controller string `yaml:"controller"`
 	} `yaml:"kafka"`
 	Server struct {
 		Name string `yaml:"name"`
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
 	} `yaml:"server"`
-	WorkerPool struct {
-		MaxPoolSize  int `yaml:"maxPoolSize"`
-		MaxQueueSize int `yaml:"maxQueueSize"`
-	} `yaml:"workerpool"`
 }
 
 var (

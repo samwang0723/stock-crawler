@@ -25,7 +25,6 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/cache"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
 )
 
 func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error {
@@ -34,8 +33,6 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 		// only running once at a time, here we use distrubted lock through Redis.
 		if h.dataService.ObtainLock(ctx, cache.CronjobLock, 5*time.Minute) != nil {
 			h.batchingDownload(ctx, 0, req.Types)
-		} else {
-			log.Error("CronDownload: Redis distributed lock obtain failed.")
 		}
 	})
 }
@@ -59,7 +56,6 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 		}
 	}
 	count, err := h.dataService.Crawl(ctx, &linkIterator{links: links})
-	log.Infof("Crawl: count=%d, err=%v", count, err)
 }
 
 func (h *handlerImpl) generateURLs(ctx context.Context, d string, t convert.Source) []string {

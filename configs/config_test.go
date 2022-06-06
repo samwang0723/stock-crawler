@@ -27,11 +27,6 @@ func Test_ConfigLoad(t *testing.T) {
 		{
 			name: "load configuration",
 			want: SystemConfig{
-				Log: struct {
-					Level string "yaml:\"level\""
-				}{
-					Level: "DEBUG",
-				},
 				RedisCache: struct {
 					Master        string   "yaml:\"master\""
 					SentinelAddrs []string "yaml:\"sentinelAddrs\""
@@ -40,11 +35,9 @@ func Test_ConfigLoad(t *testing.T) {
 					SentinelAddrs: []string{"redis-sentinel-1:26379", "redis-sentinel-2:26380", "redis-sentinel-3:26381"},
 				},
 				Kafka: struct {
-					Host string "yaml:\"host\""
-					Port int    "yaml:\"port\""
+					Controller string "yaml:\"controller\""
 				}{
-					Host: "kafka-1",
-					Port: 9092,
+					Controller: "kafka-1:9092",
 				},
 				Server: struct {
 					Name string "yaml:\"name\""
@@ -54,13 +47,6 @@ func Test_ConfigLoad(t *testing.T) {
 					Name: "stock-crawler",
 					Host: "0.0.0.0",
 					Port: 8086,
-				},
-				WorkerPool: struct {
-					MaxPoolSize  int "yaml:\"maxPoolSize\""
-					MaxQueueSize int "yaml:\"maxQueueSize\""
-				}{
-					MaxPoolSize:  10,
-					MaxQueueSize: 20,
 				},
 			},
 		},

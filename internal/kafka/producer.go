@@ -15,13 +15,11 @@ package kafka
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
 	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -36,14 +34,26 @@ type Kafka interface {
 	WriteMessages(ctx context.Context, topic string, message []byte) error
 }
 
+// Config encapsulates the settings for configuring the kafka service.
+type Config struct {
+	// Kafka controller DNS hostname
+	Controller string
+
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *logrus.Entry
+}
+
 type kafkaImpl struct {
+	cfg      Config
 	instance *kafka.Writer
 }
 
-func New(cfg *config.SystemConfig) Kafka {
+func New(cfg Config) Kafka {
 	return &kafkaImpl{
+		cfg: cfg,
 		instance: &kafka.Writer{
-			Addr:         kafka.TCP(fmt.Sprintf("%s:%d", cfg.Kafka.Host, cfg.Kafka.Port)),
+			Addr:         kafka.TCP(cfg.Controller),
 			Balancer:     &kafka.LeastBytes{},
 			BatchSize:    100,
 			BatchTimeout: 100 * time.Millisecond,
@@ -57,16 +67,16 @@ func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []b
 		Value: message,
 	}
 	err := k.instance.WriteMessages(ctx, msg)
-	log.Infof("Kafka:WriteMessages: written bytes: %d, topic: %s, data: %s, err: %s", len(message), topic, helper.Bytes2String(message), err)
+	k.cfg.Logger.Infof("Kafka:WriteMessages: written bytes: %d, topic: %s, data: %s, err: %s", len(message), topic, helper.Bytes2String(message), err)
 
 	return err
 }
 
 func (k *kafkaImpl) Close() error {
-	log.Info("Kafka:Close")
+	k.cfg.Logger.Info("Kafka:Close")
 	err := k.instance.Close()
 	if err != nil {
-		log.Errorf("Close failed: %w", err)
+		k.cfg.Logger.Errorf("Close failed: %w", err)
 	}
 	return err
 }
