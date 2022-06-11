@@ -47,6 +47,7 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 	for _, t := range types {
 		d := formatQueryDate(rewind, t)
 		urls := h.generateURLs(ctx, d, t)
+
 		for _, l := range urls {
 			links = append(links, &graph.Link{
 				URL:      l,
@@ -55,7 +56,7 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 			})
 		}
 	}
-	count, err := h.dataService.Crawl(ctx, &linkIterator{links: links})
+	h.dataService.Crawl(ctx, &linkIterator{links: links})
 }
 
 func (h *handlerImpl) generateURLs(ctx context.Context, d string, t convert.Source) []string {

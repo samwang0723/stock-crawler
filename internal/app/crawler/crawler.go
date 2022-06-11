@@ -101,7 +101,7 @@ func New(cfg Config) Crawler {
 func assembleCrawlerPipeline(cfg Config) *pipeline.Pipeline {
 	return pipeline.New(
 		pipeline.DynamicWorkerPool(
-			newLinkFetcher(cfg.URLGetter, cfg.Proxy),
+			newLinkFetcher(cfg.URLGetter, cfg.Proxy, cfg.Logger),
 			cfg.FetchWorkers,
 		),
 		pipeline.FIFO(

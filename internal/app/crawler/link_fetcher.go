@@ -20,6 +20,8 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
+	"github.com/samwang0723/stock-crawler/internal/helper"
+	"github.com/sirupsen/logrus"
 )
 
 var _ pipeline.Processor = (*linkFetcher)(nil)
@@ -29,12 +31,14 @@ var _ pipeline.Processor = (*linkFetcher)(nil)
 type linkFetcher struct {
 	urlGetter URLGetter
 	proxy     *Proxy
+	logger    *logrus.Entry
 }
 
-func newLinkFetcher(urlGetter URLGetter, proxy *Proxy) *linkFetcher {
+func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger *logrus.Entry) *linkFetcher {
 	return &linkFetcher{
 		urlGetter: urlGetter,
 		proxy:     proxy,
+		logger:    logger,
 	}
 }
 
@@ -55,6 +59,7 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		// It is important to close the connection otherwise fd count will overhead
 		"Connection": []string{"close"},
 	}
+	lf.logger.Infof("download started: %s", uri)
 	resp, err := lf.urlGetter.Do(req)
 	if err != nil {
 		return nil, nil
@@ -72,6 +77,6 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, nil
 	}
-
+	lf.logger.Infof("download completed (%s), URL: %s", helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
 	return payload, nil
 }

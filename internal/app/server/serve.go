@@ -49,7 +49,7 @@ type server struct {
 	opts Options
 }
 
-func Serve(ctx context.Context, logger *logrus.Entry) {
+func Serve(ctx context.Context, logger *logrus.Logger) {
 	config.Load()
 	cfg := config.GetCurrentConfig()
 	// bind DAL layer with service
@@ -74,7 +74,7 @@ func Serve(ctx context.Context, logger *logrus.Entry) {
 		}),
 	)
 	// associate service with handler
-	handler := handlers.New(dataService)
+	handler := handlers.New(dataService, logger.WithField("controller", "handler"))
 
 	//health check
 	health := healthcheck.NewHandler()

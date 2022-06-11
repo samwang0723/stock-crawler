@@ -49,10 +49,23 @@ func New(cfg Config) Cronjob {
 		cfg: cfg,
 		instance: cron.New(
 			cron.WithLocation(location),
-			cron.WithLogger(cfg.Logger),
+			cron.WithLogger(cfg),
 		),
 	}
 	return job
+}
+
+func (c Config) Info(msg string, keysAndValues ...interface{}) {
+	c.Logger.WithFields(logrus.Fields{
+		"data": keysAndValues,
+	}).Info(msg)
+}
+
+func (c Config) Error(err error, msg string, keysAndValues ...interface{}) {
+	c.Logger.WithFields(logrus.Fields{
+		"msg":  msg,
+		"data": keysAndValues,
+	}).Warn(msg)
 }
 
 func (c *cronjobImpl) AddJob(ctx context.Context, spec string, job func()) error {
