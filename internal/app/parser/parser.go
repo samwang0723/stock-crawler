@@ -19,27 +19,34 @@ import (
 	"io"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 )
 
-type IParser interface {
+type Parser interface {
 	SetStrategy(source convert.Source, additional ...string)
-	Execute(in []byte, additional ...string) error
+	Execute(in bytes.Buffer, additional ...string) error
 	Flush() *[]interface{}
 }
 
-type IStrategy interface {
+type Strategy interface {
 	Parse(in io.Reader, additional ...string) ([]interface{}, error)
 }
 
+type Config struct {
+	Logger *logrus.Entry
+}
+
 type parserImpl struct {
-	strategy IStrategy
+	cfg      Config
+	strategy Strategy
 	result   *[]interface{}
 }
 
-func New() IParser {
+func New(cfg Config) Parser {
 	res := &parserImpl{
+		cfg:    cfg,
 		result: &[]interface{}{},
 	}
 	return res
@@ -83,12 +90,8 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 	}
 }
 
-func (p *parserImpl) Execute(in []byte, additional ...string) error {
-	reader := transform.NewReader(
-		bytes.NewBuffer(in),
-		traditionalchinese.Big5.NewDecoder(),
-	)
-
+func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
+	reader := transform.NewReader(&in, traditionalchinese.Big5.NewDecoder())
 	res, err := p.strategy.Parse(reader, additional...)
 	if err != nil {
 		return err

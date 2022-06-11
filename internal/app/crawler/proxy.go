@@ -11,19 +11,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package icache
+package crawler
 
 import (
-	"context"
-	"time"
+	"fmt"
+	"net/url"
+	"os"
 
-	"github.com/bsm/redislock"
+	_ "github.com/joho/godotenv/autoload"
 )
 
-type IRedis interface {
-	SetExpire(ctx context.Context, key string, expired time.Time) error
-	SAdd(ctx context.Context, key string, value string) error
-	SMembers(ctx context.Context, key string) ([]string, error)
-	Close() error
-	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
+const (
+	WebScraping    = "WEB_SCRAPING"
+	WebScrapingUrl = "https://api.webscrapingapi.com/v1?api_key=%s"
+	ProxyCrawl     = "PROXY_CRAWL"
+	ProxyCrawlUrl  = "https://api.proxycrawl.com/?token=%s"
+)
+
+type Proxy struct {
+	Type string
+}
+
+func (p *Proxy) URI(source string) string {
+	var prefix string
+	switch p.Type {
+	case ProxyCrawl:
+		prefix = ProxyCrawlUrl
+	case WebScraping:
+		prefix = WebScrapingUrl
+	}
+	token := os.Getenv(p.Type)
+	return fmt.Sprintf("%s&url=%s", fmt.Sprintf(prefix, token), url.QueryEscape(source))
 }

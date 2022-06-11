@@ -23,10 +23,9 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
-	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 )
 
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
@@ -38,7 +37,7 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 			if err != nil {
 				return fmt.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.DailyClosesV1, b)
+			err = s.sendKafka(ctx, kafka.DailyClosesV1, b)
 			if err != nil {
 				return fmt.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
 			}
@@ -57,7 +56,7 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 			if err != nil {
 				return fmt.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.StocksV1, b)
+			err = s.sendKafka(ctx, kafka.StocksV1, b)
 			if err != nil {
 				return fmt.Errorf("StockThroughKafka: sendKafka failed: %w", err)
 			}
@@ -75,7 +74,7 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 			if err != nil {
 				return fmt.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.ThreePrimaryV1, b)
+			err = s.sendKafka(ctx, kafka.ThreePrimaryV1, b)
 			if err != nil {
 				return fmt.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
 			}
@@ -93,7 +92,7 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.StakeConcentrationV1, b)
+			err = s.sendKafka(ctx, kafka.StakeConcentrationV1, b)
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
 			}
@@ -114,20 +113,31 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 	return nil
 }
 
-func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context, date string) ([]string, error) {
-	defaultList, err := loadStockList()
+func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error) {
+	defaultList, err := listStocks()
 	if err != nil {
 		return nil, err
 	}
-	res, err := s.cache.SMembers(ctx, date)
-	if err != nil {
-		return nil, err
+	//	res, err := s.cache.SMembers(ctx, date)
+	//	if err != nil {
+	//		return nil, err
+	//	}
+
+	var urls []string
+	stockIds := defaultList //helper.Diff(res, defaultList)
+	for _, sid := range stockIds {
+		// in order to get accurate data, we must query each page https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
+		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
+		indexes := []int{1, 2, 3, 4, 6}
+		for _, idx := range indexes {
+			urls = append(urls, fmt.Sprintf(crawler.ConcentrationDays, sid, idx))
+		}
 	}
 
-	return helper.Difference(res, defaultList), nil
+	return urls, nil
 }
 
-func loadStockList() ([]string, error) {
+func listStocks() ([]string, error) {
 	loc := "./configs/stock_ids.json"
 
 	// Open stock list jsonFile
@@ -136,7 +146,6 @@ func loadStockList() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("Successfully Opened %s", loc)
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 

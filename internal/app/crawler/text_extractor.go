@@ -11,18 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package ikafka
+package crawler
 
-import "context"
+import (
+	"context"
 
-const (
-	DailyClosesV1        = "dailycloses-v1"
-	StocksV1             = "stocks-v1"
-	ThreePrimaryV1       = "threeprimary-v1"
-	StakeConcentrationV1 = "stakeconcentration-v1"
+	"github.com/samwang0723/stock-crawler/internal/app/parser"
+	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 )
 
-type IKafka interface {
-	Close() error
-	WriteMessages(ctx context.Context, topic string, message []byte) error
+type textExtractor struct {
+	parser parser.Parser
+}
+
+func newTextExtractor(parser parser.Parser) *textExtractor {
+	return &textExtractor{
+		parser: parser,
+	}
+}
+
+func (te *textExtractor) Process(ctx context.Context, p pipeline.Payload) (pipeline.Payload, error) {
+	payload := p.(*crawlerPayload)
+	te.parser.SetStrategy(payload.Strategy, payload.Date)
+	// Bypass the parsing error
+	te.parser.Execute(payload.RawContent, payload.URL)
+
+	return p, nil
 }

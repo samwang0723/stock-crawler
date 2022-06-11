@@ -21,31 +21,23 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	Log struct {
-		Level string `yaml:"level"`
-	} `yaml:"log"`
+type SystemConfig struct {
 	RedisCache struct {
 		Master        string   `yaml:"master"`
 		SentinelAddrs []string `yaml:"sentinelAddrs"`
 	} `yaml:"redis"`
 	Kafka struct {
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Controller string `yaml:"controller"`
 	} `yaml:"kafka"`
 	Server struct {
 		Name string `yaml:"name"`
 		Host string `yaml:"host"`
 		Port int    `yaml:"port"`
 	} `yaml:"server"`
-	WorkerPool struct {
-		MaxPoolSize  int `yaml:"maxPoolSize"`
-		MaxQueueSize int `yaml:"maxQueueSize"`
-	} `yaml:"workerpool"`
 }
 
 var (
-	instance Config
+	instance SystemConfig
 )
 
 func Load(loc ...string) {
@@ -67,6 +59,6 @@ func Load(loc ...string) {
 	}
 }
 
-func GetCurrentConfig() *Config {
+func GetCurrentConfig() *SystemConfig {
 	return &instance
 }

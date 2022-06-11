@@ -337,7 +337,7 @@ func Test_Difference(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := Difference(tt.ary1, tt.ary2); assert.ElementsMatch(t, tt.want, got) == false {
+			if got := Diff(tt.ary1, tt.ary2); assert.ElementsMatch(t, tt.want, got) == false {
 				t.Errorf("Difference = %+v, want %+v", got, tt.want)
 			}
 		})

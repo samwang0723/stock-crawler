@@ -72,7 +72,7 @@ func Test_Fetch(t *testing.T) {
 				urls:   []string{tt.server.URL},
 				client: tt.server.Client(),
 			}
-			_, _, err := c.Fetch(context.TODO())
+			_, err := c.Fetch(context.TODO())
 			if (err != nil) != tt.want {
 				t.Errorf("Fetch() = %v, want %v", err != nil, tt.want)
 			}

@@ -13,24 +13,9 @@
 // limitations under the License.
 package dto
 
-type DownloadType int32
-
-//go:generate stringer -type=DownloadType
-const (
-	DailyClose DownloadType = iota
-	ThreePrimary
-	Concentration
-	StockList
-)
-
-type DownloadRequest struct {
-	UTCTimestamp string         `json:"utcTimestamp"`
-	Types        []DownloadType `json:"types"`
-	RewindLimit  int32          `json:"rewindLimit"`
-	RateLimit    int32          `json:"rateLimit"`
-}
+import "github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 
 type StartCronjobRequest struct {
-	Schedule string         `json:"schedule"`
-	Types    []DownloadType `json:"types"`
+	Schedule string           `json:"schedule"`
+	Types    []convert.Source `json:"types"`
 }

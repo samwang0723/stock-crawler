@@ -18,50 +18,54 @@ import (
 	"context"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 
 	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 )
 
+type Cronjob interface {
+	Start()
+	Stop()
+	AddJob(ctx context.Context, spec string, job func()) error
+}
+
+// Config encapsulates the settings for configuring the redis service.
+type Config struct {
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *logrus.Entry
+}
+
 type cronjobImpl struct {
+	cfg      Config
 	instance *cron.Cron
 }
 
-type cronLog struct {
-	clog structuredlog.ILogger
+func New(cfg Config) Cronjob {
+	// load location with Taipei timezone
+	location, _ := time.LoadLocation(helper.TimeZone)
+	job := &cronjobImpl{
+		cfg: cfg,
+		instance: cron.New(
+			cron.WithLocation(location),
+			cron.WithLogger(cfg),
+		),
+	}
+	return job
 }
 
-func (l *cronLog) Info(msg string, keysAndValues ...interface{}) {
-	l.clog.RawLogger().WithFields(logrus.Fields{
+func (c Config) Info(msg string, keysAndValues ...interface{}) {
+	c.Logger.WithFields(logrus.Fields{
 		"data": keysAndValues,
 	}).Info(msg)
 }
 
-func (l *cronLog) Error(err error, msg string, keysAndValues ...interface{}) {
-	l.clog.RawLogger().WithFields(logrus.Fields{
+func (c Config) Error(err error, msg string, keysAndValues ...interface{}) {
+	c.Logger.WithFields(logrus.Fields{
 		"msg":  msg,
 		"data": keysAndValues,
 	}).Warn(msg)
-}
-
-func New(l structuredlog.ILogger) icronjob.ICronJob {
-	logger := &cronLog{clog: l}
-	logger.clog.RawLogger().SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-	// load location with Taipei timezone
-	location, _ := time.LoadLocation(helper.TimeZone)
-	job := &cronjobImpl{
-		instance: cron.New(
-			cron.WithLocation(location),
-			cron.WithLogger(logger),
-		),
-	}
-	return job
 }
 
 func (c *cronjobImpl) AddJob(ctx context.Context, spec string, job func()) error {

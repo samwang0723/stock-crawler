@@ -8,15 +8,5 @@ redis:
   sentinelAddrs: ["redis-sentinel-1:26379", "redis-sentinel-2:26380", "redis-sentinel-3:26381"]
   master: "redis-master"
 
-# Logging
-log:
-  level: "ERROR"
-
-# WorkerPool
-workerpool:
-  maxPoolSize: 20
-  maxQueueSize: 40
-
 kafka:
-  port: 9092
-  host: "localhost"
+  controller: "kafka-1:9092"
