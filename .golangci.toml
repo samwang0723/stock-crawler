@@ -1,0 +1,145 @@
+[service]
+golangci-lint-version =  "1.46"
+
+[linters]
+disable-all = true
+enable = [
+    "deadcode",
+    "errcheck",
+    "gosimple",
+    "govet",
+    "ineffassign",
+    "staticcheck",
+    "structcheck",
+    "typecheck",
+    "unused",
+    "varcheck",
+
+    "asciicheck",
+    "bidichk",
+    "bodyclose",
+    "containedctx",
+    "contextcheck",
+    "cyclop",
+    "decorder",
+    "depguard",
+    "dogsled",
+    "dupl",
+    "durationcheck",
+    "errchkjson",
+    "errname",
+    "errorlint",
+    "execinquery",
+    "exhaustive",
+    # "exhaustivestruct", deprecated
+    # "exhaustruct", quite difficult to enable for partial struct init
+    "exportloopref",
+    "forbidigo",
+    "forcetypeassert",
+    # "funlen", the complexity is covering most of issues
+    # "gci", it's hard to make gofumpt play well with gci
+    "gochecknoglobals",
+    "gochecknoinits",
+    "gocognit",
+    "goconst",
+    "gocritic",
+    "gocyclo",
+    # "godot", the dot is not always easy to add (multiline for ex)
+    "godox",
+    "goerr113",
+    "gofmt",
+    # "gofumpt", does not run properly: https://github.com/golangci/golangci-lint/issues/2711
+    "goheader",
+    "goimports",
+    # "golint", deprecated
+    "gomnd",
+    "gomoddirectives",
+    "gomodguard",
+    "goprintffuncname",
+    "gosec",
+    "grouper",
+    "ifshort",
+    "importas",
+    # "interfacer", deprecated
+    # "ireturn",
+    "lll",
+    "maintidx",
+    "makezero",
+    # "maligned", deprecated
+    "misspell",
+    "nakedret",
+    "nestif",
+    "nilerr",
+    "nilnil",
+    "nlreturn",
+    "noctx",
+    "nolintlint",
+    "nonamedreturns",
+    "nosprintfhostport",
+    "paralleltest",
+    "prealloc",
+    "predeclared",
+    "promlinter",
+    "revive",
+    "rowserrcheck",
+    # "scopelint" , deprecated
+    "sqlclosecheck",
+    "stylecheck",
+    # "tagliatelle", we don't want to force tags on all structs
+    "tenv",
+    # "testpackage", we don't want to force the use of a test package
+    "thelper",
+    "tparallel",
+    "unconvert",
+    "unparam",
+    "varnamelen",
+    "wastedassign",
+    "whitespace",
+    "wrapcheck",
+    "wsl",
+]
+
+[linters-settings.errcheck]
+check-type-assertions = true
+check-blank = true
+
+[linters-settings.govet]
+check-shadowing = true
+
+[linters-settings.revive]
+min-confidence = 0.0
+
+[linters-settings.prealloc]
+simple = false
+range-loops = true
+for-loops = true
+
+[linters-settings.gocritic]
+enabled-tags = [
+    "diagnostic",
+    "experimental",
+    "opinionated",
+    "performance",
+    "style",
+]
+disabled-checks = [
+      "whyNoLint",
+]
+
+[linters-settings.errorlint]
+errorf = true
+
+[linters-settings.nolintlint]
+require-explanation = true
+require-specific = true
+
+[linters-settings.gofumpt]
+extra-rules = true
+
+[[issues.exclude-rules]]
+path = '(.+)_test\.go'
+linters = ["funlen", "goconst", "interfacer", "dupl", "lll", "goerr113", "varnamelen", "errcheck", "gocritic", "cyclop", "wrapcheck"]
+
+[[issues.exclude-rules]]
+path = 'sqlc\.go'
+linters = ["wrapcheck"]

@@ -1,16 +1,20 @@
 # stock-crawler
+
 Taiwan stock crawling service
 
 ## Setup Redis
 
 ### Start Docker container
+
 ```
 
 $ docker-compose -p redis -f build/docker/redis/docker-compose.yml up
 ```
 
 #### Customize Sentinel
+
 Remember to change the image location inside redis/docker-compose.yml
+
 ```
 $ cd build/docker/redis
 $ docker build -t {Repo}/redis-sentinel -f Dockerfile .
@@ -19,11 +23,13 @@ $ docker build -t {Repo}/redis-sentinel -f Dockerfile .
 ## Setup Kafka
 
 ### Start Kafka container
+
 ```
 $ docker-compose -p kafka -f build/docker/kafka/docker-compose.yml up
 ```
 
 ### Create topics
+
 ```
 $ docker exec -it kafka-1 bash
 
@@ -36,11 +42,13 @@ $ docker exec -it kafka-1 bash
 ## Start Application
 
 ### Build image for Mac M1
+
 ```
-$ make docker-m1
+$ make build
 ```
 
 ### Start stock-crawler container
+
 ```
 $ docker-compose -p stock-crawler -f build/docker/app/docker-compose.yml up
 ```
@@ -48,7 +56,6 @@ $ docker-compose -p stock-crawler -f build/docker/app/docker-compose.yml up
 ### Environment configuration
 
 Please configure `.env` under project root folder
+
 1. Concentration data crawling need to use proxy to prevent rate limiting from source website, recommend to use https://app.webscrapingapi.com,
-can set `WEB_SCRAPING={API_KEY}`, or https://proxycrawl.com, set `PROXY_CRAWL={API_KEY}`
-2. If want to test the functionality, use `INCLUDE_WEEKEND=true`, otherwise please set to `false`, 
-enabling the testing mode allows you to not skip weekend dates
+   can set `WEB_SCRAPING={API_KEY}`, or https://proxycrawl.com, set `PROXY_CRAWL={API_KEY}`
