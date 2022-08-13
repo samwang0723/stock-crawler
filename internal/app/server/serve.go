@@ -170,6 +170,7 @@ func (s *server) Run(ctx context.Context) error {
 	wg.Add(1)
 	go func(s *server) {
 		defer wg.Done()
+		//FIXME: replace with actual cronjob
 		s.Handler().Download(ctx, &dto.StartCronjobRequest{
 			Types: []convert.Source{convert.StakeConcentration},
 		})

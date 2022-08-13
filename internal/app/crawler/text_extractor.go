@@ -15,18 +15,22 @@ package crawler
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 )
 
 type textExtractor struct {
-	parser parser.Parser
+	parser   parser.Parser
+	memCache map[string][]*entity.StakeConcentration
 }
 
 func newTextExtractor(parser parser.Parser) *textExtractor {
 	return &textExtractor{
-		parser: parser,
+		parser:   parser,
+		memCache: make(map[string][]*entity.StakeConcentration),
 	}
 }
 
@@ -36,5 +40,16 @@ func (te *textExtractor) Process(ctx context.Context, p pipeline.Payload) (pipel
 	// Bypass the parsing error
 	te.parser.Execute(payload.RawContent, payload.URL)
 
+	//TODO: do switch case to parse different types
+	objs := te.parser.Flush()
+	for _, v := range *objs {
+		if val, ok := v.(*entity.StakeConcentration); ok {
+			te.memCache[val.StockID] = append(te.memCache[val.StockID], val)
+			fmt.Printf("Count: %d, Process: %+v\n", len(te.memCache[val.StockID]), val)
+			if len(te.memCache[val.StockID]) == 5 {
+				//TODO: send through Kafka channel
+			}
+		}
+	}
 	return p, nil
 }

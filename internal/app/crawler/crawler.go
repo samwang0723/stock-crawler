@@ -140,6 +140,7 @@ func (ls *linkSource) Payload() pipeline.Payload {
 	return p
 }
 
+// countingSink for calculate total parsed records
 type countingSink struct {
 	count int
 }
