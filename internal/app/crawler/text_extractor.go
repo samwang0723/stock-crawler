@@ -57,7 +57,7 @@ func (te *textExtractor) Process(ctx context.Context, p pipeline.Payload) (pipel
 }
 
 func (te *textExtractor) broadcast(ctx context.Context, strategy convert.Source, data *[]interface{}) {
-	var intercept convert.InterceptData
+	intercept := convert.InterceptData{}
 
 	if strategy == convert.StakeConcentration {
 		if st := te.cacheInMemory(data); st != nil {
@@ -73,7 +73,7 @@ func (te *textExtractor) broadcast(ctx context.Context, strategy convert.Source,
 		}
 	}
 
-	if te.interceptChan != nil {
+	if te.interceptChan != nil && intercept.Data != nil {
 		te.interceptChan <- intercept
 	}
 }
@@ -85,7 +85,6 @@ func (te *textExtractor) cacheInMemory(data *[]interface{}) *entity.StakeConcent
 
 			if len(te.memCache[val.StockID]) == 5 {
 				output := entity.MapReduceStakeConcentration(te.memCache[val.StockID])
-				te.logger.Infof("Count: %d, Process: %+v", len(te.memCache[val.StockID]), output)
 				delete(te.memCache, val.StockID)
 
 				return output

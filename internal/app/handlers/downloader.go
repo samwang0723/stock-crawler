@@ -72,7 +72,6 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 				return
 			case obj, ok := <-interceptChan:
 				if ok {
-					h.logger.Warnf("---- obj: %+v ---", obj)
 					h.processData(ctx, obj)
 				}
 			}

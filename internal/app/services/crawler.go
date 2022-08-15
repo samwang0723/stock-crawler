@@ -65,5 +65,5 @@ func (cfg *CrawlerConfig) validate() error {
 }
 
 func (s *serviceImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error) {
-	return s.crawler.Crawl(ctx, linkIt)
+	return s.crawler.Crawl(ctx, linkIt, interceptChan...)
 }

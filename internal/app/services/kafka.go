@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,9 +45,17 @@ func (cfg *KafkaConfig) validate() error {
 }
 
 func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byte) error {
+	if s.producer == nil {
+		return xerrors.Errorf("kafka producer is not initialized")
+	}
+
 	return s.producer.WriteMessages(ctx, topic, message)
 }
 
 func (s *serviceImpl) StopKafka() error {
+	if s.producer == nil {
+		return xerrors.Errorf("kafka producer is not initialized")
+	}
+
 	return s.producer.Close()
 }
