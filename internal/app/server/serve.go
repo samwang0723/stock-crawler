@@ -57,15 +57,15 @@ func Serve(ctx context.Context, logger *logrus.Logger) {
 		services.WithCronJob(services.CronjobConfig{
 			Logger: logger.WithField("service", "cronjob"),
 		}),
-		//		services.WithKafka(services.KafkaConfig{
-		//			Controller: cfg.Kafka.Controller,
-		//			Logger:     logger.WithField("service", "kafka"),
-		//		}),
-		//		services.WithRedis(services.RedisConfig{
-		//			Master:        cfg.RedisCache.Master,
-		//			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
-		//			Logger:        logger.WithField("service", "redis"),
-		//		}),
+		services.WithKafka(services.KafkaConfig{
+			Controller: cfg.Kafka.Controller,
+			Logger:     logger.WithField("service", "kafka"),
+		}),
+		services.WithRedis(services.RedisConfig{
+			Master:        cfg.RedisCache.Master,
+			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
+			Logger:        logger.WithField("service", "redis"),
+		}),
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      10,
 			RateLimitInterval: 3000,
@@ -78,7 +78,7 @@ func Serve(ctx context.Context, logger *logrus.Logger) {
 
 	//health check
 	health := healthcheck.NewHandler()
-	// Our app is not happy if we've got more than 100 goroutines running.
+	// Our app is not happy if we've got more than 10k goroutines running.
 	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(10000))
 	// Our app is not ready if we can't resolve our upstream dependency in DNS.
 	health.AddReadinessCheck(
@@ -103,8 +103,8 @@ func Serve(ctx context.Context, logger *logrus.Logger) {
 		}),
 		BeforeStop(func() error {
 			dataService.StopCron()
-			//dataService.StopRedis()
-			//dataService.StopKafka()
+			dataService.StopRedis()
+			dataService.StopKafka()
 			return nil
 		}),
 	)
@@ -132,7 +132,7 @@ func (s *server) Start(ctx context.Context) error {
 			return err
 		}
 	}
-	signatureOut := fmt.Sprintf(helper.Signature, "v1.1.0", helper.GetCurrentEnv())
+	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.0", helper.GetCurrentEnv())
 	fmt.Println(signatureOut)
 
 	go func() {
@@ -168,13 +168,33 @@ func (s *server) Run(ctx context.Context) error {
 	// Execute logics
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go func(s *server) {
+	go func(ctx context.Context, s *server) {
 		defer wg.Done()
-		//FIXME: replace with actual cronjob
-		s.Handler().Download(ctx, &dto.StartCronjobRequest{
-			Types: []convert.Source{convert.StakeConcentration},
+
+		// by default starting cronjob for regular daily updates pulling
+		// cronjob using redis distrubted lock to prevent multiple instances
+		// pulling same content
+		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 16 * * 1-5",
+			Types: []convert.Source{
+				convert.TwseDailyClose,
+				convert.TwseThreePrimary,
+				convert.TpexDailyClose,
+				convert.TpexThreePrimary,
+			},
 		})
-	}(s)
+		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 18 * * 1-5",
+			Types:    []convert.Source{convert.StakeConcentration},
+		})
+		// backfill failed concentration records
+		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 19 * * 1-5",
+			Types:    []convert.Source{convert.StakeConcentration},
+		})
+
+		<-ctx.Done()
+	}(ctx, s)
 	wg.Wait()
 
 	return s.Stop()
