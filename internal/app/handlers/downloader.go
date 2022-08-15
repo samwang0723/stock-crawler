@@ -44,6 +44,7 @@ func (h *handlerImpl) Download(ctx context.Context, req *dto.StartCronjobRequest
 // batching download all the historical stock data
 func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types []convert.Source) {
 	var links []*graph.Link
+	interceptChan := make(chan convert.InterceptData)
 
 	for _, t := range types {
 		d := formatQueryDate(rewind, t)
@@ -57,7 +58,28 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 			})
 		}
 	}
-	h.dataService.Crawl(ctx, &linkIterator{links: links})
+
+	go func() {
+		for {
+			select {
+			// since its hard to predict how many records already been processed,
+			// sync.WaitGroup hard to apply in this scenario, use timeout instead
+			case <-time.After(8 * time.Hour):
+				h.logger.Warn("(BatchingDownload): timeout")
+				return
+			case <-ctx.Done():
+				h.logger.Warn("(BatchingDownload): context cancel")
+				return
+			case obj, ok := <-interceptChan:
+				if ok {
+					h.logger.Warnf("---- obj: %+v ---", obj)
+					h.processData(ctx, obj)
+				}
+			}
+		}
+	}()
+
+	h.dataService.Crawl(ctx, &linkIterator{links: links}, interceptChan)
 }
 
 func (h *handlerImpl) generateURLs(ctx context.Context, d string, t convert.Source) []string {
@@ -87,4 +109,17 @@ func formatQueryDate(rewind int32, t convert.Source) string {
 	}
 
 	return date
+}
+
+func (h *handlerImpl) processData(ctx context.Context, obj convert.InterceptData) {
+	switch obj.Type {
+	case convert.TwseDailyClose, convert.TpexDailyClose:
+		h.dataService.DailyCloseThroughKafka(ctx, obj.Data)
+	case convert.TwseThreePrimary, convert.TpexThreePrimary:
+		h.dataService.ThreePrimaryThroughKafka(ctx, obj.Data)
+	case convert.TwseStockList, convert.TpexStockList:
+		h.dataService.StockThroughKafka(ctx, obj.Data)
+	case convert.StakeConcentration:
+		h.dataService.StakeConcentrationThroughKafka(ctx, obj.Data)
+	}
 }

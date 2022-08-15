@@ -56,7 +56,7 @@ var (
 )
 
 type Crawler interface {
-	Crawl(ctx context.Context, linkIt graph.LinkIterator) (int, error)
+	Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error)
 }
 
 // URLGetter is implemented by objects that can perform HTTP GET requests.
@@ -85,31 +85,32 @@ type Config struct {
 // - Given an URL, retrieve content from remote server
 // - Extract useful trading information from retrieved pages
 type crawlerImpl struct {
-	cfg Config
-	p   *pipeline.Pipeline
+	cfg       Config
+	extractor *textExtractor
+	pipe      *pipeline.Pipeline
 }
 
 func New(cfg Config) Crawler {
+	extractor := newTextExtractor(
+		parser.New(parser.Config{Logger: cfg.Logger}),
+		cfg.Logger,
+	)
 	return &crawlerImpl{
-		cfg: cfg,
-		p:   assembleCrawlerPipeline(cfg),
+		cfg:       cfg,
+		extractor: extractor,
+		pipe:      assembleCrawlerPipeline(cfg, extractor),
 	}
 }
 
 // assembleCrawlerPipeline creates the various stages of a crawler pipeline
 // using the options in cfg and assembles them into a pipeline instance.
-func assembleCrawlerPipeline(cfg Config) *pipeline.Pipeline {
+func assembleCrawlerPipeline(cfg Config, extractor *textExtractor) *pipeline.Pipeline {
 	return pipeline.New(
 		pipeline.DynamicWorkerPool(
 			newLinkFetcher(cfg.URLGetter, cfg.Proxy, cfg.Logger),
 			cfg.FetchWorkers,
 		),
-		pipeline.FIFO(
-			newTextExtractor(
-				parser.New(parser.Config{Logger: cfg.Logger}),
-				cfg.Logger,
-			),
-		),
+		pipeline.FIFO(extractor),
 	)
 }
 
@@ -117,9 +118,13 @@ func assembleCrawlerPipeline(cfg Config) *pipeline.Pipeline {
 // returning the total count of links that went through the pipeline. Calls to
 // Crawl block until the link iterator is exhausted, an error occurs or the
 // context is cancelled.
-func (c *crawlerImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator) (int, error) {
+func (c *crawlerImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error) {
 	sink := new(countingSink)
-	err := c.p.Process(ctx, &linkSource{linkIt: linkIt}, sink)
+	if len(interceptChan) == 1 {
+		c.extractor.InterceptData(ctx, interceptChan[0])
+	}
+	err := c.pipe.Process(ctx, &linkSource{linkIt: linkIt}, sink)
+
 	return sink.getCount(), err
 }
 

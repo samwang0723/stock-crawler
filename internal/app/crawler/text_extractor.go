@@ -15,7 +15,6 @@ package crawler
 
 import (
 	"context"
-	"strconv"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -26,9 +25,10 @@ import (
 )
 
 type textExtractor struct {
-	parser   parser.Parser
-	logger   *logrus.Entry
-	memCache map[string][]*entity.StakeConcentration
+	parser        parser.Parser
+	logger        *logrus.Entry
+	memCache      map[string][]*entity.StakeConcentration
+	interceptChan chan convert.InterceptData
 }
 
 func newTextExtractor(parser parser.Parser, logger *logrus.Entry) *textExtractor {
@@ -39,6 +39,10 @@ func newTextExtractor(parser parser.Parser, logger *logrus.Entry) *textExtractor
 	}
 }
 
+func (te *textExtractor) InterceptData(ctx context.Context, interceptChan chan convert.InterceptData) {
+	te.interceptChan = interceptChan
+}
+
 func (te *textExtractor) Process(ctx context.Context, p pipeline.Payload) (pipeline.Payload, error) {
 	payload := p.(*crawlerPayload)
 	te.parser.SetStrategy(payload.Strategy, payload.Date)
@@ -47,48 +51,47 @@ func (te *textExtractor) Process(ctx context.Context, p pipeline.Payload) (pipel
 		return nil, err
 	}
 
-	err = te.broadcast(ctx, payload.Strategy, te.parser.Flush())
-	if err != nil {
-		return nil, err
-	}
+	te.broadcast(ctx, payload.Strategy, te.parser.Flush())
 
 	return p, nil
 }
 
-func (te *textExtractor) broadcast(ctx context.Context, strategy convert.Source, data *[]interface{}) error {
-	switch strategy {
-	case convert.TwseStockList, convert.TpexStockList:
-	case convert.TwseDailyClose, convert.TpexDailyClose:
-	case convert.TwseThreePrimary, convert.TpexThreePrimary:
-	case convert.StakeConcentration:
-		for _, v := range *data {
-			if val, ok := v.(*entity.StakeConcentration); ok {
-				te.memCache[val.StockID] = append(te.memCache[val.StockID], val)
-				if len(te.memCache[val.StockID]) == 5 {
-					te.logger.Infof("Count: %d, Process: %+v", len(te.memCache[val.StockID]), te.mapReduce(ctx, te.memCache[val.StockID]))
-					//TODO: clear in-memory cache
-				}
+func (te *textExtractor) broadcast(ctx context.Context, strategy convert.Source, data *[]interface{}) {
+	var intercept convert.InterceptData
+
+	if strategy == convert.StakeConcentration {
+		if st := te.cacheInMemory(data); st != nil {
+			intercept = convert.InterceptData{
+				Data: &[]interface{}{st},
+				Type: strategy,
+			}
+		}
+	} else {
+		intercept = convert.InterceptData{
+			Data: data,
+			Type: strategy,
+		}
+	}
+
+	if te.interceptChan != nil {
+		te.interceptChan <- intercept
+	}
+}
+
+func (te *textExtractor) cacheInMemory(data *[]interface{}) *entity.StakeConcentration {
+	for _, v := range *data {
+		if val, ok := v.(*entity.StakeConcentration); ok {
+			te.memCache[val.StockID] = append(te.memCache[val.StockID], val)
+
+			if len(te.memCache[val.StockID]) == 5 {
+				output := entity.MapReduceStakeConcentration(te.memCache[val.StockID])
+				te.logger.Infof("Count: %d, Process: %+v", len(te.memCache[val.StockID]), output)
+				delete(te.memCache, val.StockID)
+
+				return output
 			}
 		}
 	}
 
 	return nil
-}
-
-func (te *textExtractor) mapReduce(ctx context.Context, objs []*entity.StakeConcentration) *entity.StakeConcentration {
-	volumeDiff := []int32{0, 0, 0, 0, 0}
-	var res *entity.StakeConcentration
-
-	for _, val := range objs {
-		idx, _ := strconv.Atoi(val.HiddenField)
-		// make sure to cover latest concentration data
-		if idx == 0 {
-			res = val
-		}
-		volumeDiff[idx] = int32(val.SumBuyShares - val.SumSellShares)
-	}
-
-	res.Diff = volumeDiff
-
-	return res
 }

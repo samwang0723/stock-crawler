@@ -19,6 +19,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
@@ -63,6 +64,6 @@ func (cfg *CrawlerConfig) validate() error {
 	return err
 }
 
-func (s *serviceImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator) (int, error) {
+func (s *serviceImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error) {
 	return s.crawler.Crawl(ctx, linkIt)
 }
