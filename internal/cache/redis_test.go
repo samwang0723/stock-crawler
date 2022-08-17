@@ -23,6 +23,7 @@ import (
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
 	redismock "github.com/go-redis/redismock/v8"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )
@@ -64,6 +65,7 @@ func Test_ObtainLock(t *testing.T) {
 		},
 	}
 
+	logger := log.With().Str("test", "redis").Logger()
 	for _, tt := range tests {
 		tt := tt
 
@@ -75,6 +77,9 @@ func Test_ObtainLock(t *testing.T) {
 			client, mock := redismock.NewClientMock()
 			impl := &redisImpl{
 				instance: client,
+				cfg: Config{
+					Logger: &logger,
+				},
 			}
 			switch tt.err {
 			case redislock.ErrNotObtained:

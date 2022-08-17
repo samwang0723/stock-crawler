@@ -77,7 +77,7 @@ type Config struct {
 	// Rate limit interval to prevent remote site blocking
 	RateLimitInterval int
 
-	Logger zerolog.Logger
+	Logger *zerolog.Logger
 }
 
 // crawlerImpl implements a stock information crawling pipeline consisting of following stages:

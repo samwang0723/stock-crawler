@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog"
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
@@ -30,7 +31,6 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 
 	"github.com/heptiolabs/healthcheck"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -50,32 +50,32 @@ type server struct {
 	opts Options
 }
 
-func Serve(ctx context.Context) error {
+func Serve(ctx context.Context, logger *zerolog.Logger) error {
 	config.Load()
 	cfg := config.GetCurrentConfig()
 	// bind DAL layer with service
 	dataService := services.New(
 		services.WithCronJob(services.CronjobConfig{
-			Logger: log.With().Str("service", "cronjob").Logger(),
+			Logger: logger,
 		}),
 		services.WithKafka(services.KafkaConfig{
 			Controller: cfg.Kafka.Controller,
-			Logger:     log.With().Str("service", "kafka").Logger(),
+			Logger:     logger,
 		}),
 		services.WithRedis(services.RedisConfig{
 			Master:        cfg.RedisCache.Master,
 			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
-			Logger:        log.With().Str("service", "redis").Logger(),
+			Logger:        logger,
 		}),
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      10,
 			RateLimitInterval: 3000,
 			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
-			Logger:            log.With().Str("service", "crawler").Logger(),
+			Logger:            logger,
 		}),
 	)
 	// associate service with handler
-	handler := handlers.New(dataService, log.With().Str("controller", "handler").Logger())
+	handler := handlers.New(dataService, logger)
 
 	//health check
 	health := healthcheck.NewHandler()

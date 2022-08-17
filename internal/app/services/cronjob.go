@@ -24,7 +24,7 @@ import (
 type CronjobConfig struct {
 	// The logger to use. If not defined an output-discarding logger will
 	// be used instead.
-	Logger zerolog.Logger
+	Logger *zerolog.Logger
 }
 
 func (s *serviceImpl) StartCron() {

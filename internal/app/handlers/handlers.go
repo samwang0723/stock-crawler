@@ -28,11 +28,11 @@ type IHandler interface {
 }
 
 type handlerImpl struct {
-	logger      zerolog.Logger
+	logger      *zerolog.Logger
 	dataService services.IService
 }
 
-func New(dataService services.IService, logger zerolog.Logger) IHandler {
+func New(dataService services.IService, logger *zerolog.Logger) IHandler {
 	res := &handlerImpl{
 		logger:      logger,
 		dataService: dataService,

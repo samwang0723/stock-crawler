@@ -45,7 +45,7 @@ func main() {
 		}
 	}()
 
-	if err := server.Serve(ctx); err != nil {
+	if err := server.Serve(ctx, &logger); err != nil {
 		logger.Error().Err(err).Msg("server.Serve failed")
 		os.Exit(1)
 	}

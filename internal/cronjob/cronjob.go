@@ -31,7 +31,7 @@ type Cronjob interface {
 }
 
 type Config struct {
-	Logger zerolog.Logger
+	Logger *zerolog.Logger
 }
 
 type cronjobImpl struct {

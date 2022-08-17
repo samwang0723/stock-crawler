@@ -60,11 +60,12 @@ func Test_Retry(t *testing.T) {
 		},
 	}
 
+	logger := log.With().Str("test", "retry").Logger()
 	attempts := new(int)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			*attempts = 0
-			Retry(3, 10*time.Millisecond, log.With().Str("test", "retry").Logger(), func() error {
+			Retry(3, 10*time.Millisecond, &logger, func() error {
 				*attempts++
 				return tt.err
 			})

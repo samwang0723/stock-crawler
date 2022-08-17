@@ -38,6 +38,7 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 			if err != nil {
 				return fmt.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
 			}
+
 			err = s.sendKafka(ctx, kafka.DailyClosesV1, b)
 			if err != nil {
 				return fmt.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
@@ -46,6 +47,7 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 			return fmt.Errorf("Cannot cast interface to *dto.DailyClose: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
+
 	return nil
 
 }
@@ -57,6 +59,7 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 			if err != nil {
 				return fmt.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
 			}
+
 			err = s.sendKafka(ctx, kafka.StocksV1, b)
 			if err != nil {
 				return fmt.Errorf("StockThroughKafka: sendKafka failed: %w", err)
@@ -65,6 +68,7 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
+
 	return nil
 }
 
@@ -75,6 +79,7 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 			if err != nil {
 				return fmt.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
 			}
+
 			err = s.sendKafka(ctx, kafka.ThreePrimaryV1, b)
 			if err != nil {
 				return fmt.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
@@ -83,6 +88,7 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 			return fmt.Errorf("Cannot cast interface to *dto.ThreePrimary: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
+
 	return nil
 }
 
@@ -93,16 +99,19 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
 			}
+
 			err = s.sendKafka(ctx, kafka.StakeConcentrationV1, b)
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
 			}
+
 			// record parsed records to prevent duplicate parsing, default expire the key after 6 hours
 			key := strings.ReplaceAll(val.Date, "-", "")
 			err = s.cache.SAdd(ctx, key, val.StockID)
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: redis(SAdd) failed: %w", err)
 			}
+
 			err = s.cache.SetExpire(ctx, key, time.Now().Add(6*time.Hour))
 			if err != nil {
 				return fmt.Errorf("StakeConcentrationThroughKafka: redis(SetExpure) failed: %w", err)
@@ -113,6 +122,7 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 			return fmt.Errorf("Cannot cast interface to *dto.StakeConcentration: %v\n", reflect.TypeOf(v).Elem())
 		}
 	}
+
 	return nil
 }
 
@@ -159,9 +169,11 @@ func listStocks() ([]string, error) {
 	var list struct {
 		StockIds []string `json:"stockIds"`
 	}
+
 	err = json.Unmarshal(byteValue, &list)
 	if err != nil {
 		return nil, err
 	}
+
 	return list.StockIds, nil
 }

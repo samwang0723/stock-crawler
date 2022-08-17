@@ -36,7 +36,7 @@ type Strategy interface {
 }
 
 type Config struct {
-	Logger zerolog.Logger
+	Logger *zerolog.Logger
 }
 
 type parserImpl struct {

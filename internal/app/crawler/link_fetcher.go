@@ -33,10 +33,10 @@ var _ pipeline.Processor = (*linkFetcher)(nil)
 type linkFetcher struct {
 	urlGetter URLGetter
 	proxy     *Proxy
-	logger    zerolog.Logger
+	logger    *zerolog.Logger
 }
 
-func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger zerolog.Logger) *linkFetcher {
+func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger *zerolog.Logger) *linkFetcher {
 	return &linkFetcher{
 		urlGetter: urlGetter,
 		proxy:     proxy,

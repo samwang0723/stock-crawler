@@ -24,6 +24,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/helper"
@@ -120,6 +121,7 @@ func TestCrawl(t *testing.T) {
 		},
 	}
 
+	logger := log.With().Str("test", "crawler").Logger()
 	for _, tt := range tests {
 		tt := tt
 
@@ -130,6 +132,7 @@ func TestCrawl(t *testing.T) {
 				URLGetter:         tt.args.mockClient,
 				FetchWorkers:      2,
 				RateLimitInterval: 1000,
+				Logger:            &logger,
 			})
 			_, err := c.Crawl(context.TODO(), &testLinkIterator{links: []*graph.Link{
 				{

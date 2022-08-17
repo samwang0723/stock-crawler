@@ -21,7 +21,7 @@ import (
 )
 
 // Retry mechanism
-func Retry(attempts int, sleep time.Duration, logger zerolog.Logger, fn func() error) error {
+func Retry(attempts int, sleep time.Duration, logger *zerolog.Logger, fn func() error) error {
 	if err := fn(); err != nil {
 		if s, ok := err.(Stop); ok {
 			return s.error
