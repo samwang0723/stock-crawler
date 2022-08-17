@@ -23,10 +23,10 @@ import (
 )
 
 func Test_parseCsv(t *testing.T) {
-	wrongCsv, _ := helper.ReadFromFile("testfiles/wrong.csv")
-	correctCsv, _ := helper.ReadFromFile("testfiles/correct.csv")
-	threePrimaryCsv, _ := helper.ReadFromFile("testfiles/twse_threeprimary.csv")
-	tpexThreePrimaryCsv, _ := helper.ReadFromFile("testfiles/tpex_threeprimary.csv")
+	wrongCsv, _ := helper.ReadFromFile(".testfiles/wrong.csv")
+	correctCsv, _ := helper.ReadFromFile(".testfiles/correct.csv")
+	threePrimaryCsv, _ := helper.ReadFromFile(".testfiles/twse_threeprimary.csv")
+	tpexThreePrimaryCsv, _ := helper.ReadFromFile(".testfiles/tpex_threeprimary.csv")
 
 	b1, _ := helper.EncodeBig5([]byte(correctCsv))
 	b2, _ := helper.EncodeBig5([]byte(wrongCsv))

@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 func Test_parseConcentration(t *testing.T) {
 	wrongDoc := "<html><body><table><tr><td>WRONG</td></tr></table></body></html>"
-	correctDoc, _ := helper.ReadFromFile("testfiles/concentration.html")
+	correctDoc, _ := helper.ReadFromFile(".testfiles/concentration.html")
 
 	b, _ := helper.EncodeBig5([]byte(correctDoc))
 	tests := []struct {
