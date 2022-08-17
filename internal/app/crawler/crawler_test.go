@@ -127,7 +127,7 @@ func TestCrawl(t *testing.T) {
 					Strategy: convert.TwseDailyClose,
 				},
 			}})
-			if (err != nil) != tt.wantErr {
+			if (err != nil) == tt.wantErr {
 				t.Errorf("Crawl() = %v, want %v", err != nil, tt.wantErr)
 			}
 		})

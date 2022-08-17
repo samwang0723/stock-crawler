@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -42,13 +42,6 @@ func TestMain(m *testing.M) {
 func Test_ObtainLock(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO()
-	duration := 10 * time.Second
-	client, mock := redismock.NewClientMock()
-	impl := &redisImpl{
-		instance: client,
-	}
-
 	tests := []struct {
 		name     string
 		err      error
@@ -76,6 +69,13 @@ func Test_ObtainLock(t *testing.T) {
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
+			ctx := context.TODO()
+			duration := 10 * time.Second
+			client, mock := redismock.NewClientMock()
+			impl := &redisImpl{
+				instance: client,
+			}
 			switch tt.err {
 			case redislock.ErrNotObtained:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(tt.err)

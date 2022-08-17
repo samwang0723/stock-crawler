@@ -69,7 +69,7 @@ func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time
 	if err != nil {
 		return err
 	}
-	r.cfg.Logger.Info().Msgf("redis SetExpire(): key: %s expiredAt: %s", key, expire)
+	r.cfg.Logger.Info().Msgf("redis SetExpire(): key: %s expired: %t", key, expire)
 
 	return nil
 }

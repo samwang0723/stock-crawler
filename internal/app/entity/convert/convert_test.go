@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,30 @@
 package convert
 
 import (
+	"flag"
+	"os"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
+func TestMain(m *testing.M) {
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
+}
+
 func Test_Concentration(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		val  *ConvertData
@@ -58,7 +75,11 @@ func Test_Concentration(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			c := Concentration()
 			res := c.Execute(tt.val)
 			if val, ok := res.(*entity.StakeConcentration); ok {

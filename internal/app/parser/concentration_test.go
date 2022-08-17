@@ -16,12 +16,28 @@ package parser
 
 import (
 	"bytes"
+	"flag"
+	"os"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
+
+	"go.uber.org/goleak"
 )
+
+func TestMain(m *testing.M) {
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
+}
 
 func Test_parseConcentration(t *testing.T) {
 	wrongDoc := "<html><body><table><tr><td>WRONG</td></tr></table></body></html>"
