@@ -65,10 +65,10 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 			// since its hard to predict how many records already been processed,
 			// sync.WaitGroup hard to apply in this scenario, use timeout instead
 			case <-time.After(8 * time.Hour):
-				h.logger.Warn("(BatchingDownload): timeout")
+				h.logger.Warn().Msg("batching download: timeout")
 				return
 			case <-ctx.Done():
-				h.logger.Warn("(BatchingDownload): context cancel")
+				h.logger.Warn().Msg("batching download: context cancel")
 				return
 			case obj, ok := <-interceptChan:
 				if ok {

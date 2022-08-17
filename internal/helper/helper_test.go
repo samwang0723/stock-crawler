@@ -15,13 +15,30 @@
 package helper
 
 import (
+	"flag"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
+func TestMain(m *testing.M) {
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
+}
+
 func Test_IsInteger(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		val  string
@@ -52,6 +69,8 @@ func Test_IsInteger(t *testing.T) {
 }
 
 func Test_ToInt64(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		val  string
@@ -82,6 +101,8 @@ func Test_ToInt64(t *testing.T) {
 }
 
 func Test_ToUint64(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		val  string
@@ -117,6 +138,8 @@ func Test_ToUint64(t *testing.T) {
 }
 
 func Test_ToFloat32(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		val  string
@@ -147,6 +170,8 @@ func Test_ToFloat32(t *testing.T) {
 }
 
 func Test_FormalizeValidTimeWithLocation(t *testing.T) {
+	t.Parallel()
+
 	l, _ := time.LoadLocation(TimeZone)
 	testTime := time.Date(2021, time.December, 23, 12, 0, 0, 0, l)
 	expTime := time.Date(2021, time.December, 22, 12, 0, 0, 0, l)
@@ -187,6 +212,8 @@ func Test_FormalizeValidTimeWithLocation(t *testing.T) {
 }
 
 func Test_GetDateFromUTC(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		val    string
@@ -226,6 +253,8 @@ func Test_GetDateFromUTC(t *testing.T) {
 }
 
 func Test_GetDateFromOffset(t *testing.T) {
+	t.Parallel()
+
 	l, _ := time.LoadLocation(TimeZone)
 	expTime := time.Date(2021, time.December, 22, 12, 0, 0, 0, l)
 
@@ -262,6 +291,8 @@ func Test_GetDateFromOffset(t *testing.T) {
 }
 
 func Test_GetReadableSize(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		want    string
@@ -306,6 +337,8 @@ func Test_StringNBytes(t *testing.T) {
 }
 
 func Test_Difference(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		ary1 []string

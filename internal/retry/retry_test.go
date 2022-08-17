@@ -15,29 +15,26 @@ package retry
 
 import (
 	"errors"
+	"flag"
 	"os"
 	"testing"
 	"time"
 
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
-
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
-func setup() {
-	logger := logtest.NullLogger()
-	log.Initialize(logger)
-}
-
-func shutdown() {
-}
-
 func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
 }
 
 func Test_Retry(t *testing.T) {
@@ -67,7 +64,7 @@ func Test_Retry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			*attempts = 0
-			Retry(3, 10*time.Millisecond, func() error {
+			Retry(3, 10*time.Millisecond, log.With().Str("test", "retry").Logger(), func() error {
 				*attempts++
 				return tt.err
 			})

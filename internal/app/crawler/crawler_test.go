@@ -16,65 +16,119 @@ package crawler
 
 import (
 	"context"
+	"flag"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
+	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
+
+	"go.uber.org/goleak"
 )
 
-func setup() {
-	logger := logtest.NullLogger()
-	log.Initialize(logger)
+type testLinkIterator struct {
+	mu       sync.RWMutex
+	links    []*graph.Link
+	curIndex int
 }
 
-func shutdown() {
+func (i *testLinkIterator) Next() bool {
+	if i.curIndex >= len(i.links) {
+		return false
+	}
+	i.curIndex++
+
+	return true
+}
+
+func (i *testLinkIterator) Error() error {
+	return nil
+}
+
+func (i *testLinkIterator) Link() *graph.Link {
+	i.mu.RLock()
+	link := new(graph.Link)
+	*link = *i.links[i.curIndex-1]
+	i.mu.RUnlock()
+
+	return link
 }
 
 func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
 }
 
-func Test_Fetch(t *testing.T) {
-	setup()
+func TestCrawl(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		mockServer *httptest.Server
+	}
+
 	tests := []struct {
-		server *httptest.Server
-		name   string
-		want   bool
+		name    string
+		args    args
+		wantErr bool
 	}{
 		{
 			name: "Regular http fetch",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(http.StatusOK)
-				w.Write(helper.String2Bytes("Success"))
-			})),
-			want: false,
+			args: args{
+				mockServer: httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(http.StatusOK)
+						w.Write(helper.String2Bytes("Success"))
+					}),
+				),
+			},
+			wantErr: false,
 		},
 		{
 			name: "error fetching from server",
-			server: httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-				w.WriteHeader(500)
-			})),
-			want: true,
+			args: args{
+				mockServer: httptest.NewServer(
+					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+						w.WriteHeader(500)
+					}),
+				),
+			},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			defer tt.server.Close()
-			c := &crawlerImpl{
-				urls:   []string{tt.server.URL},
-				client: tt.server.Client(),
-			}
-			_, err := c.Fetch(context.TODO())
-			if (err != nil) != tt.want {
-				t.Errorf("Fetch() = %v, want %v", err != nil, tt.want)
+			t.Parallel()
+
+			defer tt.args.mockServer.Close()
+
+			c := New(Config{
+				URLGetter:         tt.args.mockServer.Client(),
+				FetchWorkers:      2,
+				RateLimitInterval: 1000,
+			})
+			_, err := c.Crawl(context.TODO(), &testLinkIterator{links: []*graph.Link{
+				{
+					URL:      tt.args.mockServer.URL,
+					Date:     "20220801",
+					Strategy: convert.TwseDailyClose,
+				},
+			}})
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Crawl() = %v, want %v", err != nil, tt.wantErr)
 			}
 		})
 	}

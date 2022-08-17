@@ -20,21 +20,17 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
-
-	"github.com/sirupsen/logrus"
 )
 
 type textExtractor struct {
 	parser        parser.Parser
-	logger        *logrus.Entry
 	memCache      map[string][]*entity.StakeConcentration
 	interceptChan chan convert.InterceptData
 }
 
-func newTextExtractor(parser parser.Parser, logger *logrus.Entry) *textExtractor {
+func newTextExtractor(parser parser.Parser) *textExtractor {
 	return &textExtractor{
 		parser:   parser,
-		logger:   logger,
 		memCache: make(map[string][]*entity.StakeConcentration),
 	}
 }

@@ -18,8 +18,9 @@ import (
 	"time"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
+
+	"github.com/rs/zerolog"
 	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -41,7 +42,7 @@ type Config struct {
 
 	// The logger to use. If not defined an output-discarding logger will
 	// be used instead.
-	Logger *logrus.Entry
+	Logger zerolog.Logger
 }
 
 type kafkaImpl struct {
@@ -67,16 +68,16 @@ func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []b
 		Value: message,
 	}
 	err := k.instance.WriteMessages(ctx, msg)
-	k.cfg.Logger.Infof("Kafka:WriteMessages: written bytes: %d, topic: %s, data: %s, err: %s", len(message), topic, helper.Bytes2String(message), err)
+	k.cfg.Logger.Info().Msgf("kafka writeMessages(): written bytes: %d, topic: %s, data: %s, err: %s", len(message), topic, helper.Bytes2String(message), err)
 
 	return err
 }
 
 func (k *kafkaImpl) Close() error {
-	k.cfg.Logger.Info("Kafka:Close")
+	k.cfg.Logger.Info().Msg("kafka close()")
 	err := k.instance.Close()
 	if err != nil {
-		k.cfg.Logger.Errorf("Close failed: %w", err)
+		k.cfg.Logger.Error().Err(err).Msg("close failed")
 	}
 	return err
 }

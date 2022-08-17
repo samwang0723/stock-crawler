@@ -15,6 +15,7 @@
 package parser
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -51,13 +52,15 @@ func Test_parseHtml(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
 			res.SetStrategy(convert.TwseStockList)
-			err := res.Execute([]byte(tt.content))
+			err := res.Execute(*bytes.NewBuffer([]byte(tt.content)))
 
 			if got := len(*res.result); got != tt.want || err != tt.err {
 				t.Errorf("len(parser.result) = %v, want %v", got, tt.want)

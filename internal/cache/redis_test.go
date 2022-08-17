@@ -15,35 +15,33 @@ package cache
 
 import (
 	"context"
+	"flag"
 	"os"
 	"testing"
 	"time"
-
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
 
 	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
 	redismock "github.com/go-redis/redismock/v8"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
-func setup() {
-	logger := logtest.NullLogger()
-	log.Initialize(logger)
-}
-
-func shutdown() {
-}
-
 func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
 }
 
 func Test_ObtainLock(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.TODO()
 	duration := 10 * time.Second
 	client, mock := redismock.NewClientMock()
@@ -74,7 +72,10 @@ func Test_ObtainLock(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			switch tt.err {
 			case redislock.ErrNotObtained:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(tt.err)

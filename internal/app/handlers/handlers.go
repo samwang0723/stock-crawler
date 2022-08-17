@@ -18,7 +18,8 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
-	"github.com/sirupsen/logrus"
+
+	"github.com/rs/zerolog"
 )
 
 type IHandler interface {
@@ -27,11 +28,11 @@ type IHandler interface {
 }
 
 type handlerImpl struct {
-	logger      *logrus.Entry
+	logger      zerolog.Logger
 	dataService services.IService
 }
 
-func New(dataService services.IService, logger *logrus.Entry) IHandler {
+func New(dataService services.IService, logger zerolog.Logger) IHandler {
 	res := &handlerImpl{
 		logger:      logger,
 		dataService: dataService,

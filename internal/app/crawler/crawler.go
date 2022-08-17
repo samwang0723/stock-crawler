@@ -19,11 +19,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rs/zerolog"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -77,7 +77,7 @@ type Config struct {
 	// Rate limit interval to prevent remote site blocking
 	RateLimitInterval int
 
-	Logger *logrus.Entry
+	Logger zerolog.Logger
 }
 
 // crawlerImpl implements a stock information crawling pipeline consisting of following stages:
@@ -93,7 +93,6 @@ type crawlerImpl struct {
 func New(cfg Config) Crawler {
 	extractor := newTextExtractor(
 		parser.New(parser.Config{Logger: cfg.Logger}),
-		cfg.Logger,
 	)
 	return &crawlerImpl{
 		cfg:       cfg,

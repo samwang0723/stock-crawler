@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/heptiolabs/healthcheck"
 	config "github.com/samwang0723/stock-crawler/configs"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
@@ -29,7 +28,9 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/sirupsen/logrus"
+
+	"github.com/heptiolabs/healthcheck"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -49,32 +50,32 @@ type server struct {
 	opts Options
 }
 
-func Serve(ctx context.Context, logger *logrus.Logger) {
+func Serve(ctx context.Context) error {
 	config.Load()
 	cfg := config.GetCurrentConfig()
 	// bind DAL layer with service
 	dataService := services.New(
 		services.WithCronJob(services.CronjobConfig{
-			Logger: logger.WithField("service", "cronjob"),
+			Logger: log.With().Str("service", "cronjob").Logger(),
 		}),
 		services.WithKafka(services.KafkaConfig{
 			Controller: cfg.Kafka.Controller,
-			Logger:     logger.WithField("service", "kafka"),
+			Logger:     log.With().Str("service", "kafka").Logger(),
 		}),
 		services.WithRedis(services.RedisConfig{
 			Master:        cfg.RedisCache.Master,
 			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
-			Logger:        logger.WithField("service", "redis"),
+			Logger:        log.With().Str("service", "redis").Logger(),
 		}),
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      10,
 			RateLimitInterval: 3000,
 			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
-			Logger:            logger.WithField("service", "crawler"),
+			Logger:            log.With().Str("service", "crawler").Logger(),
 		}),
 	)
 	// associate service with handler
-	handler := handlers.New(dataService, logger.WithField("controller", "handler"))
+	handler := handlers.New(dataService, log.With().Str("controller", "handler").Logger())
 
 	//health check
 	health := healthcheck.NewHandler()
@@ -109,10 +110,7 @@ func Serve(ctx context.Context, logger *logrus.Logger) {
 		}),
 	)
 
-	err := s.Run(ctx)
-	if err != nil {
-		logger.Errorf("error returned by service.Run(): %s\n", err.Error())
-	}
+	return s.Run(ctx)
 }
 
 func newServer(opts ...Option) IServer {

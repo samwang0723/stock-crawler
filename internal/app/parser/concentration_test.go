@@ -15,6 +15,7 @@
 package parser
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
@@ -56,13 +57,15 @@ func Test_parseConcentration(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
 			res.SetStrategy(convert.StakeConcentration, "2021-10-29")
-			res.Execute([]byte(tt.content), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_2330_1.djhtm")
+			res.Execute(*bytes.NewBuffer([]byte(tt.content)), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_2330_1.djhtm")
 
 			respLen := len(*res.result)
 			if respLen > 0 != tt.want {

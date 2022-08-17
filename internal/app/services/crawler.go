@@ -15,13 +15,13 @@ package services
 
 import (
 	"context"
-	"io/ioutil"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
-	"github.com/sirupsen/logrus"
+
+	"github.com/hashicorp/go-multierror"
+	"github.com/rs/zerolog"
 	"golang.org/x/xerrors"
 )
 
@@ -42,7 +42,7 @@ type CrawlerConfig struct {
 
 	// The logger to use. If not defined an output-discarding logger will
 	// be used instead.
-	Logger *logrus.Entry
+	Logger zerolog.Logger
 }
 
 func (cfg *CrawlerConfig) validate() error {
@@ -56,9 +56,6 @@ func (cfg *CrawlerConfig) validate() error {
 	}
 	if cfg.RateLimitInterval == 0 {
 		err = multierror.Append(err, xerrors.Errorf("invalid value for rate limit interval"))
-	}
-	if cfg.Logger == nil {
-		cfg.Logger = logrus.NewEntry(&logrus.Logger{Out: ioutil.Discard})
 	}
 
 	return err

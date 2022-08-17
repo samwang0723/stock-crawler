@@ -21,7 +21,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 
 	"github.com/robfig/cron/v3"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 type Cronjob interface {
@@ -30,15 +30,11 @@ type Cronjob interface {
 	AddJob(ctx context.Context, spec string, job func()) error
 }
 
-// Config encapsulates the settings for configuring the redis service.
 type Config struct {
-	// The logger to use. If not defined an output-discarding logger will
-	// be used instead.
-	Logger *logrus.Entry
+	Logger zerolog.Logger
 }
 
 type cronjobImpl struct {
-	cfg      Config
 	instance *cron.Cron
 }
 
@@ -46,7 +42,6 @@ func New(cfg Config) Cronjob {
 	// load location with Taipei timezone
 	location, _ := time.LoadLocation(helper.TimeZone)
 	job := &cronjobImpl{
-		cfg: cfg,
 		instance: cron.New(
 			cron.WithLocation(location),
 			cron.WithLogger(cfg),
@@ -56,16 +51,15 @@ func New(cfg Config) Cronjob {
 }
 
 func (c Config) Info(msg string, keysAndValues ...interface{}) {
-	c.Logger.WithFields(logrus.Fields{
-		"data": keysAndValues,
-	}).Info(msg)
+	if len(keysAndValues) > 0 {
+		c.Logger.Info().Msgf("data: %+v", keysAndValues)
+	}
 }
 
 func (c Config) Error(err error, msg string, keysAndValues ...interface{}) {
-	c.Logger.WithFields(logrus.Fields{
-		"msg":  msg,
-		"data": keysAndValues,
-	}).Warn(msg)
+	if len(keysAndValues) > 0 {
+		c.Logger.Warn().Msgf("data: %+v", keysAndValues)
+	}
 }
 
 func (c *cronjobImpl) AddJob(ctx context.Context, spec string, job func()) error {

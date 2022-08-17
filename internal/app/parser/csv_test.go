@@ -15,6 +15,7 @@
 package parser
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -66,13 +67,18 @@ func Test_parseCsv(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
+
 			res.SetStrategy(tt.target, "20211130")
-			res.Execute([]byte(tt.content))
+			res.Execute(
+				*bytes.NewBuffer([]byte(tt.content)),
+			)
 
 			if got := len(*res.result); got != tt.want {
 				t.Errorf("len(parser.result) = %v, want %v", got, tt.want)

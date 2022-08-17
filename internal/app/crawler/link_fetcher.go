@@ -21,7 +21,8 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/sirupsen/logrus"
+
+	"github.com/rs/zerolog"
 )
 
 var _ pipeline.Processor = (*linkFetcher)(nil)
@@ -31,10 +32,10 @@ var _ pipeline.Processor = (*linkFetcher)(nil)
 type linkFetcher struct {
 	urlGetter URLGetter
 	proxy     *Proxy
-	logger    *logrus.Entry
+	logger    zerolog.Logger
 }
 
-func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger *logrus.Entry) *linkFetcher {
+func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger zerolog.Logger) *linkFetcher {
 	return &linkFetcher{
 		urlGetter: urlGetter,
 		proxy:     proxy,
@@ -59,7 +60,7 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		// It is important to close the connection otherwise fd count will overhead
 		"Connection": []string{"close"},
 	}
-	lf.logger.Infof("download started: %s", uri)
+	lf.logger.Info().Msgf("download started: %s", uri)
 	resp, err := lf.urlGetter.Do(req)
 	if err != nil {
 		return nil, nil
@@ -77,6 +78,6 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
 		return nil, nil
 	}
-	lf.logger.Infof("download completed (%s), URL: %s", helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
+	lf.logger.Info().Msgf("download completed (%s), URL: %s", helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
 	return payload, nil
 }

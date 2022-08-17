@@ -19,7 +19,8 @@ import (
 	"io"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
-	"github.com/sirupsen/logrus"
+
+	"github.com/rs/zerolog"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 )
@@ -35,7 +36,7 @@ type Strategy interface {
 }
 
 type Config struct {
-	Logger *logrus.Entry
+	Logger zerolog.Logger
 }
 
 type parserImpl struct {

@@ -17,18 +17,18 @@ package retry
 import (
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 )
 
 // Retry mechanism
-func Retry(attempts int, sleep time.Duration, logger *logrus.Entry, fn func() error) error {
+func Retry(attempts int, sleep time.Duration, logger zerolog.Logger, fn func() error) error {
 	if err := fn(); err != nil {
 		if s, ok := err.(Stop); ok {
 			return s.error
 		}
 
 		if attempts--; attempts > 0 {
-			logger.Warnf("retry func error: %s. attemps #%d after %s.", err.Error(), attempts, sleep)
+			logger.Warn().Msgf("retry func error: %s. attemps #%d after %s.", err.Error(), attempts, sleep)
 			time.Sleep(sleep)
 			// if continue to fail on retry, double the interval
 			return Retry(attempts, 2*sleep, logger, fn)

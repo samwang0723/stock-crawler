@@ -18,12 +18,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/samwang0723/stock-crawler/internal/app/server"
-	"github.com/samwang0723/stock-crawler/internal/helper"
 
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog/log"
 )
 
 var (
@@ -31,23 +29,7 @@ var (
 )
 
 func main() {
-	host, _ := os.Hostname()
-	rootLogger := logrus.New()
-	rootLogger.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-	logger := rootLogger.WithFields(logrus.Fields{
-		"app":  appName,
-		"host": host,
-	})
-
-	// manually set time zone, docker image may not have preset timezone
-	var err error
-	time.Local, err = time.LoadLocation(helper.TimeZone)
-	if err != nil {
-		logrus.WithField("err", err).Errorf("error loading location '%s': %v\n", helper.TimeZone, err)
-	}
+	logger := log.With().Str("app", appName).Logger()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -56,13 +38,17 @@ func main() {
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 		select {
-		case s := <-quit:
-			logger.WithField("signal", s.String()).Infof("shutting down due to signal")
+		case <-quit:
+			logger.Info().Msg("shutting down due to signal")
 			cancel()
 		case <-ctx.Done():
 		}
 	}()
 
-	server.Serve(ctx, rootLogger)
-	logger.Info("shutdown complete")
+	if err := server.Serve(ctx); err != nil {
+		logger.Error().Err(err).Msg("server.Serve failed")
+		os.Exit(1)
+	}
+
+	logger.Info().Msg("shutdown completed")
 }

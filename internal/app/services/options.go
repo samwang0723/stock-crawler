@@ -25,7 +25,6 @@ type Option func(o *serviceImpl)
 
 func WithCronJob(cfg CronjobConfig) Option {
 	return func(i *serviceImpl) {
-		cfg.validate()
 		i.cronjob = cronjob.New(cronjob.Config{
 			Logger: cfg.Logger,
 		})
