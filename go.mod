@@ -12,9 +12,10 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/json-iterator/go v1.1.12
 	github.com/robfig/cron/v3 v3.0.1
+	github.com/rs/zerolog v1.27.0
 	github.com/segmentio/kafka-go v0.4.31
-	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.1
+	go.uber.org/goleak v1.1.12
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4
 	golang.org/x/text v0.3.7
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
@@ -40,8 +41,6 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	github.com/rs/zerolog v1.27.0 // indirect
-	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
