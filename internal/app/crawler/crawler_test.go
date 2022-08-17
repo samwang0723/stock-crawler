@@ -15,10 +15,11 @@
 package crawler
 
 import (
+	"bytes"
 	"context"
 	"flag"
+	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"sync"
 	"testing"
@@ -58,6 +59,27 @@ func (i *testLinkIterator) Link() *graph.Link {
 	return link
 }
 
+// mock HTTP client
+type mockSuccessHTTPClient struct {
+}
+
+func (ms *mockSuccessHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	correctDoc, err := helper.ReadFromFile("../parser/.testfiles/stocks.html")
+	correctBytes, _ := helper.EncodeBig5([]byte(correctDoc))
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(bytes.NewReader(correctBytes)),
+	}, err
+}
+
+type mockErrorHTTPClient struct {
+}
+
+func (mf *mockErrorHTTPClient) Do(req *http.Request) (*http.Response, error) {
+	return nil, os.ErrInvalid
+}
+
 func TestMain(m *testing.M) {
 	leak := flag.Bool("leak", false, "use leak detector")
 
@@ -74,7 +96,7 @@ func TestCrawl(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		mockServer *httptest.Server
+		mockClient URLGetter
 	}
 
 	tests := []struct {
@@ -83,25 +105,16 @@ func TestCrawl(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Regular http fetch",
+			name: "regular http fetch",
 			args: args{
-				mockServer: httptest.NewServer(
-					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-						w.WriteHeader(http.StatusOK)
-						w.Write(helper.String2Bytes("Success"))
-					}),
-				),
+				mockClient: &mockSuccessHTTPClient{},
 			},
 			wantErr: false,
 		},
 		{
 			name: "error fetching from server",
 			args: args{
-				mockServer: httptest.NewServer(
-					http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-						w.WriteHeader(500)
-					}),
-				),
+				mockClient: &mockErrorHTTPClient{},
 			},
 			wantErr: true,
 		},
@@ -113,22 +126,20 @@ func TestCrawl(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			defer tt.args.mockServer.Close()
-
 			c := New(Config{
-				URLGetter:         tt.args.mockServer.Client(),
+				URLGetter:         tt.args.mockClient,
 				FetchWorkers:      2,
 				RateLimitInterval: 1000,
 			})
 			_, err := c.Crawl(context.TODO(), &testLinkIterator{links: []*graph.Link{
 				{
-					URL:      tt.args.mockServer.URL,
+					URL:      "http://www.google.com",
 					Date:     "20220801",
-					Strategy: convert.TwseDailyClose,
+					Strategy: convert.TwseStockList,
 				},
 			}})
-			if (err != nil) == tt.wantErr {
-				t.Errorf("Crawl() = %v, want %v", err != nil, tt.wantErr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Crawl() = %v, want %v, err: %v", err != nil, tt.wantErr, err)
 			}
 		})
 	}
