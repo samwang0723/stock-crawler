@@ -22,7 +22,9 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-func Test_parseCsv(t *testing.T) {
+func TestParseCsv(t *testing.T) {
+	t.Parallel()
+
 	wrongCsv, _ := helper.ReadFromFile(".testfiles/wrong.csv")
 	correctCsv, _ := helper.ReadFromFile(".testfiles/correct.csv")
 	threePrimaryCsv, _ := helper.ReadFromFile(".testfiles/twse_threeprimary.csv")
@@ -85,5 +87,4 @@ func Test_parseCsv(t *testing.T) {
 			}
 		})
 	}
-
 }

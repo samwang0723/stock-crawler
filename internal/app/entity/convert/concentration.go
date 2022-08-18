@@ -27,7 +27,7 @@ func Concentration() IConvert {
 	return &concentrationImpl{}
 }
 
-func (c *concentrationImpl) Execute(data *ConvertData) interface{} {
+func (c *concentrationImpl) Execute(data *Data) interface{} {
 	var output *entity.StakeConcentration
 	if data == nil || len(data.RawData) < 7 {
 		return output
@@ -56,7 +56,11 @@ func (c *concentrationImpl) convertHiddenIndex(idx string) string {
 	case "6":
 		return "4"
 	default:
-		newIdx, _ := strconv.Atoi(idx)
+		newIdx, err := strconv.Atoi(idx)
+		if err != nil {
+			return ""
+		}
+
 		return strconv.Itoa(newIdx - 1)
 	}
 }

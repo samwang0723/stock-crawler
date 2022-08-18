@@ -15,10 +15,17 @@ package pipeline
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
+)
+
+const (
+	NextStage       = 1
+	NextTwoStage    = 2
+	StageTotalCount = 2
 )
 
 var _ StageParams = (*workerParams)(nil)
@@ -63,54 +70,58 @@ func New(stages ...StageRunner) *Pipeline {
 //
 // It is safe to call Process concurrently with different sources and sinks.
 func (p *Pipeline) Process(ctx context.Context, source Source, sink Sink) error {
-	var wg sync.WaitGroup
+	var waitGroup sync.WaitGroup
+
 	pCtx, ctxCancelFn := context.WithCancel(ctx)
 
 	// Allocate channels for wiring together the source, the pipeline stages
 	// and the output sink. The output of the i_th stage is used as an input
 	// for the i+1_th stage. We need to allocate one extra channel than the
 	// number of stages so we can also wire the source/sink.
-	stageCh := make([]chan Payload, len(p.stages)+1)
-	errCh := make(chan error, len(p.stages)+2)
+	stageCh := make([]chan Payload, len(p.stages)+NextStage)
+	errCh := make(chan error, len(p.stages)+NextTwoStage)
+
 	for i := 0; i < len(stageCh); i++ {
 		stageCh[i] = make(chan Payload)
 	}
 
 	// Start a worker for each stage
-	for i := 0; i < len(p.stages); i++ {
-		wg.Add(1)
+	for idx := 0; idx < len(p.stages); idx++ {
+		waitGroup.Add(1)
+
 		go func(stageIndex int) {
 			p.stages[stageIndex].Run(pCtx, &workerParams{
 				stage: stageIndex,
 				inCh:  stageCh[stageIndex],
-				outCh: stageCh[stageIndex+1],
+				outCh: stageCh[stageIndex+NextStage],
 				errCh: errCh,
 			})
 
 			// Signal next stage that no more data is available.
-			close(stageCh[stageIndex+1])
-			wg.Done()
-		}(i)
+			close(stageCh[stageIndex+NextStage])
+			waitGroup.Done()
+		}(idx)
 	}
 
 	// Start source and sink workers
-	wg.Add(2)
+	waitGroup.Add(StageTotalCount)
+
 	go func() {
 		sourceWorker(pCtx, source, stageCh[0], errCh)
 
 		// Signal next stage that no more data is available.
 		close(stageCh[0])
-		wg.Done()
+		waitGroup.Done()
 	}()
 
 	go func() {
 		sinkWorker(pCtx, sink, stageCh[len(stageCh)-1], errCh)
-		wg.Done()
+		waitGroup.Done()
 	}()
 
 	// Close the error channel once all workers exit.
 	go func() {
-		wg.Wait()
+		waitGroup.Wait()
 		close(errCh)
 		ctxCancelFn()
 	}()
@@ -119,9 +130,15 @@ func (p *Pipeline) Process(ctx context.Context, source Source, sink Sink) error 
 	var err error
 	for pErr := range errCh {
 		err = multierror.Append(err, pErr)
+
 		ctxCancelFn()
 	}
-	return err
+
+	if err != nil {
+		return fmt.Errorf("pipeline process(): %w", err)
+	}
+
+	return nil
 }
 
 // sourceWorker implements a worker that reads Payload instances from a Source
@@ -159,8 +176,10 @@ func sinkWorker(ctx context.Context, sink Sink, inCh <-chan Payload, errCh chan<
 			if err := sink.Consume(ctx, payload); err != nil {
 				wrappedErr := xerrors.Errorf("pipeline sink: %w", err)
 				maybeEmitError(wrappedErr, errCh)
+
 				return
 			}
+
 			payload.MarkAsProcessed()
 		case <-ctx.Done():
 			// Asked to shutdown

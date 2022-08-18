@@ -40,12 +40,12 @@ func Test_Concentration(t *testing.T) {
 
 	tests := []struct {
 		name string
-		val  *ConvertData
+		val  *Data
 		exp  *entity.StakeConcentration
 	}{
 		{
 			name: "convert StakeConcentration",
-			val: &ConvertData{
+			val: &Data{
 				RawData: []string{"1", "20220525", "2330", "1000", "2000", "523", "518"},
 				Target:  StakeConcentration,
 			},
@@ -66,7 +66,7 @@ func Test_Concentration(t *testing.T) {
 		},
 		{
 			name: "missing elements in ConvertData",
-			val: &ConvertData{
+			val: &Data{
 				RawData: []string{"1", "20220525", "2330", "1000"},
 				Target:  StakeConcentration,
 			},

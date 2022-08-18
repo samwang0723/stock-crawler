@@ -27,14 +27,25 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
+const (
+	cronLockPeriod     = 5
+	cronTerminatedHour = 8
+)
+
 func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error {
-	return h.dataService.AddJob(ctx, req.Schedule, func() {
+	err := h.dataService.AddJob(ctx, req.Schedule, func() {
 		// since we will have multiple daemonSet in nodes, need to make sure same cronjob
 		// only running once at a time, here we use distrubted lock through Redis.
-		if h.dataService.ObtainLock(ctx, cache.CronjobLock, 5*time.Minute) != nil {
+		if h.dataService.ObtainLock(ctx, cache.CronjobLock, cronLockPeriod*time.Minute) != nil {
 			h.batchingDownload(ctx, 0, req.Types)
 		}
 	})
+
+	if err != nil {
+		return fmt.Errorf("handlers CronDownload(): %w", err)
+	}
+
+	return nil
 }
 
 func (h *handlerImpl) Download(ctx context.Context, req *dto.StartCronjobRequest) {
@@ -44,17 +55,18 @@ func (h *handlerImpl) Download(ctx context.Context, req *dto.StartCronjobRequest
 // batching download all the historical stock data
 func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types []convert.Source) {
 	var links []*graph.Link
+
 	interceptChan := make(chan convert.InterceptData)
 
-	for _, t := range types {
-		d := formatQueryDate(rewind, t)
-		urls := h.generateURLs(ctx, d, t)
+	for _, strategy := range types {
+		date := formatQueryDate(rewind, strategy)
+		urls := h.generateURLs(ctx, date, strategy)
 
 		for _, l := range urls {
 			links = append(links, &graph.Link{
 				URL:      l,
-				Date:     d,
-				Strategy: t,
+				Date:     date,
+				Strategy: strategy,
 			})
 		}
 	}
@@ -64,11 +76,13 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 			select {
 			// since its hard to predict how many records already been processed,
 			// sync.WaitGroup hard to apply in this scenario, use timeout instead
-			case <-time.After(8 * time.Hour):
+			case <-time.After(cronTerminatedHour * time.Hour):
 				h.logger.Warn().Msg("batching download: timeout")
+
 				return
 			case <-ctx.Done():
 				h.logger.Warn().Msg("batching download: context cancel")
+
 				return
 			case obj, ok := <-interceptChan:
 				if ok {
@@ -78,26 +92,41 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 		}
 	}()
 
-	h.dataService.Crawl(ctx, &linkIterator{links: links}, interceptChan)
+	_, err := h.dataService.Crawl(ctx, &linkIterator{links: links}, interceptChan)
+
+	if err != nil {
+		h.logger.Error().Err(err).Msg("dataService crawl failed")
+	}
 }
 
-func (h *handlerImpl) generateURLs(ctx context.Context, d string, t convert.Source) []string {
+func (h *handlerImpl) generateURLs(ctx context.Context, date string, source convert.Source) []string {
 	var urls []string
-	switch t {
+
+	var err error
+
+	//nolint:nolintlint, exhaustive
+	switch source {
 	case convert.StakeConcentration:
 		// align the date format to be 20220107, but remains the query date as 2022-01-07
-		unifiedDate := strings.ReplaceAll(d, "-", "")
-		urls, _ = h.dataService.ListCrawlingConcentrationURLs(ctx, unifiedDate)
+		unifiedDate := strings.ReplaceAll(date, "-", "")
+		urls, err = h.dataService.ListCrawlingConcentrationURLs(ctx, unifiedDate)
+
+		if err != nil {
+			h.logger.Error().Err(err).Msg("dataService list crawling concentration urls failed")
+		}
 	case convert.TwseStockList, convert.TpexStockList:
-		urls = append(urls, crawler.TypeLinkMapping[t.String()])
+		urls = append(urls, crawler.TypeLinkMapping[source.String()])
 	default:
-		urls = append(urls, fmt.Sprintf(crawler.TypeLinkMapping[t.String()], d))
+		urls = append(urls, fmt.Sprintf(crawler.TypeLinkMapping[source.String()], date))
 	}
+
 	return urls
 }
 
 func formatQueryDate(rewind int32, t convert.Source) string {
 	var date string
+
+	//nolint:nolintlint, exhaustive
 	switch t {
 	case convert.TwseDailyClose, convert.TwseThreePrimary:
 		date = helper.GetDateFromOffset(rewind, helper.TwseDateFormat)
@@ -111,14 +140,20 @@ func formatQueryDate(rewind int32, t convert.Source) string {
 }
 
 func (h *handlerImpl) processData(ctx context.Context, obj convert.InterceptData) {
+	var err error
+
 	switch obj.Type {
 	case convert.TwseDailyClose, convert.TpexDailyClose:
-		h.dataService.DailyCloseThroughKafka(ctx, obj.Data)
+		err = h.dataService.DailyCloseThroughKafka(ctx, obj.Data)
 	case convert.TwseThreePrimary, convert.TpexThreePrimary:
-		h.dataService.ThreePrimaryThroughKafka(ctx, obj.Data)
+		err = h.dataService.ThreePrimaryThroughKafka(ctx, obj.Data)
 	case convert.TwseStockList, convert.TpexStockList:
-		h.dataService.StockThroughKafka(ctx, obj.Data)
+		err = h.dataService.StockThroughKafka(ctx, obj.Data)
 	case convert.StakeConcentration:
-		h.dataService.StakeConcentrationThroughKafka(ctx, obj.Data)
+		err = h.dataService.StakeConcentrationThroughKafka(ctx, obj.Data)
+	}
+
+	if err != nil {
+		h.logger.Error().Err(err).Msg(fmt.Sprintf("handler process data: %v", obj.Type))
 	}
 }

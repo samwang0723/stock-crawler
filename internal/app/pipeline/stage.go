@@ -15,6 +15,7 @@ package pipeline
 
 import (
 	"context"
+	"time"
 
 	"golang.org/x/xerrors"
 )
@@ -46,6 +47,7 @@ func (r fifo) Run(ctx context.Context, params StageParams) {
 			if err != nil {
 				wrappedErr := xerrors.Errorf("pipeline stage %d: %w", params.StageIndex(), err)
 				maybeEmitError(wrappedErr, params.Error())
+
 				return
 			}
 
@@ -53,6 +55,7 @@ func (r fifo) Run(ctx context.Context, params StageParams) {
 			// next stage there is nothing we need to do.
 			if payloadOut == nil {
 				payloadIn.MarkAsProcessed()
+
 				continue
 			}
 
@@ -70,12 +73,13 @@ func (r fifo) Run(ctx context.Context, params StageParams) {
 type dynamicWorkerPool struct {
 	proc      Processor
 	tokenPool chan struct{}
+	interval  time.Duration
 }
 
 // DynamicWorkerPool returns a StageRunner that maintains a dynamic worker pool
 // that can scale up to maxWorkers for processing incoming inputs in parallel
 // and emitting their outputs to the next stage.
-func DynamicWorkerPool(proc Processor, maxWorkers int) StageRunner {
+func DynamicWorkerPool(proc Processor, maxWorkers int, interval time.Duration) StageRunner {
 	if maxWorkers <= 0 {
 		panic("DynamicWorkerPool: maxWorkers must be > 0")
 	}
@@ -85,10 +89,10 @@ func DynamicWorkerPool(proc Processor, maxWorkers int) StageRunner {
 		tokenPool <- struct{}{}
 	}
 
-	return &dynamicWorkerPool{proc: proc, tokenPool: tokenPool}
+	return &dynamicWorkerPool{proc: proc, tokenPool: tokenPool, interval: interval}
 }
 
-// Run implements StageRunner.
+//nolint:nolintlint, cyclop // Run implements StageRunner.
 func (p *dynamicWorkerPool) Run(ctx context.Context, params StageParams) {
 stop:
 	for {
@@ -114,6 +118,7 @@ stop:
 				if err != nil {
 					wrappedErr := xerrors.Errorf("pipeline stage %d: %w", params.StageIndex(), err)
 					maybeEmitError(wrappedErr, params.Error())
+
 					return
 				}
 
@@ -121,6 +126,7 @@ stop:
 				// next stage there is nothing we need to do.
 				if payloadOut == nil {
 					payloadIn.MarkAsProcessed()
+
 					return
 				}
 
@@ -129,6 +135,9 @@ stop:
 				case params.Output() <- payloadOut:
 				case <-ctx.Done():
 				}
+
+				// prevent rate limit
+				<-time.After(p.interval)
 			}(payloadIn, token)
 		}
 	}

@@ -75,7 +75,7 @@ type Config struct {
 	FetchWorkers int
 
 	// Rate limit interval to prevent remote site blocking
-	RateLimitInterval int
+	RateLimitInterval int64
 
 	Logger *zerolog.Logger
 }
@@ -94,6 +94,7 @@ func New(cfg Config) Crawler {
 	extractor := newTextExtractor(
 		parser.New(parser.Config{Logger: cfg.Logger}),
 	)
+
 	return &crawlerImpl{
 		cfg:       cfg,
 		extractor: extractor,
@@ -108,6 +109,7 @@ func assembleCrawlerPipeline(cfg Config, extractor *textExtractor) *pipeline.Pip
 		pipeline.DynamicWorkerPool(
 			newLinkFetcher(cfg.URLGetter, cfg.Proxy, cfg.Logger),
 			cfg.FetchWorkers,
+			time.Duration(cfg.RateLimitInterval),
 		),
 		pipeline.FIFO(extractor),
 	)

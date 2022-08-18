@@ -14,12 +14,29 @@
 package config
 
 import (
+	"flag"
+	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"go.uber.org/goleak"
 )
 
+func TestMain(m *testing.M) {
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
+}
+
 func Test_ConfigLoad(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name string
 		want SystemConfig
@@ -40,20 +57,35 @@ func Test_ConfigLoad(t *testing.T) {
 					Controller: "kafka-1:9092",
 				},
 				Server: struct {
-					Name string "yaml:\"name\""
-					Host string "yaml:\"host\""
-					Port int    "yaml:\"port\""
+					Name         string "yaml:\"name\""
+					Host         string "yaml:\"host\""
+					Port         int    "yaml:\"port\""
+					MaxGoroutine int    "yaml:\"maxGoroutine\""
+					DNSLatency   int64  "yaml:\"dnsLatency\""
 				}{
-					Name: "stock-crawler",
-					Host: "0.0.0.0",
-					Port: 8086,
+					Name:         "stock-crawler",
+					Host:         "0.0.0.0",
+					Port:         8086,
+					MaxGoroutine: 20000,
+					DNSLatency:   200,
+				},
+				Crawler: struct {
+					FetchWorkers int   "yaml:\"fetchWorkers\""
+					RateLimit    int64 "yaml:\"rateLimit\""
+				}{
+					FetchWorkers: 10,
+					RateLimit:    3000,
 				},
 			},
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			Load("config.dev.yaml")
 			cfg := GetCurrentConfig()
 			if cmp.Equal(*cfg, tt.want) == false {

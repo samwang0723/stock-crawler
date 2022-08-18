@@ -30,30 +30,42 @@ type SystemConfig struct {
 		Controller string `yaml:"controller"`
 	} `yaml:"kafka"`
 	Server struct {
-		Name string `yaml:"name"`
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Name         string `yaml:"name"`
+		Host         string `yaml:"host"`
+		Port         int    `yaml:"port"`
+		MaxGoroutine int    `yaml:"maxGoroutine"`
+		DNSLatency   int64  `yaml:"dnsLatency"`
 	} `yaml:"server"`
+	Crawler struct {
+		FetchWorkers int   `yaml:"fetchWorkers"`
+		RateLimit    int64 `yaml:"rateLimit"`
+	} `yaml:"crawler"`
 }
 
 var (
+	//nolint:nolintlint, gochecknoglobals
 	instance SystemConfig
 )
 
 func Load(loc ...string) {
 	var yamlFile string
+
 	if len(loc) > 0 {
 		yamlFile = loc[0]
 	} else {
 		yamlFile = fmt.Sprintf("./configs/config.%s.yaml", helper.GetCurrentEnv())
 	}
-	f, err := os.Open(yamlFile)
+
+	file, err := os.Open(yamlFile)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	decoder := yaml.NewDecoder(f)
+
+	defer file.Close()
+
+	decoder := yaml.NewDecoder(file)
 	err = decoder.Decode(&instance)
+
 	if err != nil {
 		panic(err)
 	}

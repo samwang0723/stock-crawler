@@ -28,30 +28,33 @@ func ThreePrimary() IConvert {
 	return &threePrimaryImpl{}
 }
 
-func (c *threePrimaryImpl) Execute(data *ConvertData) interface{} {
+func (c *threePrimaryImpl) Execute(data *Data) interface{} {
 	var output *entity.ThreePrimary
 	if data == nil || len(data.RawData) < 19 {
 		return output
 	}
+
+	//nolint:nolintlint, exhaustive
 	switch data.Target {
 	case TpexThreePrimary:
 		output = &entity.ThreePrimary{
 			StockID:            data.RawData[0],
 			Date:               data.ParseDate,
-			ForeignTradeShares: helper.ToInt64(strings.Replace(data.RawData[10], ",", "", -1)),
-			TrustTradeShares:   helper.ToInt64(strings.Replace(data.RawData[13], ",", "", -1)),
-			DealerTradeShares:  helper.ToInt64(strings.Replace(data.RawData[16], ",", "", -1)),
-			HedgingTradeShares: helper.ToInt64(strings.Replace(data.RawData[19], ",", "", -1)),
+			ForeignTradeShares: helper.ToInt64(strings.ReplaceAll(data.RawData[10], ",", "")),
+			TrustTradeShares:   helper.ToInt64(strings.ReplaceAll(data.RawData[13], ",", "")),
+			DealerTradeShares:  helper.ToInt64(strings.ReplaceAll(data.RawData[16], ",", "")),
+			HedgingTradeShares: helper.ToInt64(strings.ReplaceAll(data.RawData[19], ",", "")),
 		}
 	case TwseThreePrimary:
 		output = &entity.ThreePrimary{
 			StockID:            data.RawData[0],
 			Date:               data.ParseDate,
-			ForeignTradeShares: helper.ToInt64(strings.Replace(data.RawData[4], ",", "", -1)),
-			TrustTradeShares:   helper.ToInt64(strings.Replace(data.RawData[10], ",", "", -1)),
-			DealerTradeShares:  helper.ToInt64(strings.Replace(data.RawData[14], ",", "", -1)),
-			HedgingTradeShares: helper.ToInt64(strings.Replace(data.RawData[17], ",", "", -1)),
+			ForeignTradeShares: helper.ToInt64(strings.ReplaceAll(data.RawData[4], ",", "")),
+			TrustTradeShares:   helper.ToInt64(strings.ReplaceAll(data.RawData[10], ",", "")),
+			DealerTradeShares:  helper.ToInt64(strings.ReplaceAll(data.RawData[14], ",", "")),
+			HedgingTradeShares: helper.ToInt64(strings.ReplaceAll(data.RawData[17], ",", "")),
 		}
 	}
+
 	return output
 }

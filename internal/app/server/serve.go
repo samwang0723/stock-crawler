@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -43,7 +43,7 @@ type IServer interface {
 	Config() *config.SystemConfig
 	Run(context.Context) error
 	Start(context.Context) error
-	Stop() error
+	Stop(context.Context) error
 }
 
 type server struct {
@@ -68,8 +68,8 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 			Logger:        logger,
 		}),
 		services.WithCrawler(services.CrawlerConfig{
-			FetchWorkers:      10,
-			RateLimitInterval: 3000,
+			FetchWorkers:      cfg.Crawler.FetchWorkers,
+			RateLimitInterval: cfg.Crawler.RateLimit,
 			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
 			Logger:            logger,
 		}),
@@ -77,84 +77,103 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 	// associate service with handler
 	handler := handlers.New(dataService, logger)
 
-	//health check
+	// health check
 	health := healthcheck.NewHandler()
-	// Our app is not happy if we've got more than 10k goroutines running.
-	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(10000))
-	// Our app is not ready if we can't resolve our upstream dependency in DNS.
+	// our app is not happy if we've got more than 10k goroutines running.
+	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(cfg.Server.MaxGoroutine))
+	// our app is not ready if we can't resolve our upstream dependency in DNS.
 	health.AddReadinessCheck(
 		"upstream-redis-dns",
-		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, 200*time.Millisecond))
+		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, time.Duration(cfg.Server.DNSLatency)))
 	health.AddReadinessCheck(
 		"upstream-kafka-dns",
-		healthcheck.DNSResolveCheck(cfg.Kafka.Controller, 200*time.Millisecond))
+		healthcheck.DNSResolveCheck(cfg.Kafka.Controller, time.Duration(cfg.Server.DNSLatency)))
+
 	healthServer := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
 		Handler: health,
 	}
 
-	s := newServer(
+	svc := newServer(
 		Name(cfg.Server.Name),
 		Config(cfg),
 		Handler(handler),
 		HealthCheck(healthServer),
 		BeforeStart(func() error {
 			dataService.StartCron()
+
 			return nil
 		}),
 		BeforeStop(func() error {
 			dataService.StopCron()
-			dataService.StopRedis()
-			dataService.StopKafka()
+			err := dataService.StopRedis()
+			if err != nil {
+				return fmt.Errorf("data service stop redis failed: %w", err)
+			}
+
+			err = dataService.StopKafka()
+			if err != nil {
+				return fmt.Errorf("data service stop kafka failed: %w", err)
+			}
+
 			return nil
 		}),
 	)
 
-	return s.Run(ctx)
+	if err := svc.Run(ctx); err != nil {
+		return fmt.Errorf("server run failed: %w", err)
+	}
+
+	return nil
 }
 
 func newServer(opts ...Option) IServer {
-	o := Options{}
+	option := Options{}
 	for _, opt := range opts {
-		opt(&o)
+		opt(&option)
 	}
+
 	return &server{
-		opts: o,
+		opts: option,
 	}
 }
 
 func (s *server) Start(ctx context.Context) error {
-	var err error
 	for _, fn := range s.opts.BeforeStart {
-		if err = fn(); err != nil {
+		if err := fn(); err != nil {
 			return err
 		}
 	}
+
 	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.0", helper.GetCurrentEnv())
+
 	fmt.Println(signatureOut)
 
 	go func() {
 		// start healthcheck specific server
-		err = s.HealthCheck().ListenAndServe()
+		s.HealthCheck().ListenAndServe()
 	}()
 
-	return err
+	return nil
 }
 
-func (s *server) Stop() error {
-	var err error
+func (s *server) Stop(ctx context.Context) error {
 	for _, fn := range s.opts.BeforeStop {
-		if err = fn(); err != nil {
-			break
+		if err := fn(); err != nil {
+			return fmt.Errorf("server before stop failed: %w", err)
 		}
 	}
 
 	// shutdown healthcheck server
-	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownPeriod)
+	sctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
 	defer cancel()
-	err = s.HealthCheck().Shutdown(ctx)
 
-	return err
+	err := s.HealthCheck().Shutdown(sctx)
+	if err != nil {
+		return fmt.Errorf("server stop failed: %w", err)
+	}
+
+	return nil
 }
 
 // Run starts the server and shut down gracefully afterwards
@@ -164,15 +183,17 @@ func (s *server) Run(ctx context.Context) error {
 	}
 
 	// Execute logics
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func(ctx context.Context, s *server) {
-		defer wg.Done()
+	var waitGroup sync.WaitGroup
+
+	waitGroup.Add(1)
+
+	go func(ctx context.Context, svc *server) {
+		defer waitGroup.Done()
 
 		// by default starting cronjob for regular daily updates pulling
 		// cronjob using redis distrubted lock to prevent multiple instances
 		// pulling same content
-		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 16 * * 1-5",
 			Types: []convert.Source{
 				convert.TwseDailyClose,
@@ -181,21 +202,21 @@ func (s *server) Run(ctx context.Context) error {
 				convert.TpexThreePrimary,
 			},
 		})
-		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 18 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
 		// backfill failed concentration records
-		s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 19 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
 
 		<-ctx.Done()
 	}(ctx, s)
-	wg.Wait()
+	waitGroup.Wait()
 
-	return s.Stop()
+	return s.Stop(ctx)
 }
 
 func (s *server) Name() string {

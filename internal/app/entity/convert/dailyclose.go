@@ -29,19 +29,21 @@ func DailyClose() IConvert {
 	return &dailyCloseImpl{}
 }
 
-func (c *dailyCloseImpl) Execute(data *ConvertData) interface{} {
+func (c *dailyCloseImpl) Execute(data *Data) interface{} {
 	var output *entity.DailyClose
 	if data == nil || len(data.RawData) < 17 {
 		return output
 	}
+
+	//nolint:nolintlint, exhaustive
 	switch data.Target {
 	case TpexDailyClose:
 		output = &entity.DailyClose{
 			StockID:      data.RawData[0],
 			Date:         data.ParseDate,
-			TradedShares: helper.ToUint64(strings.Replace(data.RawData[8], ",", "", -1)),
-			Transactions: helper.ToUint64(strings.Replace(data.RawData[10], ",", "", -1)),
-			Turnover:     helper.ToUint64(strings.Replace(data.RawData[9], ",", "", -1)),
+			TradedShares: helper.ToUint64(strings.ReplaceAll(data.RawData[8], ",", "")),
+			Transactions: helper.ToUint64(strings.ReplaceAll(data.RawData[10], ",", "")),
+			Turnover:     helper.ToUint64(strings.ReplaceAll(data.RawData[9], ",", "")),
 			Open:         helper.ToFloat32(data.RawData[4]),
 			High:         helper.ToFloat32(data.RawData[5]),
 			Low:          helper.ToFloat32(data.RawData[6]),
@@ -52,16 +54,16 @@ func (c *dailyCloseImpl) Execute(data *ConvertData) interface{} {
 		output = &entity.DailyClose{
 			StockID:      data.RawData[0],
 			Date:         data.ParseDate,
-			TradedShares: helper.ToUint64(strings.Replace(data.RawData[2], ",", "", -1)),
-			Transactions: helper.ToUint64(strings.Replace(data.RawData[3], ",", "", -1)),
-			Turnover:     helper.ToUint64(strings.Replace(data.RawData[4], ",", "", -1)),
+			TradedShares: helper.ToUint64(strings.ReplaceAll(data.RawData[2], ",", "")),
+			Transactions: helper.ToUint64(strings.ReplaceAll(data.RawData[3], ",", "")),
+			Turnover:     helper.ToUint64(strings.ReplaceAll(data.RawData[4], ",", "")),
 			Open:         helper.ToFloat32(data.RawData[5]),
 			High:         helper.ToFloat32(data.RawData[6]),
 			Low:          helper.ToFloat32(data.RawData[7]),
 			Close:        helper.ToFloat32(data.RawData[8]),
 			PriceDiff:    helper.ToFloat32(fmt.Sprintf("%s%s", data.RawData[9], data.RawData[10])),
 		}
-
 	}
+
 	return output
 }

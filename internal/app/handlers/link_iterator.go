@@ -31,6 +31,7 @@ func (i *linkIterator) Next() bool {
 		return false
 	}
 	i.curIndex++
+
 	return true
 }
 
@@ -47,5 +48,6 @@ func (i *linkIterator) Link() *graph.Link {
 	link := new(graph.Link)
 	*link = *i.links[i.curIndex-1]
 	i.mu.RUnlock()
+
 	return link
 }

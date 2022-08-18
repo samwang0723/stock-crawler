@@ -39,7 +39,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func Test_parseConcentration(t *testing.T) {
+func TestParseConcentration(t *testing.T) {
+	t.Parallel()
+
 	wrongDoc := "<html><body><table><tr><td>WRONG</td></tr></table></body></html>"
 	correctDoc, _ := helper.ReadFromFile(".testfiles/concentration.html")
 
@@ -47,7 +49,7 @@ func Test_parseConcentration(t *testing.T) {
 	tests := []struct {
 		name    string
 		content string
-		stockId string
+		stockID string
 		hidden  string
 		date    string
 		shares  []uint64
@@ -60,7 +62,7 @@ func Test_parseConcentration(t *testing.T) {
 			want:    true,
 			shares:  []uint64{12449, 40221},
 			price:   []float32{63.45, 63.53},
-			stockId: "6727",
+			stockID: "6727",
 			hidden:  "0",
 			date:    "20211029",
 		},
@@ -87,8 +89,8 @@ func Test_parseConcentration(t *testing.T) {
 			if respLen > 0 != tt.want {
 				t.Errorf("len(parser.result) = %v, want %v", respLen, tt.want)
 			} else if respLen > 0 {
-				c := (*res.result)[0].(*entity.StakeConcentration)
-				if c.StockID != tt.stockId ||
+				c, ok := (*res.result)[0].(*entity.StakeConcentration)
+				if ok && c.StockID != tt.stockID ||
 					c.HiddenField != tt.hidden ||
 					c.Date != tt.date ||
 					c.SumBuyShares != tt.shares[0] ||

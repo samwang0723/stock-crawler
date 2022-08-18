@@ -15,5 +15,8 @@ package parser
 
 import "errors"
 
-var NoParseResults = errors.New("Empty parsing results.")
-var WrongConcentrationTitle = errors.New("Wrong concentration html title.")
+var (
+	ErrNoParseResults          = errors.New("empty parsing results.")
+	ErrWrongConcentrationTitle = errors.New("wrong concentration html title.")
+	ErrParseDayMissing         = errors.New("parse day missing")
+)

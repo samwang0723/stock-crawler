@@ -20,6 +20,7 @@ import (
 )
 
 var (
+	//nolint:nolintlint, gochecknoglobals
 	concentrationPool = sync.Pool{
 		New: func() interface{} { return new(StakeConcentration) },
 	}
@@ -38,14 +39,16 @@ type StakeConcentration struct {
 
 func MapReduceStakeConcentration(objs []*StakeConcentration) *StakeConcentration {
 	volumeDiff := []int32{0, 0, 0, 0, 0}
+
 	var res *StakeConcentration
 
 	for _, val := range objs {
-		idx, _ := strconv.Atoi(val.HiddenField)
+		idx, err := strconv.Atoi(val.HiddenField)
 		// make sure to cover latest source of truth date's concentration data
-		if idx == 0 {
+		if err == nil && idx == 0 {
 			res = val
 		}
+
 		volumeDiff[idx] = int32(val.SumBuyShares - val.SumSellShares)
 	}
 
@@ -55,7 +58,11 @@ func MapReduceStakeConcentration(objs []*StakeConcentration) *StakeConcentration
 }
 
 func (sc *StakeConcentration) Clone() *StakeConcentration {
-	newSc := concentrationPool.Get().(*StakeConcentration)
+	newSc, ok := concentrationPool.Get().(*StakeConcentration)
+	if !ok {
+		return nil
+	}
+
 	newSc.StockID = sc.StockID
 	newSc.Date = sc.Date
 	newSc.Diff = sc.Diff

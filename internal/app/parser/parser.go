@@ -16,6 +16,7 @@ package parser
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -23,6 +24,14 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
+)
+
+const (
+	StockCap            = 6
+	DailyCloseCap       = 17
+	TwseThreePrimaryCap = 19
+	TpexThreePrimaryCap = 24
+	ConcentrationCap    = 7
 )
 
 type Parser interface {
@@ -50,6 +59,7 @@ func New(cfg Config) Parser {
 		cfg:    cfg,
 		result: &[]interface{}{},
 	}
+
 	return res
 }
 
@@ -57,34 +67,34 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 	switch source {
 	case convert.TpexStockList, convert.TwseStockList:
 		p.strategy = &htmlStrategy{
-			capacity:  6,
+			capacity:  StockCap,
 			source:    source,
 			converter: convert.Stock(),
 		}
 	case convert.TwseDailyClose, convert.TpexDailyClose:
 		p.strategy = &csvStrategy{
-			capacity:  17,
+			capacity:  DailyCloseCap,
 			source:    source,
 			converter: convert.DailyClose(),
 			date:      additional[0],
 		}
 	case convert.TwseThreePrimary:
 		p.strategy = &csvStrategy{
-			capacity:  19,
+			capacity:  TwseThreePrimaryCap,
 			source:    source,
 			converter: convert.ThreePrimary(),
 			date:      additional[0],
 		}
 	case convert.TpexThreePrimary:
 		p.strategy = &csvStrategy{
-			capacity:  24,
+			capacity:  TpexThreePrimaryCap,
 			source:    source,
 			converter: convert.ThreePrimary(),
 			date:      additional[0],
 		}
 	case convert.StakeConcentration:
 		p.strategy = &concentrationStrategy{
-			capacity:  7,
+			capacity:  ConcentrationCap,
 			date:      additional[0],
 			converter: convert.Concentration(),
 		}
@@ -94,16 +104,19 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
 	reader := transform.NewReader(&in, traditionalchinese.Big5.NewDecoder())
 	res, err := p.strategy.Parse(reader, additional...)
+
 	if err != nil {
-		return err
+		return fmt.Errorf("parser Execute(): %w", err)
 	}
 
 	*p.result = append(*p.result, res...)
+
 	return nil
 }
 
 func (p *parserImpl) Flush() *[]interface{} {
 	res := *p.result
 	p.result = &[]interface{}{}
+
 	return &res
 }

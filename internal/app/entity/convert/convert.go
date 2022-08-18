@@ -27,7 +27,7 @@ const (
 	StakeConcentration
 )
 
-type ConvertData struct {
+type Data struct {
 	ParseDate string
 	RawData   []string
 	Target    Source
@@ -35,5 +35,5 @@ type ConvertData struct {
 
 // Use strategy pattern to convert entities from parser
 type IConvert interface {
-	Execute(data *ConvertData) interface{}
+	Execute(data *Data) interface{}
 }

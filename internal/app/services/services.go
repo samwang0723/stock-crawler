@@ -54,5 +54,6 @@ func New(opts ...Option) IService {
 	for _, opt := range opts {
 		opt(impl)
 	}
+
 	return impl
 }

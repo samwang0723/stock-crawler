@@ -33,7 +33,10 @@ func WithCronJob(cfg CronjobConfig) Option {
 
 func WithKafka(cfg KafkaConfig) Option {
 	return func(i *serviceImpl) {
-		cfg.validate()
+		if err := cfg.validate(); err != nil {
+			return
+		}
+
 		i.producer = kafka.New(kafka.Config{
 			Controller: cfg.Controller,
 			Logger:     cfg.Logger,
@@ -43,7 +46,10 @@ func WithKafka(cfg KafkaConfig) Option {
 
 func WithRedis(cfg RedisConfig) Option {
 	return func(i *serviceImpl) {
-		cfg.validate()
+		if err := cfg.validate(); err != nil {
+			return
+		}
+
 		i.cache = cache.New(cache.Config{
 			Master:        cfg.Master,
 			SentinelAddrs: cfg.SentinelAddrs,
@@ -54,7 +60,10 @@ func WithRedis(cfg RedisConfig) Option {
 
 func WithCrawler(cfg CrawlerConfig) Option {
 	return func(i *serviceImpl) {
-		cfg.validate()
+		if err := cfg.validate(); err != nil {
+			return
+		}
+
 		i.crawler = crawler.New(crawler.Config{
 			URLGetter:         cfg.URLGetter,
 			FetchWorkers:      cfg.FetchWorkers,

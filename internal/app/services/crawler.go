@@ -20,9 +20,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog"
-	"golang.org/x/xerrors"
 )
 
 // Config encapsulates the settings for configuring the web-crawler service.
@@ -35,7 +33,7 @@ type CrawlerConfig struct {
 	FetchWorkers int
 
 	// The time between subsequent crawler passes.
-	RateLimitInterval int
+	RateLimitInterval int64
 
 	// Proxy for preventing remote site's rate limiting
 	Proxy *crawler.Proxy
@@ -46,19 +44,19 @@ type CrawlerConfig struct {
 }
 
 func (cfg *CrawlerConfig) validate() error {
-	var err error
 	if cfg.URLGetter == nil {
 		cfg.URLGetter = crawler.DefaultHttpClient
 	}
 
 	if cfg.FetchWorkers <= 0 {
-		err = multierror.Append(err, xerrors.Errorf("invalid value for fetch workers"))
-	}
-	if cfg.RateLimitInterval == 0 {
-		err = multierror.Append(err, xerrors.Errorf("invalid value for rate limit interval"))
+		return ErrWorkerCountInvalid
 	}
 
-	return err
+	if cfg.RateLimitInterval < 0 {
+		return ErrRateLimitIntervalInvalid
+	}
+
+	return nil
 }
 
 func (s *serviceImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error) {

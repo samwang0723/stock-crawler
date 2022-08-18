@@ -37,5 +37,6 @@ func New(dataService services.IService, logger *zerolog.Logger) IHandler {
 		logger:      logger,
 		dataService: dataService,
 	}
+
 	return res
 }

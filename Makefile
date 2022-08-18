@@ -24,6 +24,7 @@ test-leak: ## launch all tests with leak detection (if possible)
 	go test ./internal/helper/... -leak
 	go test ./internal/kafka/... -leak
 	go test ./internal/retry/... -leak
+	go test ./configs/... -leak
 
 test-coverage-report:
 	go test -v  ./... -cover -race -covermode=atomic -coverprofile=./coverage.out
