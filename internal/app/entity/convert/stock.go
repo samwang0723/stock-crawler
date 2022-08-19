@@ -20,8 +20,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 )
 
-type stockImpl struct {
-}
+type stockImpl struct{}
 
 func Stock() IConvert {
 	return &stockImpl{}

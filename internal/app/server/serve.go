@@ -35,6 +35,7 @@ import (
 
 const (
 	gracefulShutdownPeriod = 5 * time.Second
+	readHeaderTimeout      = 10 * time.Second
 )
 
 type IServer interface {
@@ -90,8 +91,9 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 		healthcheck.DNSResolveCheck(cfg.Kafka.Controller, time.Duration(cfg.Server.DNSLatency)))
 
 	healthServer := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler: health,
+		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		Handler:           health,
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
 	svc := newServer(
@@ -147,14 +149,19 @@ func (s *server) Start(ctx context.Context) error {
 
 	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.0", helper.GetCurrentEnv())
 
+	//nolint:nolintlint, forbidigo
 	fmt.Println(signatureOut)
+
+	var err error
 
 	go func() {
 		// start healthcheck specific server
-		s.HealthCheck().ListenAndServe()
+		if err = s.HealthCheck().ListenAndServe(); err != nil {
+			err = fmt.Errorf("server healthcheck listen and serve failed: %w", err)
+		}
 	}()
 
-	return nil
+	return err
 }
 
 func (s *server) Stop(ctx context.Context) error {
@@ -193,6 +200,8 @@ func (s *server) Run(ctx context.Context) error {
 		// by default starting cronjob for regular daily updates pulling
 		// cronjob using redis distrubted lock to prevent multiple instances
 		// pulling same content
+		//
+		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 16 * * 1-5",
 			Types: []convert.Source{
@@ -202,11 +211,16 @@ func (s *server) Run(ctx context.Context) error {
 				convert.TpexThreePrimary,
 			},
 		})
+
+		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 18 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
+
 		// backfill failed concentration records
+		//
+		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 19 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},

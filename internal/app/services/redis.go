@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog"
 	"golang.org/x/xerrors"
 )
@@ -37,15 +36,15 @@ type RedisConfig struct {
 }
 
 func (cfg *RedisConfig) validate() error {
-	var err error
 	if cfg.Master == "" {
-		err = multierror.Append(err, xerrors.Errorf("invalid value for master hostname"))
-	}
-	if len(cfg.SentinelAddrs) == 0 {
-		err = multierror.Append(err, xerrors.Errorf("invalid value for sentinel addresses"))
+		return xerrors.Errorf("invalid redis config value for master hostname")
 	}
 
-	return err
+	if len(cfg.SentinelAddrs) == 0 {
+		return xerrors.Errorf("invalid redis config value for sentinel addresses")
+	}
+
+	return nil
 }
 
 func (s *serviceImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
@@ -61,5 +60,9 @@ func (s *serviceImpl) StopRedis() error {
 		return xerrors.Errorf("redis is not running")
 	}
 
-	return s.cache.Close()
+	if err := s.cache.Close(); err != nil {
+		return xerrors.Errorf("failed to stop redis: %w", err)
+	}
+
+	return nil
 }

@@ -20,8 +20,9 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
 
-	"github.com/robfig/cron/v3"
+	cron "github.com/robfig/cron/v3"
 	"github.com/rs/zerolog"
+	"golang.org/x/xerrors"
 )
 
 type Cronjob interface {
@@ -40,13 +41,20 @@ type cronjobImpl struct {
 
 func New(cfg Config) Cronjob {
 	// load location with Taipei timezone
-	location, _ := time.LoadLocation(helper.TimeZone)
+	location, err := time.LoadLocation(helper.TimeZone)
+	if err != nil {
+		cfg.Logger.Fatal().Err(err).Msg("failed to load timezone")
+
+		return nil
+	}
+
 	job := &cronjobImpl{
 		instance: cron.New(
 			cron.WithLocation(location),
 			cron.WithLogger(cfg),
 		),
 	}
+
 	return job
 }
 
@@ -64,7 +72,8 @@ func (c Config) Error(err error, msg string, keysAndValues ...interface{}) {
 
 func (c *cronjobImpl) AddJob(ctx context.Context, spec string, job func()) error {
 	_, err := c.instance.AddFunc(spec, job)
-	return err
+
+	return xerrors.Errorf("failed to add job: %w", err)
 }
 
 func (c *cronjobImpl) Start() {

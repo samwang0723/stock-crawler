@@ -15,26 +15,35 @@
 package retry
 
 import (
+	"errors"
 	"time"
 
 	"github.com/rs/zerolog"
 )
 
+const (
+	// DefaultRetryCount is the default retries times
+	defaultRetryCount = 2
+)
+
 // Retry mechanism
-func Retry(attempts int, sleep time.Duration, logger *zerolog.Logger, fn func() error) error {
-	if err := fn(); err != nil {
-		if s, ok := err.(Stop); ok {
-			return s.error
+func Retry(attempts int, sleep time.Duration, logger *zerolog.Logger, fnc func() error) error {
+	if err := fnc(); err != nil {
+		if errors.As(err, &Stop{}) {
+			return err
 		}
 
-		if attempts--; attempts > 0 {
-			logger.Warn().Msgf("retry func error: %s. attemps #%d after %s.", err.Error(), attempts, sleep)
+		attempts--
+		if attempts > 0 {
+			logger.Warn().Msgf("retry func error: %s. attempts #%d after %s.", err.Error(), attempts, sleep)
 			time.Sleep(sleep)
 			// if continue to fail on retry, double the interval
-			return Retry(attempts, 2*sleep, logger, fn)
+			return Retry(attempts, defaultRetryCount*sleep, logger, fnc)
 		}
+
 		return err
 	}
+
 	return nil
 }
 

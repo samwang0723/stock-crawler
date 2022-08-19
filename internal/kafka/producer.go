@@ -18,9 +18,10 @@ import (
 	"time"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
+	"golang.org/x/xerrors"
 
 	"github.com/rs/zerolog"
-	"github.com/segmentio/kafka-go"
+	kafkago "github.com/segmentio/kafka-go"
 )
 
 const (
@@ -47,15 +48,18 @@ type Config struct {
 
 type kafkaImpl struct {
 	cfg      Config
-	instance *kafka.Writer
+	instance *kafkago.Writer
 }
 
+// NewKafka creates a new kafka service.
+//
+//nolint:nolintlint, gomnd
 func New(cfg Config) Kafka {
 	return &kafkaImpl{
 		cfg: cfg,
-		instance: &kafka.Writer{
-			Addr:         kafka.TCP(cfg.Controller),
-			Balancer:     &kafka.LeastBytes{},
+		instance: &kafkago.Writer{
+			Addr:         kafkago.TCP(cfg.Controller),
+			Balancer:     &kafkago.LeastBytes{},
 			BatchSize:    100,
 			BatchTimeout: 100 * time.Millisecond,
 		},
@@ -63,21 +67,34 @@ func New(cfg Config) Kafka {
 }
 
 func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []byte) error {
-	msg := kafka.Message{
+	msg := kafkago.Message{
 		Topic: topic,
 		Value: message,
 	}
-	err := k.instance.WriteMessages(ctx, msg)
-	k.cfg.Logger.Info().Msgf("kafka writeMessages(): written bytes: %d, topic: %s, data: %s, err: %s", len(message), topic, helper.Bytes2String(message), err)
 
-	return err
+	err := k.instance.WriteMessages(ctx, msg)
+	if err != nil {
+		return xerrors.Errorf("kafka writeMessages(): %w", err)
+	}
+
+	k.cfg.Logger.Info().Msgf(
+		"kafka writeMessages(): written bytes: %d, topic: %s, data: %s",
+		len(message),
+		topic,
+		helper.Bytes2String(message),
+	)
+
+	return nil
 }
 
 func (k *kafkaImpl) Close() error {
 	k.cfg.Logger.Info().Msg("kafka close()")
-	err := k.instance.Close()
-	if err != nil {
+
+	if err := k.instance.Close(); err != nil {
 		k.cfg.Logger.Error().Err(err).Msg("close failed")
+
+		return xerrors.Errorf("kafka close(): %w", err)
 	}
-	return err
+
+	return nil
 }

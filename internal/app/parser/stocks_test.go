@@ -27,8 +27,8 @@ func TestParseHtml(t *testing.T) {
 	t.Parallel()
 
 	wrongDoc := "<html><body></body></html>"
-	correctDoc, err := helper.ReadFromFile(".testfiles/stocks.html")
 
+	correctDoc, err := helper.ReadFromFile(".testfiles/stocks.html")
 	if err != nil {
 		t.Errorf("failed to load html test file: %s", err)
 	}

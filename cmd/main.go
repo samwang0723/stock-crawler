@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+//nolint:nolintlint, gochecknoglobals
 var (
 	appName = "stock-crawler"
 )
@@ -47,7 +48,6 @@ func main() {
 
 	if err := server.Serve(ctx, &logger); err != nil {
 		logger.Error().Err(err).Msg("server.Serve failed")
-		os.Exit(1)
 	}
 
 	logger.Info().Msg("shutdown completed")

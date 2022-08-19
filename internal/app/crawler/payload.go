@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -24,6 +24,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 )
 
+//nolint:nolintlint, gochecknoglobals
 var (
 	_ pipeline.Payload = (*crawlerPayload)(nil)
 
@@ -42,7 +43,11 @@ type crawlerPayload struct {
 }
 
 func (p *crawlerPayload) Clone() pipeline.Payload {
-	newP := payloadPool.Get().(*crawlerPayload)
+	newP, ok := payloadPool.Get().(*crawlerPayload)
+	if !ok {
+		return nil
+	}
+
 	newP.URL = p.URL
 	newP.Strategy = p.Strategy
 	newP.Date = p.Date
@@ -53,6 +58,7 @@ func (p *crawlerPayload) Clone() pipeline.Payload {
 	if err != nil {
 		panic(fmt.Sprintf("error cloning payload raw content: %v", err))
 	}
+
 	return newP
 }
 

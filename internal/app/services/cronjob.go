@@ -16,6 +16,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rs/zerolog"
 )
@@ -36,5 +37,10 @@ func (s *serviceImpl) StopCron() {
 }
 
 func (s *serviceImpl) AddJob(ctx context.Context, spec string, job func()) error {
-	return s.cronjob.AddJob(ctx, spec, job)
+	err := s.cronjob.AddJob(ctx, spec, job)
+	if err != nil {
+		return fmt.Errorf("service cron add job failed: %w", err)
+	}
+
+	return nil
 }

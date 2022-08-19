@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/xerrors"
 )
 
@@ -64,9 +64,9 @@ func New(stages ...StageRunner) *Pipeline {
 // and returns back any errors that may have occurred.
 //
 // Calls to Process block until:
-//  - all data from the source has been processed OR
-//  - an error occurs OR
-//  - the supplied context expires
+//   - all data from the source has been processed OR
+//   - an error occurs OR
+//   - the supplied context expires
 //
 // It is safe to call Process concurrently with different sources and sinks.
 func (p *Pipeline) Process(ctx context.Context, source Source, sink Sink) error {

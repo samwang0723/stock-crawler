@@ -18,16 +18,17 @@ import (
 	"bytes"
 	"context"
 	"flag"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"sync"
 	"testing"
 
-	"github.com/rs/zerolog/log"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/helper"
+
+	"github.com/rs/zerolog/log"
 	"go.uber.org/goleak"
 )
 
@@ -60,8 +61,7 @@ func (i *testLinkIterator) Link() *graph.Link {
 }
 
 // mock HTTP client
-type mockSuccessHTTPClient struct {
-}
+type mockSuccessHTTPClient struct{}
 
 func (ms *mockSuccessHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	correctDoc, err := helper.ReadFromFile("../parser/.testfiles/stocks.html")
@@ -69,12 +69,11 @@ func (ms *mockSuccessHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 	return &http.Response{
 		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(bytes.NewReader(correctBytes)),
+		Body:       io.NopCloser(bytes.NewReader(correctBytes)),
 	}, err
 }
 
-type mockErrorHTTPClient struct {
-}
+type mockErrorHTTPClient struct{}
 
 func (mf *mockErrorHTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return nil, os.ErrInvalid
@@ -121,6 +120,7 @@ func TestCrawl(t *testing.T) {
 	}
 
 	logger := log.With().Str("test", "crawler").Logger()
+
 	for _, tt := range tests {
 		tt := tt
 

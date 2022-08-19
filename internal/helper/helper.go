@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,7 @@ package helper
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"strconv"
@@ -26,8 +26,10 @@ import (
 
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
+	"golang.org/x/xerrors"
 )
 
+//nolint:nolintlint, varnamelen
 const (
 	TB                       = 1000000000000
 	GB                       = 1000000000
@@ -38,11 +40,11 @@ const (
 	TpexDateFormat           = "2006/01/02"
 	StakeConcentrationFormat = "2006-01-02"
 	Signature                = `
- _____ _             _                                  _           
-/  ___| |           | |                                | |          
-\ '--.| |_ ___   ___| | ________ ___ _ __ __ ___      _| | ___ _ __ 
+ _____ _             _                                  _
+/  ___| |           | |                                | |
+\ '--.| |_ ___   ___| | ________ ___ _ __ __ ___      _| | ___ _ __
  '--. \ __/ _ \ / __| |/ /______/ __| '__/ _' \ \ /\ / / |/ _ \ '__|
-/\__/ / || (_) | (__|   <      | (__| | | (_| |\ V  V /| |  __/ |   
+/\__/ / || (_) | (__|   <      | (__| | | (_| |\ V  V /| |  __/ |
 \____/ \__\___/ \___|_|\_\      \___|_|  \__,_| \_/\_/ |_|\___|_|
 
                                                         Version (%s)
@@ -53,9 +55,9 @@ _______________________________________________
 )
 
 func ReadFromFile(fileName string) (string, error) {
-	bs, err := ioutil.ReadFile(fileName)
+	bs, err := os.ReadFile(fileName)
 	if err != nil {
-		return "", err
+		return "", xerrors.Errorf("read file %s failed: %w", fileName, err)
 	}
 
 	return string(bs), nil
@@ -64,20 +66,24 @@ func ReadFromFile(fileName string) (string, error) {
 func EncodeBig5(s []byte) ([]byte, error) {
 	I := bytes.NewReader(s)
 	O := transform.NewReader(I, traditionalchinese.Big5.NewEncoder())
-	d, e := ioutil.ReadAll(O)
+	data, e := io.ReadAll(O)
+
 	if e != nil {
-		return nil, e
+		return nil, xerrors.Errorf("encode big5 failed: %w", e)
 	}
-	return d, nil
+
+	return data, nil
 }
 
 func IsInteger(v string) bool {
 	if _, err := strconv.Atoi(v); err == nil {
 		return true
 	}
+
 	return false
 }
 
+//nolint:nolintlint, gomnd
 func ToInt64(v string) int64 {
 	if i, err := strconv.ParseInt(v, 10, 64); err == nil {
 		return i
@@ -86,6 +92,7 @@ func ToInt64(v string) int64 {
 	return 0
 }
 
+//nolint:nolintlint, gomnd
 func ToUint64(v string) uint64 {
 	if i, err := strconv.ParseUint(v, 10, 64); err == nil {
 		return i
@@ -94,50 +101,60 @@ func ToUint64(v string) uint64 {
 	return 0
 }
 
+//nolint:nolintlint, gomnd
 func ToFloat32(v string) float32 {
 	if f, err := strconv.ParseFloat(v, 32); err == nil {
 		return float32(f)
 	}
+
 	return 0
 }
 
 func FormalizeValidTimeWithLocation(input time.Time, offset ...int32) *time.Time {
-	l, _ := time.LoadLocation(TimeZone)
-	t := input.In(l)
-	if len(offset) > 0 {
-		t = t.AddDate(0, 0, int(offset[0]))
+	loc, err := time.LoadLocation(TimeZone)
+	if err != nil {
+		return nil
 	}
 
-	if IncludeWeekend() == false {
+	localTime := input.In(loc)
+
+	if len(offset) > 0 {
+		localTime = localTime.AddDate(0, 0, int(offset[0]))
+	}
+
+	if !IncludeWeekend() {
 		// only within workday will be valid
-		wkDay := t.Weekday()
+		wkDay := localTime.Weekday()
 		if wkDay == time.Saturday || wkDay == time.Sunday {
 			return nil
 		}
 	}
 
-	return &t
+	return &localTime
 }
 
-func GetDateFromUTC(timestamp string, format string) string {
+func GetDateFromUTC(timestamp, format string) string {
+	//nolint:nolintlint, gomnd
 	i, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
 		return ""
 	}
-	t := FormalizeValidTimeWithLocation(time.Unix(i, 0))
-	if t == nil {
+
+	localTime := FormalizeValidTimeWithLocation(time.Unix(i, 0))
+
+	if localTime == nil {
 		return ""
 	}
 
 	// Twse format: 20190213
-	s := t.Format(format)
+	dataStr := localTime.Format(format)
 
-	switch format {
-	case TpexDateFormat:
+	if format == TpexDateFormat {
 		// Tpex format: 108/02/06
-		s = UnifiedDateFormatToTpex(s)
+		dataStr = UnifiedDateFormatToTpex(dataStr)
 	}
-	return s
+
+	return dataStr
 }
 
 func GetDateFromOffset(offset int32, format string, input ...time.Time) string {
@@ -145,72 +162,94 @@ func GetDateFromOffset(offset int32, format string, input ...time.Time) string {
 	if len(input) > 0 {
 		current = input[0]
 	}
-	t := FormalizeValidTimeWithLocation(current, offset)
-	if t == nil {
+
+	localTime := FormalizeValidTimeWithLocation(current, offset)
+
+	if localTime == nil {
 		return ""
 	}
-	timestamp := strconv.FormatInt(t.Unix(), 10)
+
+	//nolint:nolintlint, gomnd
+	timestamp := strconv.FormatInt(localTime.Unix(), 10)
+
 	return GetDateFromUTC(timestamp, format)
 }
 
 func UnifiedDateFormatToTpex(input string) string {
 	if strings.Contains(input, "/") {
 		res := strings.Split(input, "/")
-		year, _ := strconv.Atoi(res[0])
+
+		year, err := strconv.Atoi(res[0])
+		if err != nil {
+			return ""
+		}
+
+		//nolint:nolintlint, gomnd
 		return fmt.Sprintf("%d/%s/%s", year-1911, res[1], res[2])
 	}
+
 	return input
 }
 
 func UnifiedDateFormatToTwse(input string) string {
 	if strings.Contains(input, "/") {
-		i := strings.Split(input, "/")
-		year, _ := strconv.Atoi(i[0])
-		res := fmt.Sprintf("%d%s%s", year+1911, i[1], i[2])
-		return res
+		res := strings.Split(input, "/")
+
+		year, err := strconv.Atoi(res[0])
+		if err != nil {
+			return ""
+		}
+
+		//nolint:nolintlint, gomnd
+		resNew := fmt.Sprintf("%d%s%s", year+1911, res[1], res[2])
+
+		return resNew
 	}
+
 	return input
 }
 
-func GetReadableSize(length int, decimals int) (out string) {
+//nolint:nolintlint, cyclop
+func GetReadableSize(length, decimals int) string {
 	var unit string
-	var i int
-	var remainder int
+
+	var calcVal, width, remainder int
 
 	// Get whole number, and the remainder for decimals
-	if length > TB {
+	switch {
+	case length > TB:
 		unit = "TB"
-		i = length / TB
-		remainder = length - (i * TB)
-	} else if length > GB {
+		calcVal = length / TB
+		remainder = length - (calcVal * TB)
+	case length > GB:
 		unit = "GB"
-		i = length / GB
-		remainder = length - (i * GB)
-	} else if length > MB {
+		calcVal = length / GB
+		remainder = length - (calcVal * GB)
+	case length > MB:
 		unit = "MB"
-		i = length / MB
-		remainder = length - (i * MB)
-	} else if length > KB {
+		calcVal = length / MB
+		remainder = length - (calcVal * MB)
+	case length > KB:
 		unit = "KB"
-		i = length / KB
-		remainder = length - (i * KB)
-	} else {
+		calcVal = length / KB
+		remainder = length - (calcVal * KB)
+	default:
 		return strconv.Itoa(length) + " B"
 	}
 
 	if decimals == 0 {
-		return strconv.Itoa(i) + " " + unit
+		return strconv.Itoa(calcVal) + " " + unit
 	}
 
 	// This is to calculate missing leading zeroes
-	width := 0
-	if remainder > GB {
+	switch {
+	case remainder > GB:
 		width = 12
-	} else if remainder > MB {
+	case remainder > MB:
 		width = 9
-	} else if remainder > KB {
+	case remainder > KB:
 		width = 6
-	} else {
+	default:
 		width = 3
 	}
 
@@ -219,16 +258,18 @@ func GetReadableSize(length int, decimals int) (out string) {
 	for iter := len(remainderString); iter < width; iter++ {
 		remainderString = "0" + remainderString
 	}
+
 	if decimals > len(remainderString) {
 		decimals = len(remainderString)
 	}
 
-	return fmt.Sprintf("%d.%s %s", i, remainderString[:decimals], unit)
+	return fmt.Sprintf("%d.%s %s", calcVal, remainderString[:decimals], unit)
 }
 
 func GetCurrentEnv() string {
 	env := os.Getenv("ENVIRONMENT")
 	output := "dev"
+
 	switch env {
 	case "development":
 		output = "dev"
@@ -237,44 +278,50 @@ func GetCurrentEnv() string {
 	case "production":
 		output = "prod"
 	}
+
 	return output
 }
 
 func IncludeWeekend() bool {
 	includeWeekend := os.Getenv("INCLUDE_WEEKEND")
+
 	isTest, err := strconv.ParseBool(includeWeekend)
 	if err != nil {
 		return false
 	}
+
 	return isTest
 }
 
+//nolint:nolintlint, govet
 func String2Bytes(s string) []byte {
 	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh := reflect.SliceHeader{
+	byteHeader := reflect.SliceHeader{
 		Data: sh.Data,
 		Len:  sh.Len,
 		Cap:  sh.Len,
 	}
-	return *(*[]byte)(unsafe.Pointer(&bh))
+
+	return *(*[]byte)(unsafe.Pointer(&byteHeader))
 }
 
 func Bytes2String(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
-func Diff(slice1 []string, slice2 []string) []string {
+func Diff(slice1, slice2 []string) []string {
 	diffStr := []string{}
-	m := map[string]int{}
+	res := map[string]int{}
 
 	for _, s1Val := range slice1 {
-		m[s1Val] = 1
-	}
-	for _, s2Val := range slice2 {
-		m[s2Val] = m[s2Val] + 1
+		res[s1Val] = 1
 	}
 
-	for mKey, mVal := range m {
+	for _, s2Val := range slice2 {
+		res[s2Val]++
+	}
+
+	for mKey, mVal := range res {
 		if mVal == 1 {
 			diffStr = append(diffStr, mKey)
 		}

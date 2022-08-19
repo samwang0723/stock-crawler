@@ -15,6 +15,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -45,7 +46,7 @@ type CrawlerConfig struct {
 
 func (cfg *CrawlerConfig) validate() error {
 	if cfg.URLGetter == nil {
-		cfg.URLGetter = crawler.DefaultHttpClient
+		cfg.URLGetter = crawler.DefaultHTTPClient
 	}
 
 	if cfg.FetchWorkers <= 0 {
@@ -59,6 +60,15 @@ func (cfg *CrawlerConfig) validate() error {
 	return nil
 }
 
-func (s *serviceImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error) {
-	return s.crawler.Crawl(ctx, linkIt, interceptChan...)
+func (s *serviceImpl) Crawl(
+	ctx context.Context,
+	linkIt graph.LinkIterator,
+	interceptChan ...chan convert.InterceptData,
+) (int, error) {
+	count, err := s.crawler.Crawl(ctx, linkIt, interceptChan...)
+	if err != nil {
+		return 0, fmt.Errorf("server crawl failed: %w", err)
+	}
+
+	return count, nil
 }

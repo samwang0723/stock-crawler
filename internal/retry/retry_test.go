@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,7 +37,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func Test_Retry(t *testing.T) {
+func TestRetry(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		err   error
@@ -61,12 +63,16 @@ func Test_Retry(t *testing.T) {
 	}
 
 	logger := log.With().Str("test", "retry").Logger()
-	attempts := new(int)
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			attempts := new(int)
 			*attempts = 0
 			Retry(3, 10*time.Millisecond, &logger, func() error {
 				*attempts++
+
 				return tt.err
 			})
 			assert.Equal(t, tt.count, *attempts)

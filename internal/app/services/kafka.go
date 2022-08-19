@@ -16,7 +16,6 @@ package services
 import (
 	"context"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog"
 	"golang.org/x/xerrors"
 )
@@ -32,12 +31,11 @@ type KafkaConfig struct {
 }
 
 func (cfg *KafkaConfig) validate() error {
-	var err error
 	if cfg.Controller == "" {
-		err = multierror.Append(err, xerrors.Errorf("invalid value for controller hostname"))
+		return xerrors.Errorf("invalid kafka config value for controller hostname")
 	}
 
-	return err
+	return nil
 }
 
 func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byte) error {
@@ -45,7 +43,12 @@ func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byt
 		return xerrors.Errorf("kafka producer is not initialized")
 	}
 
-	return s.producer.WriteMessages(ctx, topic, message)
+	err := s.producer.WriteMessages(ctx, topic, message)
+	if err != nil {
+		return xerrors.Errorf("failed to send kafka message: %w", err)
+	}
+
+	return nil
 }
 
 func (s *serviceImpl) StopKafka() error {
@@ -53,5 +56,9 @@ func (s *serviceImpl) StopKafka() error {
 		return xerrors.Errorf("kafka producer is not initialized")
 	}
 
-	return s.producer.Close()
+	if err := s.producer.Close(); err != nil {
+		return xerrors.Errorf("failed to close kafka producer: %w", err)
+	}
+
+	return nil
 }

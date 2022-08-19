@@ -15,13 +15,13 @@ package crawler
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 	"github.com/samwang0723/stock-crawler/internal/helper"
+	"golang.org/x/xerrors"
 
 	"github.com/rs/zerolog"
 )
@@ -45,40 +45,49 @@ func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger *zerolog.Logger) *
 }
 
 func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipeline.Payload, error) {
-	payload := p.(*crawlerPayload)
+	payload, ok := p.(*crawlerPayload)
+	if !ok {
+		return nil, xerrors.Errorf("invalid payload type: %T", p)
+	}
 
 	uri := payload.URL
 	if lf.proxy != nil && payload.Strategy == convert.StakeConcentration {
 		uri = lf.proxy.URI(payload.URL)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", uri, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", uri, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, xerrors.Errorf("failed to create request: %w", err)
 	}
+
 	req.Header = http.Header{
 		"Content-Type": []string{"text/csv;charset=ms950"},
 		// It is important to close the connection otherwise fd count will overhead
 		"Connection": []string{"close"},
 	}
+
 	lf.logger.Info().Msgf("download started: %s", uri)
+
 	resp, err := lf.urlGetter.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("urlGetter.Do(): %w", err)
+		return nil, xerrors.Errorf("urlGetter.Do(): %w", err)
 	}
 
 	// copy stream from response body, although it consumes memory but
 	// better helps on concurrent handling in goroutine.
 	_, err = io.Copy(&payload.RawContent, resp.Body)
 	resp.Body.Close()
+
 	if err != nil {
-		return nil, fmt.Errorf("io.Copy(): %w", err)
+		return nil, xerrors.Errorf("io.Copy(): %w", err)
 	}
 
 	// Skip payloads for invalid http status codes.
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, fmt.Errorf("invalid http status code: %d", resp.StatusCode)
+		return nil, xerrors.Errorf("invalid http status code: %d", resp.StatusCode)
 	}
+
+	//nolint:nolintlint, gomnd
 	lf.logger.Info().Msgf("download completed (%s), URL: %s", helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
 
 	return payload, nil

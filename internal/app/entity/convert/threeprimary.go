@@ -21,8 +21,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-type threePrimaryImpl struct {
-}
+type threePrimaryImpl struct{}
 
 func ThreePrimary() IConvert {
 	return &threePrimaryImpl{}

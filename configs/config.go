@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ import (
 	"os"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 type SystemConfig struct {
@@ -42,10 +42,8 @@ type SystemConfig struct {
 	} `yaml:"crawler"`
 }
 
-var (
-	//nolint:nolintlint, gochecknoglobals
-	instance SystemConfig
-)
+//nolint:nolintlint, gochecknoglobals
+var instance SystemConfig
 
 func Load(loc ...string) {
 	var yamlFile string

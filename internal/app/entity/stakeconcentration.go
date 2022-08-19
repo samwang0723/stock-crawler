@@ -19,12 +19,10 @@ import (
 	"sync"
 )
 
-var (
-	//nolint:nolintlint, gochecknoglobals
-	concentrationPool = sync.Pool{
-		New: func() interface{} { return new(StakeConcentration) },
-	}
-)
+//nolint:nolintlint, gochecknoglobals
+var concentrationPool = sync.Pool{
+	New: func() interface{} { return new(StakeConcentration) },
+}
 
 type StakeConcentration struct {
 	StockID       string  `json:"stockId"`

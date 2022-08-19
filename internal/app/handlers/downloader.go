@@ -40,7 +40,6 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 			h.batchingDownload(ctx, 0, req.Types)
 		}
 	})
-
 	if err != nil {
 		return fmt.Errorf("handlers CronDownload(): %w", err)
 	}
@@ -93,7 +92,6 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 	}()
 
 	_, err := h.dataService.Crawl(ctx, &linkIterator{links: links}, interceptChan)
-
 	if err != nil {
 		h.logger.Error().Err(err).Msg("dataService crawl failed")
 	}

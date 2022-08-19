@@ -201,7 +201,7 @@ func Test_FormalizeValidTimeWithLocation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			got := FormalizeValidTimeWithLocation(tt.ti, int32(tt.offset))
-			//t.Errorf("FormalizeValidTimeWithLocation(tt.ti, tt.offset) = %v, want %v", got, tt.want)
+			// t.Errorf("FormalizeValidTimeWithLocation(tt.ti, tt.offset) = %v, want %v", got, tt.want)
 			if got != nil {
 				assert.True(t, got.Equal(*tt.want))
 			} else {
@@ -332,6 +332,8 @@ func Test_GetReadableSize(t *testing.T) {
 }
 
 func Test_StringNBytes(t *testing.T) {
+	t.Parallel()
+
 	assert.Equal(t, []byte("abcde"), String2Bytes("abcde"))
 	assert.Equal(t, "abcde", Bytes2String([]byte("abcde")))
 }
@@ -375,5 +377,4 @@ func Test_Difference(t *testing.T) {
 			}
 		})
 	}
-
 }

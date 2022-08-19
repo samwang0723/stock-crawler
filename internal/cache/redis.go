@@ -15,11 +15,13 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/go-redis/redis/v8"
+	redis "github.com/go-redis/redis/v8"
 	"github.com/rs/zerolog"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -67,14 +69,15 @@ func New(cfg Config) Redis {
 func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time) error {
 	expire, err := r.instance.ExpireAt(ctx, key, expired).Result()
 	if err != nil {
-		return err
+		return xerrors.Errorf("redis SetExpire(): key: %s, expired: %s, err: %w", key, expired, err)
 	}
+
 	r.cfg.Logger.Info().Msgf("redis SetExpire(): key: %s expired: %t", key, expire)
 
 	return nil
 }
 
-func (r *redisImpl) SAdd(ctx context.Context, key string, value string) error {
+func (r *redisImpl) SAdd(ctx context.Context, key, value string) error {
 	err := r.instance.SAdd(ctx, key, value).Err()
 	if err != nil {
 		r.cfg.Logger.Error().Err(err).Msgf("redis SAdd(): key: %s, value: %s", key, value)
@@ -82,7 +85,7 @@ func (r *redisImpl) SAdd(ctx context.Context, key string, value string) error {
 		r.cfg.Logger.Info().Msgf("redis SAdd(): key: %s, value: %s", key, value)
 	}
 
-	return err
+	return xerrors.Errorf("redis SAdd(): key: %s, value: %s, err: %w", key, value, err)
 }
 
 func (r *redisImpl) SMembers(ctx context.Context, key string) ([]string, error) {
@@ -93,11 +96,15 @@ func (r *redisImpl) SMembers(ctx context.Context, key string) ([]string, error) 
 		r.cfg.Logger.Info().Msgf("redis SMembers(): res: %+v", res)
 	}
 
-	return res, err
+	return res, xerrors.Errorf("redis SMembers(): key: %s, err: %w", key, err)
 }
 
 func (r *redisImpl) Close() error {
-	return r.instance.Close()
+	if err := r.instance.Close(); err != nil {
+		return xerrors.Errorf("redis Close(): err: %w", err)
+	}
+
+	return nil
 }
 
 func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
@@ -106,8 +113,9 @@ func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Dura
 
 	// Try to obtain lock.
 	lock, err := locker.Obtain(ctx, key, expire, nil)
-	if err == redislock.ErrNotObtained {
+	if errors.Is(err, redislock.ErrNotObtained) {
 		r.cfg.Logger.Error().Err(err).Msg("redis ObtainLock(): Could not obtain lock!")
+
 		return nil
 	} else if err != nil {
 		panic(err)

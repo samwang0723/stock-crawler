@@ -24,8 +24,10 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
+	"golang.org/x/xerrors"
 )
 
+//nolint:nolintlint, lll
 const (
 	TwseDailyClose    = "https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=%s&type=ALLBUT0999"
 	TwseThreePrimary  = "http://www.tse.com.tw/fund/T86?response=csv&date=%s&selectType=ALLBUT0999"
@@ -34,11 +36,14 @@ const (
 	TWSEStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"
 	TPEXStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4"
 	ConcentrationDays = "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_%s_%d.djhtm"
+
+	defaultHTTPTimeout = 60 * time.Second
 )
 
+//nolint:nolintlint, gochecknoglobals, gosec
 var (
-	DefaultHttpClient = &http.Client{
-		Timeout: time.Second * 60,
+	DefaultHTTPClient = &http.Client{
+		Timeout: defaultHTTPTimeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
@@ -119,11 +124,17 @@ func assembleCrawlerPipeline(cfg Config, extractor *textExtractor) *pipeline.Pip
 // returning the total count of links that went through the pipeline. Calls to
 // Crawl block until the link iterator is exhausted, an error occurs or the
 // context is cancelled.
-func (c *crawlerImpl) Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error) {
+func (c *crawlerImpl) Crawl(
+	ctx context.Context,
+	linkIt graph.LinkIterator,
+	interceptChan ...chan convert.InterceptData,
+) (int, error) {
 	sink := new(countingSink)
+
 	if len(interceptChan) == 1 {
 		c.extractor.InterceptData(ctx, interceptChan[0])
 	}
+
 	err := c.pipe.Process(ctx, &linkSource{linkIt: linkIt}, sink)
 
 	return sink.getCount(), err
@@ -133,18 +144,31 @@ type linkSource struct {
 	linkIt graph.LinkIterator
 }
 
-func (ls *linkSource) Error() error              { return ls.linkIt.Error() }
+func (ls *linkSource) Error() error {
+	if err := ls.linkIt.Error(); err != nil {
+		return xerrors.Errorf("linkSource error: %w", err)
+	}
+
+	return nil
+}
+
 func (ls *linkSource) Next(context.Context) bool { return ls.linkIt.Next() }
+
 func (ls *linkSource) Payload() pipeline.Payload {
 	link := ls.linkIt.Link()
-	p := payloadPool.Get().(*crawlerPayload)
+	obj := payloadPool.Get()
 
-	p.URL = link.URL
-	p.Strategy = link.Strategy
-	p.Date = link.Date
-	p.RetrievedAt = time.Now()
+	payload, ok := obj.(*crawlerPayload)
+	if !ok {
+		return nil
+	}
 
-	return p
+	payload.URL = link.URL
+	payload.Strategy = link.Strategy
+	payload.Date = link.Date
+	payload.RetrievedAt = time.Now()
+
+	return payload
 }
 
 // countingSink for calculate total parsed records
@@ -154,6 +178,7 @@ type countingSink struct {
 
 func (s *countingSink) Consume(_ context.Context, p pipeline.Payload) error {
 	s.count++
+
 	return nil
 }
 

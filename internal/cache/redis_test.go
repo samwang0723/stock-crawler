@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/go-redis/redis/v8"
+	redis "github.com/go-redis/redis/v8"
 	redismock "github.com/go-redis/redismock/v8"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
@@ -66,6 +66,7 @@ func Test_ObtainLock(t *testing.T) {
 	}
 
 	logger := log.With().Str("test", "redis").Logger()
+
 	for _, tt := range tests {
 		tt := tt
 
@@ -81,14 +82,16 @@ func Test_ObtainLock(t *testing.T) {
 					Logger: &logger,
 				},
 			}
+
+			//nolint:nolintlint, errorlint
 			switch tt.err {
+			case redis.ErrClosed:
+				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(redis.ErrClosed)
+				assert.Panics(t, func() { impl.ObtainLock(ctx, CronjobLock, duration) }, "The code did not panic")
 			case redislock.ErrNotObtained:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(tt.err)
 				lock := impl.ObtainLock(ctx, CronjobLock, duration)
 				assert.Equal(t, tt.obtained, lock != nil)
-			case redis.ErrClosed:
-				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(redis.ErrClosed)
-				assert.Panics(t, func() { impl.ObtainLock(ctx, CronjobLock, duration) }, "The code did not panic")
 			default:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetVal(true)
 				lock := impl.ObtainLock(ctx, CronjobLock, duration)

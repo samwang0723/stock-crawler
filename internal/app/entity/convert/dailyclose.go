@@ -22,8 +22,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-type dailyCloseImpl struct {
-}
+type dailyCloseImpl struct{}
 
 func DailyClose() IConvert {
 	return &dailyCloseImpl{}

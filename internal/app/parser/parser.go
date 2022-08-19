@@ -103,8 +103,8 @@ func (p *parserImpl) SetStrategy(source convert.Source, additional ...string) {
 
 func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
 	reader := transform.NewReader(&in, traditionalchinese.Big5.NewDecoder())
-	res, err := p.strategy.Parse(reader, additional...)
 
+	res, err := p.strategy.Parse(reader, additional...)
 	if err != nil {
 		return fmt.Errorf("parser Execute(): %w", err)
 	}
