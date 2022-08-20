@@ -156,9 +156,8 @@ func (ls *linkSource) Next(context.Context) bool { return ls.linkIt.Next() }
 
 func (ls *linkSource) Payload() pipeline.Payload {
 	link := ls.linkIt.Link()
-	obj := payloadPool.Get()
 
-	payload, ok := obj.(*crawlerPayload)
+	payload, ok := payloadPool.Get().(*crawlerPayload)
 	if !ok {
 		return nil
 	}
