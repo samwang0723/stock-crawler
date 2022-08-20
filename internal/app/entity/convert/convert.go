@@ -11,19 +11,29 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package icache
 
-import (
-	"context"
-	"time"
+package convert
 
-	"github.com/bsm/redislock"
+type Source int
+
+//go:generate stringer -type=Source
+const (
+	TwseDailyClose Source = iota
+	TwseThreePrimary
+	TpexDailyClose
+	TpexThreePrimary
+	TwseStockList
+	TpexStockList
+	StakeConcentration
 )
 
-type IRedis interface {
-	SetExpire(ctx context.Context, key string, expired time.Time) error
-	SAdd(ctx context.Context, key string, value string) error
-	SMembers(ctx context.Context, key string) ([]string, error)
-	Close() error
-	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
+type Data struct {
+	ParseDate string
+	RawData   []string
+	Target    Source
+}
+
+// Use strategy pattern to convert entities from parser
+type IConvert interface {
+	Execute(data *Data) interface{}
 }

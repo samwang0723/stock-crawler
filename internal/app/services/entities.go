@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,139 +16,185 @@ package services
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"reflect"
 	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
+
+	jsoniter "github.com/json-iterator/go"
+	"golang.org/x/xerrors"
 )
 
+const (
+	sourceStockList    = "./configs/stock_ids.json"
+	defaultCacheExpire = 6 * time.Hour
+)
+
+//nolint:nolintlint, gochecknoglobals
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interface{}) error {
-	for _, v := range *objs {
-		if val, ok := v.(*entity.DailyClose); ok {
-			b, err := json.Marshal(val)
+	for _, val := range *objs {
+		if res, ok := val.(*entity.DailyClose); ok {
+			b, err := json.Marshal(res)
 			if err != nil {
-				return fmt.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.DailyClosesV1, b)
+
+			err = s.sendKafka(ctx, kafka.DailyClosesV1, b)
 			if err != nil {
-				return fmt.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
 			}
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.DailyClose: %v\n", reflect.TypeOf(v).Elem())
+			return xerrors.Errorf("Cannot cast interface to *dto.DailyClose: %v", reflect.TypeOf(val).Elem())
 		}
 	}
-	return nil
 
+	return nil
 }
 
 func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}) error {
-	for _, v := range *objs {
-		if val, ok := v.(*entity.Stock); ok {
-			b, err := json.Marshal(val)
+	for _, val := range *objs {
+		if res, ok := val.(*entity.Stock); ok {
+			b, err := json.Marshal(res)
 			if err != nil {
-				return fmt.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.StocksV1, b)
+
+			err = s.sendKafka(ctx, kafka.StocksV1, b)
 			if err != nil {
-				return fmt.Errorf("StockThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("StockThroughKafka: sendKafka failed: %w", err)
 			}
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.Stock: %v\n", reflect.TypeOf(v).Elem())
+			return xerrors.Errorf("Cannot cast interface to *dto.Stock: %v", reflect.TypeOf(val).Elem())
 		}
 	}
+
 	return nil
 }
 
 func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]interface{}) error {
-	for _, v := range *objs {
-		if val, ok := v.(*entity.ThreePrimary); ok {
-			b, err := json.Marshal(val)
+	for _, val := range *objs {
+		if res, ok := val.(*entity.ThreePrimary); ok {
+			b, err := json.Marshal(res)
 			if err != nil {
-				return fmt.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.ThreePrimaryV1, b)
+
+			err = s.sendKafka(ctx, kafka.ThreePrimaryV1, b)
 			if err != nil {
-				return fmt.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
 			}
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.ThreePrimary: %v\n", reflect.TypeOf(v).Elem())
+			return xerrors.Errorf("Cannot cast interface to *dto.ThreePrimary: %v", reflect.TypeOf(val).Elem())
 		}
 	}
+
 	return nil
 }
 
 func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error {
-	for _, v := range *objs {
-		if val, ok := v.(*entity.StakeConcentration); ok {
-			b, err := json.Marshal(val)
+	for _, val := range *objs {
+		if res, ok := val.(*entity.StakeConcentration); ok {
+			b, err := json.Marshal(res)
 			if err != nil {
-				return fmt.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
 			}
-			err = s.sendKafka(ctx, ikafka.StakeConcentrationV1, b)
+
+			err = s.sendKafka(ctx, kafka.StakeConcentrationV1, b)
 			if err != nil {
-				return fmt.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
 			}
+
 			// record parsed records to prevent duplicate parsing, default expire the key after 6 hours
-			key := strings.ReplaceAll(val.Date, "-", "")
-			err = s.cache.SAdd(ctx, key, val.StockID)
+			err = s.cacheParsedConcentration(ctx, res.Date, res.StockID)
 			if err != nil {
-				return fmt.Errorf("StakeConcentrationThroughKafka: redis(SAdd) failed: %w", err)
+				return xerrors.Errorf("StakeConcentrationThroughKafka: cacheParsedConcentration failed: %w", err)
 			}
-			err = s.cache.SetExpire(ctx, key, time.Now().Add(6*time.Hour))
-			if err != nil {
-				return fmt.Errorf("StakeConcentrationThroughKafka: redis(SetExpure) failed: %w", err)
-			}
+
+			res.Recycle()
 		} else {
-			return fmt.Errorf("Cannot cast interface to *dto.StakeConcentration: %v\n", reflect.TypeOf(v).Elem())
+			return xerrors.Errorf("Cannot cast interface to *dto.StakeConcentration: %v", reflect.TypeOf(val).Elem())
 		}
 	}
+
 	return nil
 }
 
-func (s *serviceImpl) ListBackfillStakeConcentrationStockIds(ctx context.Context, date string) ([]string, error) {
-	defaultList, err := loadStockList()
+func (s *serviceImpl) cacheParsedConcentration(ctx context.Context, date, stockID string) error {
+	key := strings.ReplaceAll(date, "-", "")
+
+	err := s.cache.SAdd(ctx, key, stockID)
 	if err != nil {
-		return nil, err
-	}
-	res, err := s.cache.SMembers(ctx, date)
-	if err != nil {
-		return nil, err
+		return xerrors.Errorf("cacheParsedConcentration: cache.SAdd failed: %w", err)
 	}
 
-	return helper.Difference(res, defaultList), nil
+	err = s.cache.SetExpire(ctx, key, time.Now().Add(defaultCacheExpire))
+	if err != nil {
+		return xerrors.Errorf("cacheParsedConcentration: cache.SetExpire failed: %w", err)
+	}
+
+	return nil
 }
 
-func loadStockList() ([]string, error) {
-	loc := "./configs/stock_ids.json"
+func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error) {
+	defaultList, err := listStocks()
+	if err != nil {
+		return nil, xerrors.Errorf("ListCrawlingConcentrationURLs: listStocks failed: %w", err)
+	}
 
+	res, err := s.cache.SMembers(ctx, date)
+	if err != nil {
+		return nil, xerrors.Errorf("ListCrawlingConcentrationURLs: redis(SMembers) failed: %w", err)
+	}
+
+	var urls []string
+
+	stockIds := helper.Diff(res, defaultList)
+
+	for _, sid := range stockIds {
+		// in order to get accurate data, we must query each page
+		// https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
+		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
+		indexes := []int{1, 2, 3, 4, 6}
+		for _, idx := range indexes {
+			urls = append(urls, fmt.Sprintf(crawler.ConcentrationDays, sid, idx))
+		}
+	}
+
+	return urls, nil
+}
+
+func listStocks() ([]string, error) {
 	// Open stock list jsonFile
-	jsonFile, err := os.Open(loc)
+	jsonFile, err := os.Open(sourceStockList)
 	// if we os.Open returns an error then handle it
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("listStocks: os.Open failed: %w", err)
 	}
-	log.Infof("Successfully Opened %s", loc)
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
+	byteValue, err := io.ReadAll(jsonFile)
+	if err != nil {
+		return nil, xerrors.Errorf("listStocks: io.ReadAll failed: %w", err)
+	}
 
 	// decode json stock list
 	var list struct {
 		StockIds []string `json:"stockIds"`
 	}
+
 	err = json.Unmarshal(byteValue, &list)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("listStocks: json.Unmarshal failed: %w", err)
 	}
+
 	return list.StockIds, nil
 }

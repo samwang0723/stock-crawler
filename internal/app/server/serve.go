@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,206 +18,219 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
+	"sync"
 	"time"
 
-	"github.com/heptiolabs/healthcheck"
+	"github.com/rs/zerolog"
 	config "github.com/samwang0723/stock-crawler/configs"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
-	"github.com/samwang0723/stock-crawler/internal/cache"
-	"github.com/samwang0723/stock-crawler/internal/concurrent"
-	"github.com/samwang0723/stock-crawler/internal/cronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"github.com/samwang0723/stock-crawler/internal/kafka"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
+
+	"github.com/heptiolabs/healthcheck"
 )
 
 const (
 	gracefulShutdownPeriod = 5 * time.Second
+	readHeaderTimeout      = 10 * time.Second
 )
 
 type IServer interface {
 	Name() string
-	Logger() structuredlog.ILogger
 	Handler() handlers.IHandler
-	Config() *config.Config
-	Dispatcher() *concurrent.Dispatcher
+	Config() *config.SystemConfig
 	Run(context.Context) error
 	Start(context.Context) error
-	Stop() error
+	Stop(context.Context) error
 }
 
 type server struct {
 	opts Options
 }
 
-func Serve() {
+func Serve(ctx context.Context, logger *zerolog.Logger) error {
 	config.Load()
 	cfg := config.GetCurrentConfig()
-	logger := structuredlog.Logger(cfg)
 	// bind DAL layer with service
 	dataService := services.New(
-		services.WithCronJob(cronjob.New(logger)),
-		services.WithKafka(kafka.New(cfg)),
-		services.WithRedis(cache.New(cfg)),
+		services.WithCronJob(services.CronjobConfig{
+			Logger: logger,
+		}),
+		services.WithKafka(services.KafkaConfig{
+			Controller: cfg.Kafka.Controller,
+			Logger:     logger,
+		}),
+		services.WithRedis(services.RedisConfig{
+			Master:        cfg.RedisCache.Master,
+			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
+			Logger:        logger,
+		}),
+		services.WithCrawler(services.CrawlerConfig{
+			FetchWorkers:      cfg.Crawler.FetchWorkers,
+			RateLimitInterval: cfg.Crawler.RateLimit,
+			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
+			Logger:            logger,
+		}),
 	)
 	// associate service with handler
-	handler := handlers.New(dataService)
+	handler := handlers.New(dataService, logger)
 
-	//health check
+	// health check
 	health := healthcheck.NewHandler()
-	// Our app is not happy if we've got more than 100 goroutines running.
-	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(10000))
-	// Our app is not ready if we can't resolve our upstream dependency in DNS.
+	// our app is not happy if we've got more than 10k goroutines running.
+	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(cfg.Server.MaxGoroutine))
+	// our app is not ready if we can't resolve our upstream dependency in DNS.
 	health.AddReadinessCheck(
 		"upstream-redis-dns",
-		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, 200*time.Millisecond))
+		healthcheck.DNSResolveCheck(cfg.RedisCache.Master, time.Duration(cfg.Server.DNSLatency)))
+	health.AddReadinessCheck(
+		"upstream-kafka-dns",
+		healthcheck.DNSResolveCheck(cfg.Kafka.Controller, time.Duration(cfg.Server.DNSLatency)))
+
 	healthServer := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
-		Handler: health,
+		Addr:              fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port),
+		Handler:           health,
+		ReadHeaderTimeout: readHeaderTimeout,
 	}
 
-	s := newServer(
+	svc := newServer(
 		Name(cfg.Server.Name),
 		Config(cfg),
-		Logger(logger),
 		Handler(handler),
-		Dispatcher(concurrent.NewDispatcher(cfg.WorkerPool.MaxPoolSize)),
 		HealthCheck(healthServer),
 		BeforeStart(func() error {
-			// initialize global job queue
-			concurrent.JobQueue = make(concurrent.JobChan, cfg.WorkerPool.MaxQueueSize)
 			dataService.StartCron()
+
 			return nil
 		}),
 		BeforeStop(func() error {
 			dataService.StopCron()
-			dataService.StopRedis()
-			dataService.StopKafka()
-			//no need to explictly close a channel, it will be garbage collected
-			//close(concurrent.JobQueue)
+			err := dataService.StopRedis()
+			if err != nil {
+				return fmt.Errorf("data service stop redis failed: %w", err)
+			}
+
+			err = dataService.StopKafka()
+			if err != nil {
+				return fmt.Errorf("data service stop kafka failed: %w", err)
+			}
+
 			return nil
 		}),
 	)
 
-	log.Initialize(s.Logger())
-	err := s.Run(context.Background())
-	if err != nil && s.Logger() != nil {
-		log.Errorf("error returned by service.Run(): %s\n", err.Error())
+	if err := svc.Run(ctx); err != nil {
+		return fmt.Errorf("server run failed: %w", err)
 	}
+
+	return nil
 }
 
 func newServer(opts ...Option) IServer {
-	o := Options{}
+	option := Options{}
 	for _, opt := range opts {
-		opt(&o)
+		opt(&option)
 	}
+
 	return &server{
-		opts: o,
+		opts: option,
 	}
 }
 
 func (s *server) Start(ctx context.Context) error {
-	var err error
 	for _, fn := range s.opts.BeforeStart {
-		if err = fn(); err != nil {
+		if err := fn(); err != nil {
 			return err
 		}
 	}
 
-	signature := `
- _____ _             _                                  _           
-/  ___| |           | |                                | |          
-\ '--.| |_ ___   ___| | ________ ___ _ __ __ ___      _| | ___ _ __ 
- '--. \ __/ _ \ / __| |/ /______/ __| '__/ _' \ \ /\ / / |/ _ \ '__|
-/\__/ / || (_) | (__|   <      | (__| | | (_| |\ V  V /| |  __/ |   
-\____/ \__\___/ \___|_|\_\      \___|_|  \__,_| \_/\_/ |_|\___|_|
+	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.0", helper.GetCurrentEnv())
 
-                                                        Version (%s)
-Stand-alone stock data crawling service
-Environment (%s)
-_______________________________________________
-`
-	signatureOut := fmt.Sprintf(signature, "v1.0.0", helper.GetCurrentEnv())
+	//nolint:nolintlint, forbidigo
 	fmt.Println(signatureOut)
 
-	// starting the workerpool
-	s.Dispatcher().Run(ctx)
+	var err error
 
-	// by default starting cronjob for regular daily updates pulling
-	// cronjob using redis distrubted lock to prevent multiple instances
-	// pulling same content
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 16 * * 1-5",
-		Types:    []dto.DownloadType{dto.DailyClose, dto.ThreePrimary},
-	})
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 18 * * 1-5",
-		Types:    []dto.DownloadType{dto.Concentration},
-	})
-	// backfill failed concentration records
-	s.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-		Schedule: "30 19 * * 1-5",
-		Types:    []dto.DownloadType{dto.Concentration},
-	})
-
-	// start healthcheck specific server
 	go func() {
-		err = s.HealthCheck().ListenAndServe()
+		// start healthcheck specific server
+		if err = s.HealthCheck().ListenAndServe(); err != nil {
+			err = fmt.Errorf("server healthcheck listen and serve failed: %w", err)
+		}
 	}()
 
 	return err
 }
 
-func (s *server) Stop() error {
-	var err error
+func (s *server) Stop(ctx context.Context) error {
 	for _, fn := range s.opts.BeforeStop {
-		if err = fn(); err != nil {
-			break
+		if err := fn(); err != nil {
+			return fmt.Errorf("server before stop failed: %w", err)
 		}
 	}
 
-	// graceful shutdown workerpool
-	s.Dispatcher().Shutdown()
-
 	// shutdown healthcheck server
-	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownPeriod)
+	sctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
 	defer cancel()
-	err = s.HealthCheck().Shutdown(ctx)
 
-	log.Warn("server being gracefully shuted down")
+	err := s.HealthCheck().Shutdown(sctx)
+	if err != nil {
+		return fmt.Errorf("server stop failed: %w", err)
+	}
 
-	return err
+	return nil
 }
 
 // Run starts the server and shut down gracefully afterwards
 func (s *server) Run(ctx context.Context) error {
-	childCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	if err := s.Start(childCtx); err != nil {
+	if err := s.Start(ctx); err != nil {
 		return err
 	}
 
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	select {
-	case <-quit:
-		log.Warn("singal interrupt")
-		cancel()
-	case <-childCtx.Done():
-		log.Warn("main context being cancelled")
-	}
-	return s.Stop()
-}
+	// Execute logics
+	var waitGroup sync.WaitGroup
 
-func (s *server) Logger() structuredlog.ILogger {
-	return s.opts.Logger
+	waitGroup.Add(1)
+
+	go func(ctx context.Context, svc *server) {
+		defer waitGroup.Done()
+
+		// by default starting cronjob for regular daily updates pulling
+		// cronjob using redis distrubted lock to prevent multiple instances
+		// pulling same content
+		//
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 16 * * 1-5",
+			Types: []convert.Source{
+				convert.TwseDailyClose,
+				convert.TwseThreePrimary,
+				convert.TpexDailyClose,
+				convert.TpexThreePrimary,
+			},
+		})
+
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 18 * * 1-5",
+			Types:    []convert.Source{convert.StakeConcentration},
+		})
+
+		// backfill failed concentration records
+		//
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 19 * * 1-5",
+			Types:    []convert.Source{convert.StakeConcentration},
+		})
+
+		<-ctx.Done()
+	}(ctx, s)
+	waitGroup.Wait()
+
+	return s.Stop(ctx)
 }
 
 func (s *server) Name() string {
@@ -228,12 +241,8 @@ func (s *server) Handler() handlers.IHandler {
 	return s.opts.Handler
 }
 
-func (s *server) Config() *config.Config {
+func (s *server) Config() *config.SystemConfig {
 	return s.opts.Config
-}
-
-func (s *server) Dispatcher() *concurrent.Dispatcher {
-	return s.opts.Dispatcher
 }
 
 func (s *server) HealthCheck() *http.Server {

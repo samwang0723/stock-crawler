@@ -2,7 +2,7 @@ version: '3.5'
 services:
   stock-crawler:
     container_name: stock-crawler
-    image: samwang0723/stock-crawler:m1
+    image: samwang0723/stock-crawler:v2.0.0
     ports:
       - "8086:8086"
     env_file:

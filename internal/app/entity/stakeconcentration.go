@@ -14,6 +14,16 @@
 
 package entity
 
+import (
+	"strconv"
+	"sync"
+)
+
+//nolint:nolintlint, gochecknoglobals
+var concentrationPool = sync.Pool{
+	New: func() interface{} { return new(StakeConcentration) },
+}
+
 type StakeConcentration struct {
 	StockID       string  `json:"stockId"`
 	Date          string  `json:"exchangeDate"`
@@ -23,4 +33,53 @@ type StakeConcentration struct {
 	SumSellShares uint64  `json:"sumSellShares"`
 	AvgBuyPrice   float32 `json:"avgBuyPrice"`
 	AvgSellPrice  float32 `json:"avgSellPrice"`
+}
+
+func MapReduceStakeConcentration(objs []*StakeConcentration) *StakeConcentration {
+	volumeDiff := []int32{0, 0, 0, 0, 0}
+
+	var res *StakeConcentration
+
+	for _, val := range objs {
+		idx, err := strconv.Atoi(val.HiddenField)
+		// make sure to cover latest source of truth date's concentration data
+		if err == nil && idx == 0 {
+			res = val
+		}
+
+		volumeDiff[idx] = int32(val.SumBuyShares - val.SumSellShares)
+	}
+
+	res.Diff = volumeDiff
+
+	return res.Clone()
+}
+
+func (sc *StakeConcentration) Clone() *StakeConcentration {
+	newSc, ok := concentrationPool.Get().(*StakeConcentration)
+	if !ok {
+		return nil
+	}
+
+	newSc.StockID = sc.StockID
+	newSc.Date = sc.Date
+	newSc.Diff = sc.Diff
+	newSc.SumBuyShares = sc.SumBuyShares
+	newSc.SumSellShares = sc.SumSellShares
+	newSc.AvgBuyPrice = sc.AvgBuyPrice
+	newSc.AvgSellPrice = sc.AvgSellPrice
+
+	return newSc
+}
+
+func (sc *StakeConcentration) Recycle() {
+	sc.StockID = ""
+	sc.Date = ""
+	sc.Diff = sc.Diff[:0]
+	sc.SumBuyShares = 0
+	sc.SumSellShares = 0
+	sc.AvgBuyPrice = 0.0
+	sc.AvgSellPrice = 0.0
+
+	concentrationPool.Put(sc)
 }

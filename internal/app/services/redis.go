@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,12 +18,51 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
+	"github.com/rs/zerolog"
+	"golang.org/x/xerrors"
 )
 
+// Config encapsulates the settings for configuring the redis service.
+type RedisConfig struct {
+	// Redis master node DNS hostname
+	Master string
+
+	// Redis sentinel addresses
+	SentinelAddrs []string
+
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *zerolog.Logger
+}
+
+func (cfg *RedisConfig) validate() error {
+	if cfg.Master == "" {
+		return xerrors.Errorf("invalid redis config value for master hostname")
+	}
+
+	if len(cfg.SentinelAddrs) == 0 {
+		return xerrors.Errorf("invalid redis config value for sentinel addresses")
+	}
+
+	return nil
+}
+
 func (s *serviceImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
+	if s.cache == nil {
+		return nil
+	}
+
 	return s.cache.ObtainLock(ctx, key, expire)
 }
 
 func (s *serviceImpl) StopRedis() error {
-	return s.cache.Close()
+	if s.cache == nil {
+		return xerrors.Errorf("redis is not running")
+	}
+
+	if err := s.cache.Close(); err != nil {
+		return xerrors.Errorf("failed to stop redis: %w", err)
+	}
+
+	return nil
 }

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,96 +16,171 @@ package crawler
 import (
 	"context"
 	"crypto/tls"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/app/crawler/icrawler"
-	"github.com/samwang0723/stock-crawler/internal/app/crawler/proxy"
-	"github.com/samwang0723/stock-crawler/internal/helper"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
+	"github.com/rs/zerolog"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
+	"github.com/samwang0723/stock-crawler/internal/app/graph"
+	"github.com/samwang0723/stock-crawler/internal/app/parser"
+	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
+	"golang.org/x/xerrors"
 )
 
-type crawlerImpl struct {
-	client *http.Client
-	proxy  *proxy.Proxy
-	urls   []string
-}
+//nolint:nolintlint, lll
+const (
+	TwseDailyClose    = "https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=%s&type=ALLBUT0999"
+	TwseThreePrimary  = "http://www.tse.com.tw/fund/T86?response=csv&date=%s&selectType=ALLBUT0999"
+	TpexDailyClose    = "http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_download.php?l=zh-tw&d=%s&s=0,asc,0"
+	TpexThreePrimary  = "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d=%s"
+	TWSEStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"
+	TPEXStocks        = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4"
+	ConcentrationDays = "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_%s_%d.djhtm"
 
-func New(p *proxy.Proxy) icrawler.ICrawler {
-	res := &crawlerImpl{
-		client: &http.Client{
-			Timeout: time.Second * 60,
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			},
+	defaultHTTPTimeout = 60 * time.Second
+)
+
+//nolint:nolintlint, gochecknoglobals, gosec
+var (
+	DefaultHTTPClient = &http.Client{
+		Timeout: defaultHTTPTimeout,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
-		proxy: p,
 	}
-	return res
+
+	TypeLinkMapping = map[string]string{
+		convert.TpexStockList.String():      TPEXStocks,
+		convert.TwseStockList.String():      TWSEStocks,
+		convert.TwseDailyClose.String():     TwseDailyClose,
+		convert.TpexDailyClose.String():     TpexDailyClose,
+		convert.TwseThreePrimary.String():   TwseThreePrimary,
+		convert.TpexThreePrimary.String():   TpexThreePrimary,
+		convert.StakeConcentration.String(): ConcentrationDays,
+	}
+)
+
+type Crawler interface {
+	Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error)
 }
 
-func (c *crawlerImpl) AppendURL(url string) {
-	c.urls = append(c.urls, url)
+// URLGetter is implemented by objects that can perform HTTP GET requests.
+type URLGetter interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
-func (c *crawlerImpl) GetURLs() []string {
-	return c.urls
+type Config struct {
+	// A URLGetter instance to fetch links.
+	URLGetter URLGetter
+
+	// A Proxy instance for avoiding remote rate limiting
+	Proxy *Proxy
+
+	// The number of concurrent workers used for retrieving links.
+	FetchWorkers int
+
+	// Rate limit interval to prevent remote site blocking
+	RateLimitInterval int64
+
+	Logger *zerolog.Logger
 }
 
-func (c *crawlerImpl) Fetch(ctx context.Context) (string, []byte, error) {
-	if len(c.urls) == 0 {
-		return "", nil, NoUrlToParse
-	}
-	source := c.urls[0]
-	uri := source
-	if c.proxy != nil {
-		uri = fmt.Sprintf("%s&url=%s", c.proxy.URI(), url.QueryEscape(source))
-	}
-
-	res, err := download(ctx, c.client, uri)
-	if err != nil {
-		return source, nil, err
-	}
-
-	// dequeue the first element
-	if len(c.urls) > 0 {
-		c.urls = c.urls[1:]
-	}
-	return source, res, nil
+// crawlerImpl implements a stock information crawling pipeline consisting of following stages:
+//
+// - Given an URL, retrieve content from remote server
+// - Extract useful trading information from retrieved pages
+type crawlerImpl struct {
+	cfg       Config
+	extractor *textExtractor
+	pipe      *pipeline.Pipeline
 }
 
-func download(ctx context.Context, client *http.Client, uri string) ([]byte, error) {
-	req, err := http.NewRequest("GET", uri, nil)
-	if err != nil {
-		return nil, FetchError("NewRequest initialized failed", uri, err)
-	}
-	req.Header = http.Header{
-		"Content-Type": []string{"text/csv;charset=ms950"},
-		// It is important to close the connection otherwise fd count will overhead
-		"Connection": []string{"close"},
-	}
-	req = req.WithContext(ctx)
-	log.Debugf("download started: %s", uri)
+func New(cfg Config) Crawler {
+	extractor := newTextExtractor(
+		parser.New(parser.Config{Logger: cfg.Logger}),
+	)
 
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, FetchError("client.Do", uri, err)
+	return &crawlerImpl{
+		cfg:       cfg,
+		extractor: extractor,
+		pipe:      assembleCrawlerPipeline(cfg, extractor),
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, FetchError(fmt.Sprintf("Status = %d", resp.StatusCode), uri, err)
+}
+
+// assembleCrawlerPipeline creates the various stages of a crawler pipeline
+// using the options in cfg and assembles them into a pipeline instance.
+func assembleCrawlerPipeline(cfg Config, extractor *textExtractor) *pipeline.Pipeline {
+	return pipeline.New(
+		pipeline.DynamicWorkerPool(
+			newLinkFetcher(cfg.URLGetter, cfg.Proxy, cfg.Logger),
+			cfg.FetchWorkers,
+			time.Duration(cfg.RateLimitInterval),
+		),
+		pipeline.FIFO(extractor),
+	)
+}
+
+// Crawl iterates linkIt and sends each link through the crawler pipeline
+// returning the total count of links that went through the pipeline. Calls to
+// Crawl block until the link iterator is exhausted, an error occurs or the
+// context is cancelled.
+func (c *crawlerImpl) Crawl(
+	ctx context.Context,
+	linkIt graph.LinkIterator,
+	interceptChan ...chan convert.InterceptData,
+) (int, error) {
+	sink := new(countingSink)
+
+	if len(interceptChan) == 1 {
+		c.extractor.InterceptData(ctx, interceptChan[0])
 	}
 
-	// copy stream from response body, although it consumes memory but
-	// better helps on concurrent handling in goroutine.
-	f, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, FetchError("Unable to read body", uri, err)
+	err := c.pipe.Process(ctx, &linkSource{linkIt: linkIt}, sink)
+
+	return sink.getCount(), err
+}
+
+type linkSource struct {
+	linkIt graph.LinkIterator
+}
+
+func (ls *linkSource) Error() error {
+	if err := ls.linkIt.Error(); err != nil {
+		return xerrors.Errorf("linkSource error: %w", err)
 	}
 
-	log.Debugf("download completed (%s), URL: %s", helper.GetReadableSize(len(f), 2), uri)
-	return f, nil
+	return nil
+}
+
+func (ls *linkSource) Next(context.Context) bool { return ls.linkIt.Next() }
+
+func (ls *linkSource) Payload() pipeline.Payload {
+	link := ls.linkIt.Link()
+
+	payload, ok := payloadPool.Get().(*crawlerPayload)
+	if !ok {
+		return nil
+	}
+
+	payload.URL = link.URL
+	payload.Strategy = link.Strategy
+	payload.Date = link.Date
+	payload.RetrievedAt = time.Now()
+
+	return payload
+}
+
+// countingSink for calculate total parsed records
+type countingSink struct {
+	count int
+}
+
+func (s *countingSink) Consume(_ context.Context, p pipeline.Payload) error {
+	s.count++
+
+	return nil
+}
+
+func (s *countingSink) getCount() int {
+	return s.count
 }

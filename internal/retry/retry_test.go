@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,32 +15,31 @@ package retry
 
 import (
 	"errors"
+	"flag"
 	"os"
 	"testing"
 	"time"
 
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
-
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
-func setup() {
-	logger := logtest.NullLogger()
-	log.Initialize(logger)
-}
-
-func shutdown() {
-}
-
 func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
 }
 
-func Test_Retry(t *testing.T) {
+func TestRetry(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name  string
 		err   error
@@ -63,12 +62,17 @@ func Test_Retry(t *testing.T) {
 		},
 	}
 
-	attempts := new(int)
+	logger := log.With().Str("test", "retry").Logger()
+
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			attempts := new(int)
 			*attempts = 0
-			Retry(3, 10*time.Millisecond, func() error {
+			Retry(3, 10*time.Millisecond, &logger, func() error {
 				*attempts++
+
 				return tt.err
 			})
 			assert.Equal(t, tt.count, *attempts)

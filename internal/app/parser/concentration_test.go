@@ -15,22 +15,41 @@
 package parser
 
 import (
+	"bytes"
+	"flag"
+	"os"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
+
+	"go.uber.org/goleak"
 )
 
-func Test_parseConcentration(t *testing.T) {
+func TestMain(m *testing.M) {
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
+}
+
+func TestParseConcentration(t *testing.T) {
+	t.Parallel()
+
 	wrongDoc := "<html><body><table><tr><td>WRONG</td></tr></table></body></html>"
-	correctDoc, _ := helper.ReadFromFile("testfiles/concentration.html")
+	correctDoc, _ := helper.ReadFromFile(".testfiles/concentration.html")
 
 	b, _ := helper.EncodeBig5([]byte(correctDoc))
 	tests := []struct {
 		name    string
 		content string
-		stockId string
+		stockID string
 		hidden  string
 		date    string
 		shares  []uint64
@@ -43,7 +62,7 @@ func Test_parseConcentration(t *testing.T) {
 			want:    true,
 			shares:  []uint64{12449, 40221},
 			price:   []float32{63.45, 63.53},
-			stockId: "6727",
+			stockID: "6727",
 			hidden:  "0",
 			date:    "20211029",
 		},
@@ -56,20 +75,22 @@ func Test_parseConcentration(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
 			res.SetStrategy(convert.StakeConcentration, "2021-10-29")
-			res.Execute([]byte(tt.content), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_2330_1.djhtm")
+			res.Execute(*bytes.NewBuffer([]byte(tt.content)), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_2330_1.djhtm")
 
 			respLen := len(*res.result)
 			if respLen > 0 != tt.want {
 				t.Errorf("len(parser.result) = %v, want %v", respLen, tt.want)
 			} else if respLen > 0 {
-				c := (*res.result)[0].(*entity.StakeConcentration)
-				if c.StockID != tt.stockId ||
+				c, ok := (*res.result)[0].(*entity.StakeConcentration)
+				if ok && c.StockID != tt.stockID ||
 					c.HiddenField != tt.hidden ||
 					c.Date != tt.date ||
 					c.SumBuyShares != tt.shares[0] ||

@@ -16,7 +16,7 @@ package parser
 
 import (
 	"encoding/csv"
-	"fmt"
+	"errors"
 	"io"
 	"strings"
 
@@ -31,23 +31,24 @@ type csvStrategy struct {
 	capacity  int
 }
 
-func (s *csvStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, error) {
-	if len(s.date) == 0 {
-		return nil, fmt.Errorf("parse day missing")
+//nolint:nolintlint, cyclop
+func (s *csvStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
+	if s.date == "" {
+		return nil, ErrParseDayMissing
 	}
 
 	var output []interface{}
 
-	reader := csv.NewReader(in)
+	reader := csv.NewReader(input)
 	reader.Comma = ','
 	reader.FieldsPerRecord = -1
 
-	//override to standarize date string (20211123)
+	// override to standarize date string (20211123)
 	date := helper.UnifiedDateFormatToTwse(s.date)
 
 	for {
 		records, err := reader.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		} else if len(records) == 0 || s.capacity > len(records) {
 			continue
@@ -56,7 +57,7 @@ func (s *csvStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, 
 		// make sure only parse recognized stock_id
 		records[0] = strings.TrimSpace(records[0])
 		if len(records[0]) > 0 && len(records[0]) < 6 && helper.IsInteger(records[0][0:2]) {
-			res := s.converter.Execute(&convert.ConvertData{
+			res := s.converter.Execute(&convert.Data{
 				ParseDate: date,
 				RawData:   records,
 				Target:    s.source,
@@ -66,8 +67,9 @@ func (s *csvStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, 
 			}
 		}
 	}
+
 	if len(output) == 0 {
-		return nil, NoParseResults
+		return nil, ErrNoParseResults
 	}
 
 	return output, nil

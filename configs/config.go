@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,55 +18,57 @@ import (
 	"os"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
-type Config struct {
-	Log struct {
-		Level string `yaml:"level"`
-	} `yaml:"log"`
+type SystemConfig struct {
 	RedisCache struct {
 		Master        string   `yaml:"master"`
 		SentinelAddrs []string `yaml:"sentinelAddrs"`
 	} `yaml:"redis"`
 	Kafka struct {
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Controller string `yaml:"controller"`
 	} `yaml:"kafka"`
 	Server struct {
-		Name string `yaml:"name"`
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+		Name         string `yaml:"name"`
+		Host         string `yaml:"host"`
+		Port         int    `yaml:"port"`
+		MaxGoroutine int    `yaml:"maxGoroutine"`
+		DNSLatency   int64  `yaml:"dnsLatency"`
 	} `yaml:"server"`
-	WorkerPool struct {
-		MaxPoolSize  int `yaml:"maxPoolSize"`
-		MaxQueueSize int `yaml:"maxQueueSize"`
-	} `yaml:"workerpool"`
+	Crawler struct {
+		FetchWorkers int   `yaml:"fetchWorkers"`
+		RateLimit    int64 `yaml:"rateLimit"`
+	} `yaml:"crawler"`
 }
 
-var (
-	instance Config
-)
+//nolint:nolintlint, gochecknoglobals
+var instance SystemConfig
 
 func Load(loc ...string) {
 	var yamlFile string
+
 	if len(loc) > 0 {
 		yamlFile = loc[0]
 	} else {
 		yamlFile = fmt.Sprintf("./configs/config.%s.yaml", helper.GetCurrentEnv())
 	}
-	f, err := os.Open(yamlFile)
+
+	file, err := os.Open(yamlFile)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
-	decoder := yaml.NewDecoder(f)
+
+	defer file.Close()
+
+	decoder := yaml.NewDecoder(file)
 	err = decoder.Decode(&instance)
+
 	if err != nil {
 		panic(err)
 	}
 }
 
-func GetCurrentConfig() *Config {
+func GetCurrentConfig() *SystemConfig {
 	return &instance
 }

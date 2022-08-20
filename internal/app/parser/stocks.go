@@ -19,7 +19,6 @@ import (
 	"strings"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
-
 	"golang.org/x/net/html"
 )
 
@@ -29,28 +28,34 @@ type htmlStrategy struct {
 	source    convert.Source
 }
 
-func (s *htmlStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, error) {
+//nolint:nolintlint, cyclop
+func (s *htmlStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
 	var output []interface{}
+
 	var records []string
+
 	var isColumn, isBold, startParsing bool
 
-	z := html.NewTokenizer(in)
+	tokenizer := html.NewTokenizer(input)
 
 	for {
-		tt := z.Next()
-		switch {
-		case tt == html.StartTagToken:
-			t := z.Token()
+		next := tokenizer.Next()
+
+		//nolint:nolintlint,exhaustive // ignore rest of the TokenType
+		switch next {
+		case html.StartTagToken:
+			t := tokenizer.Token()
 			isColumn = t.Data == "td"
 			isBold = t.Data == "b"
 
 			if t.Data == "tr" {
 				if s.capacity == len(records) {
 					// flush the temporary cache into output queue
-					res := s.converter.Execute(&convert.ConvertData{
+					res := s.converter.Execute(&convert.Data{
 						Target:  s.source,
 						RawData: records,
 					})
+
 					if res != nil {
 						output = append(output, res)
 					}
@@ -58,12 +63,14 @@ func (s *htmlStrategy) Parse(in io.Reader, additional ...string) ([]interface{},
 				// reset the buffer to parse next row
 				records = []string{}
 			}
-		case tt == html.TextToken:
-			t := z.Token()
+		case html.TextToken:
+			t := tokenizer.Token()
 			content := strings.TrimSpace(t.Data)
-			if len(content) == 0 {
+
+			if content == "" {
 				continue
 			}
+
 			switch {
 			case isColumn:
 				if startParsing {
@@ -72,10 +79,11 @@ func (s *htmlStrategy) Parse(in io.Reader, additional ...string) ([]interface{},
 			case isBold:
 				startParsing = content == "股票"
 			}
-		case tt == html.ErrorToken:
+		case html.ErrorToken:
 			if len(output) == 0 {
-				return nil, NoParseResults
+				return nil, ErrNoParseResults
 			}
+
 			return output, nil
 		}
 	}
