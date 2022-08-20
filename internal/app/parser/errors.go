@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,5 +15,8 @@ package parser
 
 import "errors"
 
-var NoParseResults = errors.New("Empty parsing results.")
-var WrongConcentrationTitle = errors.New("Wrong concentration html title.")
+var (
+	ErrNoParseResults          = errors.New("empty parsing results")
+	ErrWrongConcentrationTitle = errors.New("wrong concentration html title")
+	ErrParseDayMissing         = errors.New("parse day missing")
+)

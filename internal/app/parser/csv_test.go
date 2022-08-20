@@ -15,17 +15,20 @@
 package parser
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-func Test_parseCsv(t *testing.T) {
-	wrongCsv, _ := helper.ReadFromFile("testfiles/wrong.csv")
-	correctCsv, _ := helper.ReadFromFile("testfiles/correct.csv")
-	threePrimaryCsv, _ := helper.ReadFromFile("testfiles/twse_threeprimary.csv")
-	tpexThreePrimaryCsv, _ := helper.ReadFromFile("testfiles/tpex_threeprimary.csv")
+func TestParseCsv(t *testing.T) {
+	t.Parallel()
+
+	wrongCsv, _ := helper.ReadFromFile(".testfiles/wrong.csv")
+	correctCsv, _ := helper.ReadFromFile(".testfiles/correct.csv")
+	threePrimaryCsv, _ := helper.ReadFromFile(".testfiles/twse_threeprimary.csv")
+	tpexThreePrimaryCsv, _ := helper.ReadFromFile(".testfiles/tpex_threeprimary.csv")
 
 	b1, _ := helper.EncodeBig5([]byte(correctCsv))
 	b2, _ := helper.EncodeBig5([]byte(wrongCsv))
@@ -66,18 +69,22 @@ func Test_parseCsv(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
+
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
+
 			res.SetStrategy(tt.target, "20211130")
-			res.Execute([]byte(tt.content))
+			res.Execute(
+				*bytes.NewBuffer([]byte(tt.content)),
+			)
 
 			if got := len(*res.result); got != tt.want {
 				t.Errorf("len(parser.result) = %v, want %v", got, tt.want)
 			}
 		})
 	}
-
 }

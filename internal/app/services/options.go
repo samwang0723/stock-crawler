@@ -15,27 +15,61 @@
 package services
 
 import (
-	"github.com/samwang0723/stock-crawler/internal/cache/icache"
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
+	"github.com/samwang0723/stock-crawler/internal/cache"
+	"github.com/samwang0723/stock-crawler/internal/cronjob"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 )
 
 type Option func(o *serviceImpl)
 
-func WithCronJob(cronjob icronjob.ICronJob) Option {
+func WithCronJob(cfg CronjobConfig) Option {
 	return func(i *serviceImpl) {
-		i.cronjob = cronjob
+		i.cronjob = cronjob.New(cronjob.Config{
+			Logger: cfg.Logger,
+		})
 	}
 }
 
-func WithKafka(producer ikafka.IKafka) Option {
+func WithKafka(cfg KafkaConfig) Option {
 	return func(i *serviceImpl) {
-		i.producer = producer
+		if err := cfg.validate(); err != nil {
+			return
+		}
+
+		i.producer = kafka.New(kafka.Config{
+			Controller: cfg.Controller,
+			Logger:     cfg.Logger,
+		})
 	}
 }
 
-func WithRedis(redis icache.IRedis) Option {
+func WithRedis(cfg RedisConfig) Option {
 	return func(i *serviceImpl) {
-		i.cache = redis
+		if err := cfg.validate(); err != nil {
+			return
+		}
+
+		i.cache = cache.New(cache.Config{
+			Master:        cfg.Master,
+			SentinelAddrs: cfg.SentinelAddrs,
+			Logger:        cfg.Logger,
+		})
+	}
+}
+
+func WithCrawler(cfg CrawlerConfig) Option {
+	return func(i *serviceImpl) {
+		if err := cfg.validate(); err != nil {
+			return
+		}
+
+		i.crawler = crawler.New(crawler.Config{
+			URLGetter:         cfg.URLGetter,
+			FetchWorkers:      cfg.FetchWorkers,
+			RateLimitInterval: cfg.RateLimitInterval,
+			Proxy:             cfg.Proxy,
+			Logger:            cfg.Logger,
+		})
 	}
 }

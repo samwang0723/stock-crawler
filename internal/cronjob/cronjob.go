@@ -18,55 +18,62 @@ import (
 	"context"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-	structuredlog "github.com/samwang0723/stock-crawler/internal/logger/structured"
 
-	"github.com/robfig/cron/v3"
-	"github.com/sirupsen/logrus"
+	cron "github.com/robfig/cron/v3"
+	"github.com/rs/zerolog"
+	"golang.org/x/xerrors"
 )
+
+type Cronjob interface {
+	Start()
+	Stop()
+	AddJob(ctx context.Context, spec string, job func()) error
+}
+
+type Config struct {
+	Logger *zerolog.Logger
+}
 
 type cronjobImpl struct {
 	instance *cron.Cron
 }
 
-type cronLog struct {
-	clog structuredlog.ILogger
-}
-
-func (l *cronLog) Info(msg string, keysAndValues ...interface{}) {
-	l.clog.RawLogger().WithFields(logrus.Fields{
-		"data": keysAndValues,
-	}).Info(msg)
-}
-
-func (l *cronLog) Error(err error, msg string, keysAndValues ...interface{}) {
-	l.clog.RawLogger().WithFields(logrus.Fields{
-		"msg":  msg,
-		"data": keysAndValues,
-	}).Warn(msg)
-}
-
-func New(l structuredlog.ILogger) icronjob.ICronJob {
-	logger := &cronLog{clog: l}
-	logger.clog.RawLogger().SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
+func New(cfg Config) Cronjob {
 	// load location with Taipei timezone
-	location, _ := time.LoadLocation(helper.TimeZone)
+	location, err := time.LoadLocation(helper.TimeZone)
+	if err != nil {
+		cfg.Logger.Fatal().Err(err).Msg("failed to load timezone")
+
+		return nil
+	}
+
 	job := &cronjobImpl{
 		instance: cron.New(
 			cron.WithLocation(location),
-			cron.WithLogger(logger),
+			cron.WithLogger(cfg),
 		),
 	}
+
 	return job
+}
+
+func (c Config) Info(msg string, keysAndValues ...interface{}) {
+	if len(keysAndValues) > 0 {
+		c.Logger.Info().Msgf("data: %+v", keysAndValues)
+	}
+}
+
+func (c Config) Error(err error, msg string, keysAndValues ...interface{}) {
+	if len(keysAndValues) > 0 {
+		c.Logger.Warn().Msgf("data: %+v", keysAndValues)
+	}
 }
 
 func (c *cronjobImpl) AddJob(ctx context.Context, spec string, job func()) error {
 	_, err := c.instance.AddFunc(spec, job)
-	return err
+
+	return xerrors.Errorf("failed to add job: %w", err)
 }
 
 func (c *cronjobImpl) Start() {

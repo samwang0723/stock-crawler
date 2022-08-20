@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,20 +14,41 @@
 package main
 
 import (
-	"log"
-	"time"
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/samwang0723/stock-crawler/internal/app/server"
-	"github.com/samwang0723/stock-crawler/internal/helper"
+
+	"github.com/rs/zerolog/log"
+)
+
+//nolint:nolintlint, gochecknoglobals
+var (
+	appName = "stock-crawler"
 )
 
 func main() {
-	// manually set time zone, docker image may not have preset timezone
-	var err error
-	time.Local, err = time.LoadLocation(helper.TimeZone)
-	if err != nil {
-		log.Printf("error loading location '%s': %v\n", helper.TimeZone, err)
+	logger := log.With().Str("app", appName).Logger()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+		select {
+		case <-quit:
+			logger.Info().Msg("shutting down due to signal")
+			cancel()
+		case <-ctx.Done():
+		}
+	}()
+
+	if err := server.Serve(ctx, &logger); err != nil {
+		logger.Error().Err(err).Msg("server.Serve failed")
 	}
 
-	server.Serve()
+	logger.Info().Msg("shutdown completed")
 }

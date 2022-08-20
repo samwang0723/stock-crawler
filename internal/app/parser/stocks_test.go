@@ -15,18 +15,24 @@
 package parser
 
 import (
+	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-func Test_parseHtml(t *testing.T) {
+func TestParseHtml(t *testing.T) {
+	t.Parallel()
+
 	wrongDoc := "<html><body></body></html>"
-	correctDoc, err := helper.ReadFromFile("testfiles/stocks.html")
+
+	correctDoc, err := helper.ReadFromFile(".testfiles/stocks.html")
 	if err != nil {
 		t.Errorf("failed to load html test file: %s", err)
 	}
+
 	correctBytes, _ := helper.EncodeBig5([]byte(correctDoc))
 
 	tests := []struct {
@@ -45,24 +51,25 @@ func Test_parseHtml(t *testing.T) {
 			name:    "wrong stock list html",
 			content: wrongDoc,
 			want:    0,
-			err:     NoParseResults,
+			err:     ErrNoParseResults,
 		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
+
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
 			res.SetStrategy(convert.TwseStockList)
-			err := res.Execute([]byte(tt.content))
+			err := res.Execute(*bytes.NewBuffer([]byte(tt.content)))
 
-			if got := len(*res.result); got != tt.want || err != tt.err {
+			if got := len(*res.result); got != tt.want || !errors.Is(err, tt.err) {
 				t.Errorf("len(parser.result) = %v, want %v", got, tt.want)
 			}
 		})
 	}
-
 }

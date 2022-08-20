@@ -19,9 +19,12 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/samwang0723/stock-crawler/internal/cache/icache"
-	"github.com/samwang0723/stock-crawler/internal/cronjob/icronjob"
-	"github.com/samwang0723/stock-crawler/internal/kafka/ikafka"
+	"github.com/samwang0723/stock-crawler/internal/app/crawler"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
+	"github.com/samwang0723/stock-crawler/internal/app/graph"
+	"github.com/samwang0723/stock-crawler/internal/cache"
+	"github.com/samwang0723/stock-crawler/internal/cronjob"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 )
 
 type IService interface {
@@ -32,16 +35,18 @@ type IService interface {
 	StockThroughKafka(ctx context.Context, objs *[]interface{}) error
 	ThreePrimaryThroughKafka(ctx context.Context, objs *[]interface{}) error
 	StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error
-	ListBackfillStakeConcentrationStockIds(ctx context.Context, date string) ([]string, error)
 	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
 	StopRedis() error
 	StopKafka() error
+	ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error)
+	Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error)
 }
 
 type serviceImpl struct {
-	cronjob  icronjob.ICronJob
-	producer ikafka.IKafka
-	cache    icache.IRedis
+	cronjob  cronjob.Cronjob
+	producer kafka.Kafka
+	cache    cache.Redis
+	crawler  crawler.Crawler
 }
 
 func New(opts ...Option) IService {
@@ -49,5 +54,6 @@ func New(opts ...Option) IService {
 	for _, opt := range opts {
 		opt(impl)
 	}
+
 	return impl
 }

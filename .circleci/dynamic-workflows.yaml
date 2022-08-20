@@ -1,0 +1,193 @@
+version: 2.1
+
+orbs:
+  aws-eks: circleci/aws-eks@2.2.0
+  aws-cli: circleci/aws-cli@3.1.1
+  slack: circleci/slack@4.10.1
+
+parameters:
+  workspace_directory:
+    type: string
+    default: "/home/circleci/app"
+  app_name:
+    type: string
+    default: "stock-crawler"
+  dev-changed:
+    type: boolean
+    default: false
+  sta-changed:
+    type: boolean
+    default: false
+  pro-changed:
+    type: boolean
+    default: false
+  api-changed:
+    type: boolean
+    default: false
+
+executors:
+  spectral-executor:
+    docker:
+      - image: bitnami/git:latest
+    working_directory: << pipeline.parameters.workspace_directory >>
+
+jobs:
+  deploy-api-kustomize:
+    docker:
+      - image: cimg/base:stable
+    parameters:
+      kustomize-folder:
+        description: kustomize folder to deploy, for example adev-app-main
+        type: string
+      kubectl-version:
+        type: string
+        description: kubectl version
+        default: "latest"
+      role-arn:
+        description: role-arn to deploy eks
+        type: string
+      eks-cluster-name:
+        description: target cluster to deploy, for example adev-app-main
+        type: string
+      eks-aws-region:
+        description: target aws region, for example ap-southeast-1
+        type: string
+    steps:
+      - checkout
+      - aws-cli/setup:
+          profile-name: default
+      - aws-cli/assume-role-with-web-identity:
+          role-arn: << parameters.role-arn >>
+      - aws-eks/update-kubeconfig-with-authenticator:
+          aws-region: << parameters.eks-aws-region >>
+          cluster-name: << parameters.eks-cluster-name >>
+          install-kubectl: true
+          kubectl-version: << parameters.kubectl-version >>
+      - run:
+          name: Apply kustomization
+          command: |
+            kubectl kustomize deploy/<< parameters.kustomize-folder >> | kubectl apply -f -
+
+# Note: slack integration requires SLACK_ACCESS_TOKEN (has to be stored in circleci context) and SLACK_DEFAULT_CHANNEL (can be stored as either context or env variable)
+  send-slack-changelog:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - run:
+          name: Get tag version of the image
+          command: |
+            echo 'TAG_VERSION="$(grep -o 'v...............' deploy/apro-app-main/kustomization.yaml)"' >> $BASH_ENV
+      - slack/notify:
+          event: always
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "CHANGELOG - :book:",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Click the button to view changelog - tag version: ${TAG_VERSION}. 
+                    Note: This is a sample production pipeline for << pipeline.parameters.app_name >> app. 
+                    Hence, approving the workflow will not deploy anything in production."
+                  },
+                  "accessory": {
+                    "type": "button",
+                    "text": {
+                      "type": "plain_text",
+                      "text": "View Changelog",
+                      "emoji": true
+                    },
+                    "value": "click_me_123",
+                    "url": "https://github.com/samwang0723/stock-crawler/${TAG_VERSION}/CHANGELOG.md",
+                    "action_id": "button-action"
+                  }
+                }
+              ]
+            }
+
+workflows:
+  deploy-api-dev:
+    when: << pipeline.parameters.dev-changed >>
+    jobs:
+      - deploy-api-kustomize:
+          context: slack-notification # technically the context doesn't need to have any env var but it's required according to https://circleci.com/docs/openid-connect-tokens
+          kustomize-folder: adev-app-main-122
+          role-arn: ${AWS_ROLE_ARN_DEV}
+          eks-cluster-name: ${EKS_CLUSTER_NAME_DEV}
+          eks-aws-region: ${EKS_AWS_REGION_DEV}
+          filters:
+            tags:
+              only: /.*/
+
+  deploy-api-staging:
+    when: << pipeline.parameters.sta-changed >>
+    jobs:
+      - deploy-api-kustomize:
+          context: slack-notification # technically the context doesn't need to have any env var but it's required according to https://circleci.com/docs/openid-connect-tokens
+          kustomize-folder: asta-app-main
+          role-arn: ${AWS_ROLE_ARN_STAGING}
+          eks-cluster-name: ${EKS_CLUSTER_NAME_STAGING}
+          eks-aws-region: ${EKS_AWS_REGION_STAGING}
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              only:
+                - main
+
+  deploy-production:
+    when: << pipeline.parameters.pro-changed >>
+    jobs:
+      - slack/on-hold:
+          context: slack-notification
+          mentions: "@channel"
+          filters:
+            branches:
+              only:
+                - main
+            tags:
+              only: /.*/
+      - send-slack-changelog:
+          context: slack-notification
+          requires:
+            - slack/on-hold
+          filters:
+            branches:
+              only:
+                - main
+            tags:
+              only: /.*/
+      - pause_workflow:
+          type: approval
+          requires:
+            - slack/on-hold
+          filters:
+            branches:
+              only:
+                - main
+            tags:
+              only: /.*/
+      # Note: this app will not be deployed in production, hence the following code snippet is commented out and only for reference
+      # - deploy-api-kustomize:
+      #     context: slack-notification
+      #     role-arn: ${AWS_ROLE_ARN_PRODUCTION}
+      #     eks-cluster-name: ${EKS_CLUSTER_NAME_PRODUCTION}
+      #     eks-aws-region: ${EKS_AWS_REGION_PRODUCTION}
+      #     requires:
+      #       - pause_workflow
+      #     kustomize-folder: apro-app-main
+      #     filters:
+      #       branches:
+      #         only:
+      #           - main
+      #       tags:
+      #         only: /.*/

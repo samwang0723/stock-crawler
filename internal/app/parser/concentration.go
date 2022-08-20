@@ -20,6 +20,7 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
+
 	"golang.org/x/net/html"
 )
 
@@ -30,38 +31,44 @@ type concentrationStrategy struct {
 	capacity  int
 }
 
-func (s *concentrationStrategy) Parse(in io.Reader, additional ...string) ([]interface{}, error) {
+//nolint:nolintlint, cyclop, gocognit
+func (s *concentrationStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
 	var records []string
+
 	var output []interface{}
+
 	var isColumn, isTitle, startParsing bool
 
 	s.url = additional[0]
 	l := len(s.url)
+
 	if l > 7 && strings.HasSuffix(s.url, ".djhtm") {
-		records = append(records, s.url[l-7:l-6])                      // 0: hidden field
-		records = append(records, strings.ReplaceAll(s.date, "-", "")) // 1: date
+		// 0: hidden field, 1: date
+		records = append(records, s.url[l-7:l-6], strings.ReplaceAll(s.date, "-", ""))
 	}
 
-	z := html.NewTokenizer(in)
+	tokenizer := html.NewTokenizer(input)
 
 	for {
-		tt := z.Next()
+		next := tokenizer.Next()
+
 		switch {
-		case tt == html.StartTagToken:
-			t := z.Token()
-			if t.Data == "tr" && len(t.Attr) == 1 {
-				a := t.Attr[0]
+		case next == html.StartTagToken:
+			token := tokenizer.Token()
+			if token.Data == "tr" && len(token.Attr) == 1 {
+				a := token.Attr[0]
 				if a.Key == "id" && a.Val == "oScrollFoot" {
 					startParsing = true
 				}
 			}
 
-			isColumn = t.Data == "td"
-			isTitle = t.Data == "title"
-		case tt == html.TextToken:
-			t := z.Token()
-			content := strings.TrimSpace(t.Data)
-			if len(content) == 0 {
+			isColumn = token.Data == "td"
+			isTitle = token.Data == "title"
+		case next == html.TextToken:
+			token := tokenizer.Token()
+			content := strings.TrimSpace(token.Data)
+
+			if content == "" {
 				continue
 			}
 
@@ -69,20 +76,21 @@ func (s *concentrationStrategy) Parse(in io.Reader, additional ...string) ([]int
 			case isTitle:
 				header := strings.Split(content, "-")
 				if len(header) <= 1 {
-					return nil, WrongConcentrationTitle
+					return nil, ErrWrongConcentrationTitle
 				}
+
 				records = append(records, strings.TrimSpace(header[1])) // 2: stockId
 			case isColumn:
 				if startParsing {
 					// make sure records are storing correct numbers
-					n := strings.Replace(content, ",", "", -1)
+					n := strings.ReplaceAll(content, ",", "")
 					if helper.ToUint64(n) > 0 || helper.ToFloat32(n) > 0 {
 						records = append(records, n) // 3,4,5,6: BuySum, SellSum, AvgBuy, AvgSell
 					}
 
 					// reached the row capacity limit, flush the cache data
 					if s.capacity == len(records) {
-						res := s.converter.Execute(&convert.ConvertData{
+						res := s.converter.Execute(&convert.Data{
 							RawData: records,
 							Target:  convert.StakeConcentration,
 						})
@@ -95,10 +103,11 @@ func (s *concentrationStrategy) Parse(in io.Reader, additional ...string) ([]int
 					}
 				}
 			}
-		case tt == html.ErrorToken:
+		case next == html.ErrorToken:
 			if len(output) == 0 {
-				return nil, NoParseResults
+				return nil, ErrNoParseResults
 			}
+
 			return output, nil
 		}
 	}

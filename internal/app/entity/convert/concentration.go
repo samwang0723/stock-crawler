@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,14 +20,13 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/helper"
 )
 
-type concentrationImpl struct {
-}
+type concentrationImpl struct{}
 
 func Concentration() IConvert {
 	return &concentrationImpl{}
 }
 
-func (c *concentrationImpl) Execute(data *ConvertData) interface{} {
+func (c *concentrationImpl) Execute(data *Data) interface{} {
 	var output *entity.StakeConcentration
 	if data == nil || len(data.RawData) < 7 {
 		return output
@@ -56,7 +55,11 @@ func (c *concentrationImpl) convertHiddenIndex(idx string) string {
 	case "6":
 		return "4"
 	default:
-		newIdx, _ := strconv.Atoi(idx)
+		newIdx, err := strconv.Atoi(idx)
+		if err != nil {
+			return ""
+		}
+
 		return strconv.Itoa(newIdx - 1)
 	}
 }

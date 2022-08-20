@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,24 +13,9 @@
 // limitations under the License.
 package dto
 
-type DownloadType int32
-
-//go:generate stringer -type=DownloadType
-const (
-	DailyClose DownloadType = iota
-	ThreePrimary
-	Concentration
-	StockList
-)
-
-type DownloadRequest struct {
-	UTCTimestamp string         `json:"utcTimestamp"`
-	Types        []DownloadType `json:"types"`
-	RewindLimit  int32          `json:"rewindLimit"`
-	RateLimit    int32          `json:"rateLimit"`
-}
+import "github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 
 type StartCronjobRequest struct {
-	Schedule string         `json:"schedule"`
-	Types    []DownloadType `json:"types"`
+	Schedule string           `json:"schedule"`
+	Types    []convert.Source `json:"types"`
 }

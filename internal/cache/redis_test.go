@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,41 +15,33 @@ package cache
 
 import (
 	"context"
+	"flag"
 	"os"
 	"testing"
 	"time"
 
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-	logtest "github.com/samwang0723/stock-crawler/internal/logger/structured"
-
 	"github.com/bsm/redislock"
-	"github.com/go-redis/redis/v8"
+	redis "github.com/go-redis/redis/v8"
 	redismock "github.com/go-redis/redismock/v8"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
-func setup() {
-	logger := logtest.NullLogger()
-	log.Initialize(logger)
-}
-
-func shutdown() {
-}
-
 func TestMain(m *testing.M) {
-	setup()
-	code := m.Run()
-	shutdown()
-	os.Exit(code)
+	leak := flag.Bool("leak", false, "use leak detector")
+
+	if *leak {
+		goleak.VerifyTestMain(m)
+
+		return
+	}
+
+	os.Exit(m.Run())
 }
 
 func Test_ObtainLock(t *testing.T) {
-	ctx := context.TODO()
-	duration := 10 * time.Second
-	client, mock := redismock.NewClientMock()
-	impl := &redisImpl{
-		instance: client,
-	}
+	t.Parallel()
 
 	tests := []struct {
 		name     string
@@ -73,16 +65,33 @@ func Test_ObtainLock(t *testing.T) {
 		},
 	}
 
+	logger := log.With().Str("test", "redis").Logger()
+
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.TODO()
+			duration := 10 * time.Second
+			client, mock := redismock.NewClientMock()
+			impl := &redisImpl{
+				instance: client,
+				cfg: Config{
+					Logger: &logger,
+				},
+			}
+
+			//nolint:nolintlint, errorlint
 			switch tt.err {
+			case redis.ErrClosed:
+				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(redis.ErrClosed)
+				assert.Panics(t, func() { impl.ObtainLock(ctx, CronjobLock, duration) }, "The code did not panic")
 			case redislock.ErrNotObtained:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(tt.err)
 				lock := impl.ObtainLock(ctx, CronjobLock, duration)
 				assert.Equal(t, tt.obtained, lock != nil)
-			case redis.ErrClosed:
-				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetErr(redis.ErrClosed)
-				assert.Panics(t, func() { impl.ObtainLock(ctx, CronjobLock, duration) }, "The code did not panic")
 			default:
 				mock.Regexp().ExpectSetNX(CronjobLock, `[a-z]+`, duration).SetVal(true)
 				lock := impl.ObtainLock(ctx, CronjobLock, duration)

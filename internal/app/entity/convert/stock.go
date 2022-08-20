@@ -20,14 +20,13 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 )
 
-type stockImpl struct {
-}
+type stockImpl struct{}
 
 func Stock() IConvert {
 	return &stockImpl{}
 }
 
-func (c *stockImpl) Execute(data *ConvertData) interface{} {
+func (c *stockImpl) Execute(data *Data) interface{} {
 	var output *entity.Stock
 	if data == nil || len(data.RawData) < 6 {
 		return output
@@ -40,5 +39,6 @@ func (c *stockImpl) Execute(data *ConvertData) interface{} {
 		Country:  "TW",
 		Category: strings.TrimSpace(data.RawData[4]),
 	}
+
 	return output
 }

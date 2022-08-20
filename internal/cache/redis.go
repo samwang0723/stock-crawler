@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,29 +15,51 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"time"
 
-	config "github.com/samwang0723/stock-crawler/configs"
-	"github.com/samwang0723/stock-crawler/internal/cache/icache"
-	log "github.com/samwang0723/stock-crawler/internal/logger"
-
 	"github.com/bsm/redislock"
-	"github.com/go-redis/redis/v8"
+	redis "github.com/go-redis/redis/v8"
+	"github.com/rs/zerolog"
+	"golang.org/x/xerrors"
 )
 
 const (
 	CronjobLock = "cronjob-lock"
 )
 
+type Redis interface {
+	SetExpire(ctx context.Context, key string, expired time.Time) error
+	SAdd(ctx context.Context, key string, value string) error
+	SMembers(ctx context.Context, key string) ([]string, error)
+	Close() error
+	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
+}
+
+// Config encapsulates the settings for configuring the redis service.
+type Config struct {
+	// Redis master node DNS hostname
+	Master string
+
+	// Redis sentinel addresses
+	SentinelAddrs []string
+
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *zerolog.Logger
+}
+
 type redisImpl struct {
+	cfg      Config
 	instance *redis.Client
 }
 
-func New(cfg *config.Config) icache.IRedis {
+func New(cfg Config) Redis {
 	impl := &redisImpl{
+		cfg: cfg,
 		instance: redis.NewFailoverClient(&redis.FailoverOptions{
-			MasterName:    cfg.RedisCache.Master,
-			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
+			MasterName:    cfg.Master,
+			SentinelAddrs: cfg.SentinelAddrs,
 		}),
 	}
 
@@ -47,26 +69,42 @@ func New(cfg *config.Config) icache.IRedis {
 func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time) error {
 	expire, err := r.instance.ExpireAt(ctx, key, expired).Result()
 	if err != nil {
-		return err
+		return xerrors.Errorf("redis SetExpire(): key: %s, expired: %s, err: %w", key, expired, err)
 	}
-	log.Infof("Redis:SetExpire: key: %s expiredAt: %s", key, expire)
+
+	r.cfg.Logger.Info().Msgf("redis SetExpire(): key: %s expired: %t", key, expire)
+
 	return nil
 }
 
-func (r *redisImpl) SAdd(ctx context.Context, key string, value string) error {
+func (r *redisImpl) SAdd(ctx context.Context, key, value string) error {
 	err := r.instance.SAdd(ctx, key, value).Err()
-	log.Infof("Redis:SAdd: key: %s, value: %s, err: %w", key, value, err)
-	return err
+	if err != nil {
+		r.cfg.Logger.Error().Err(err).Msgf("redis SAdd(): key: %s, value: %s", key, value)
+	} else {
+		r.cfg.Logger.Info().Msgf("redis SAdd(): key: %s, value: %s", key, value)
+	}
+
+	return xerrors.Errorf("redis SAdd(): key: %s, value: %s, err: %w", key, value, err)
 }
 
 func (r *redisImpl) SMembers(ctx context.Context, key string) ([]string, error) {
 	res, err := r.instance.SMembers(ctx, key).Result()
-	log.Infof("Redis:SMembers: res: %+v, err: %w", res, err)
-	return res, err
+	if err != nil {
+		r.cfg.Logger.Error().Err(err).Msgf("redis SMembers(): res: %+v", res)
+	} else {
+		r.cfg.Logger.Info().Msgf("redis SMembers(): res: %+v", res)
+	}
+
+	return res, xerrors.Errorf("redis SMembers(): key: %s, err: %w", key, err)
 }
 
 func (r *redisImpl) Close() error {
-	return r.instance.Close()
+	if err := r.instance.Close(); err != nil {
+		return xerrors.Errorf("redis Close(): err: %w", err)
+	}
+
+	return nil
 }
 
 func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
@@ -75,13 +113,15 @@ func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Dura
 
 	// Try to obtain lock.
 	lock, err := locker.Obtain(ctx, key, expire, nil)
-	if err == redislock.ErrNotObtained {
-		log.Errorf("Redis:ObtainLock: Could not obtain lock! reason: %w", err)
+	if errors.Is(err, redislock.ErrNotObtained) {
+		r.cfg.Logger.Error().Err(err).Msg("redis ObtainLock(): Could not obtain lock!")
+
 		return nil
 	} else if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
-	log.Debugf("Redis:ObtainLock: (%s) lock obtained successfully!", key)
+	r.cfg.Logger.Debug().Msgf("redis ObtainLock(): (%s) lock obtained successfully!", key)
+
 	return lock
 }

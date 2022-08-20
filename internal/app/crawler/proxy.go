@@ -4,22 +4,22 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package proxy
+package crawler
 
 import (
 	"fmt"
+	"net/url"
 	"os"
-
-	_ "github.com/joho/godotenv/autoload"
 )
 
+//nolint:nolintlint, revive, stylecheck
 const (
 	WebScraping    = "WEB_SCRAPING"
 	WebScrapingUrl = "https://api.webscrapingapi.com/v1?api_key=%s"
@@ -28,18 +28,20 @@ const (
 )
 
 type Proxy struct {
-	Type          string
-	RequireClient bool
+	Type string
 }
 
-func (p *Proxy) URI() string {
-	var url string
+func (p *Proxy) URI(source string) string {
+	var prefix string
+
 	switch p.Type {
 	case ProxyCrawl:
-		url = ProxyCrawlUrl
+		prefix = ProxyCrawlUrl
 	case WebScraping:
-		url = WebScrapingUrl
+		prefix = WebScrapingUrl
 	}
+
 	token := os.Getenv(p.Type)
-	return fmt.Sprintf(url, token)
+
+	return fmt.Sprintf("%s&url=%s", fmt.Sprintf(prefix, token), url.QueryEscape(source))
 }

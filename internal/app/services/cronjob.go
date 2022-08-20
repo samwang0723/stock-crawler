@@ -16,7 +16,17 @@ package services
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/rs/zerolog"
 )
+
+// Config encapsulates the settings for configuring the redis service.
+type CronjobConfig struct {
+	// The logger to use. If not defined an output-discarding logger will
+	// be used instead.
+	Logger *zerolog.Logger
+}
 
 func (s *serviceImpl) StartCron() {
 	s.cronjob.Start()
@@ -27,5 +37,10 @@ func (s *serviceImpl) StopCron() {
 }
 
 func (s *serviceImpl) AddJob(ctx context.Context, spec string, job func()) error {
-	return s.cronjob.AddJob(ctx, spec, job)
+	err := s.cronjob.AddJob(ctx, spec, job)
+	if err != nil {
+		return fmt.Errorf("service cron add job failed: %w", err)
+	}
+
+	return nil
 }
