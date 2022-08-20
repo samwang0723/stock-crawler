@@ -5,6 +5,7 @@ help: ## show this help
 
 PROJECT_NAME?=core
 APP_NAME?=stock-crawler
+VERSION?=v2.0.0
 
 SHELL = /bin/bash
 
@@ -76,7 +77,7 @@ build: lint test bench sec-scan docker-m1
 docker-m1:
 	@echo "[docker build] build local docker image on Mac M1"
 	@docker build \
-		-t samwang0723/$(APP_NAME):m1 \
+		-t samwang0723/$(APP_NAME):$(VERSION) \
 		--build-arg LAST_MAIN_COMMIT_HASH=$(LAST_MAIN_COMMIT_HASH) \
 		--build-arg LAST_MAIN_COMMIT_TIME=$(LAST_MAIN_COMMIT_TIME) \
 		-f build/docker/app/Dockerfile.local .
@@ -92,7 +93,7 @@ docker-amd64:
 	@docker buildx use m1-builder
 	@docker buildx build \
 		--load --platform=linux/amd64 \
-		-t samwang0723/$(APP_NAME):latest \
+		-t samwang0723/$(APP_NAME):$(VERSION) \
 		--build-arg LAST_MAIN_COMMIT_HASH=$(LAST_MAIN_COMMIT_HASH) \
 		--build-arg LAST_MAIN_COMMIT_TIME=$(LAST_MAIN_COMMIT_TIME) \
 		-f build/docker/app/Dockerfile .
