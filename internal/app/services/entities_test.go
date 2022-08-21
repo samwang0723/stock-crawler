@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"os"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
 	kafkamock "github.com/samwang0723/stock-crawler/internal/kafka/mocks"
+	"golang.org/x/xerrors"
 
 	"github.com/golang/mock/gomock"
 	"go.uber.org/goleak"
@@ -30,7 +32,8 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		data *[]interface{}
+		data         *[]interface{}
+		expectReturn error
 	}
 
 	tests := []struct {
@@ -55,8 +58,33 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 						PriceDiff:    0.0,
 					},
 				},
+				expectReturn: nil,
 			},
 			wantErr: false,
+		},
+		{
+			name: "failed to send correct data format through kafka",
+			args: args{
+				data: &[]interface{}{
+					&entity.StakeConcentration{
+						StockID: "2330",
+					},
+				},
+				expectReturn: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "failed to send daily close data due to kafka error",
+			args: args{
+				data: &[]interface{}{
+					&entity.DailyClose{
+						StockID: "2330",
+					},
+				},
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+			},
+			wantErr: true,
 		},
 	}
 
@@ -79,7 +107,7 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 					if err != nil {
 						t.Errorf("service DailyCloseThroughKafka: json.Marshal failed: %v", err)
 					}
-					mockKafka.EXPECT().WriteMessages(ctx, kafka.DailyClosesV1, b).Return(nil).Times(1)
+					mockKafka.EXPECT().WriteMessages(ctx, kafka.DailyClosesV1, b).Return(tt.args.expectReturn).Times(1)
 				}
 			}
 
@@ -90,6 +118,180 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 			err := svc.DailyCloseThroughKafka(ctx, tt.args.data)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("service DailyCloseThroughKafka() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestStockThroughKafka(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		data         *[]interface{}
+		expectReturn error
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "successfully send stock data through kafka",
+			args: args{
+				data: &[]interface{}{
+					&entity.Stock{
+						StockID: "2330",
+						Name:    "Test",
+					},
+				},
+				expectReturn: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "failed to send correct data format through kafka",
+			args: args{
+				data: &[]interface{}{
+					&entity.StakeConcentration{
+						StockID: "2330",
+					},
+				},
+				expectReturn: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "failed to send stock data due to kafka error",
+			args: args{
+				data: &[]interface{}{
+					&entity.Stock{
+						StockID: "2330",
+						Name:    "Test",
+					},
+				},
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+
+			mockCtl := gomock.NewController(t)
+			defer mockCtl.Finish()
+
+			mockKafka := kafkamock.NewMockKafka(mockCtl)
+
+			for _, val := range *tt.args.data {
+				if res, ok := val.(*entity.Stock); ok {
+					b, err := json.Marshal(res)
+					if err != nil {
+						t.Errorf("service StockThroughKafka: json.Marshal failed: %v", err)
+					}
+					mockKafka.EXPECT().WriteMessages(ctx, kafka.StocksV1, b).Return(tt.args.expectReturn).Times(1)
+				}
+			}
+
+			svc := &serviceImpl{
+				producer: mockKafka,
+			}
+
+			err := svc.StockThroughKafka(ctx, tt.args.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service StockThroughKafka() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestThreePrimaryThroughKafka(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		data         *[]interface{}
+		expectReturn error
+	}
+
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "successfully send three primary data through kafka",
+			args: args{
+				data: &[]interface{}{
+					&entity.ThreePrimary{
+						StockID: "2330",
+					},
+				},
+				expectReturn: nil,
+			},
+			wantErr: false,
+		},
+		{
+			name: "failed to send correct data format through kafka",
+			args: args{
+				data: &[]interface{}{
+					&entity.StakeConcentration{
+						StockID: "2330",
+					},
+				},
+				expectReturn: nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "failed to send three primary due to kafka error",
+			args: args{
+				data: &[]interface{}{
+					&entity.ThreePrimary{
+						StockID: "2330",
+					},
+				},
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+
+			mockCtl := gomock.NewController(t)
+			defer mockCtl.Finish()
+
+			mockKafka := kafkamock.NewMockKafka(mockCtl)
+
+			for _, val := range *tt.args.data {
+				if res, ok := val.(*entity.ThreePrimary); ok {
+					b, err := json.Marshal(res)
+					if err != nil {
+						t.Errorf("service ThreePrimaryThroughKafka: json.Marshal failed: %v", err)
+					}
+					mockKafka.EXPECT().WriteMessages(ctx, kafka.ThreePrimaryV1, b).Return(tt.args.expectReturn).Times(1)
+				}
+			}
+
+			svc := &serviceImpl{
+				producer: mockKafka,
+			}
+
+			err := svc.ThreePrimaryThroughKafka(ctx, tt.args.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("service ThreePrimaryThroughKafka() error = %v", err)
 			}
 		})
 	}
