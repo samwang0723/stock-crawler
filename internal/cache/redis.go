@@ -28,6 +28,7 @@ const (
 	CronjobLock = "cronjob-lock"
 )
 
+//go:generate mockgen -source=redis.go -destination=mocks/redis.go -package=cache
 type Redis interface {
 	SetExpire(ctx context.Context, key string, expired time.Time) error
 	SAdd(ctx context.Context, key string, value string) error
