@@ -15,6 +15,7 @@ package pipeline
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"golang.org/x/xerrors"
@@ -146,4 +147,87 @@ stop:
 	for i := 0; i < cap(p.tokenPool); i++ {
 		<-p.tokenPool
 	}
+}
+
+type broadcast struct {
+	fifos []StageRunner
+}
+
+// Broadcast returns a StageRunner that passes a copy of each incoming payload
+// to all specified processors and emits their outputs to the next stage.
+func Broadcast(procs ...Processor) StageRunner {
+	if len(procs) == 0 {
+		panic("Broadcast: at least one processor must be specified")
+	}
+
+	fifos := make([]StageRunner, len(procs))
+	for i, p := range procs {
+		fifos[i] = FIFO(p)
+	}
+
+	return &broadcast{fifos: fifos}
+}
+
+// Run implements StageRunner.
+//
+//nolint:nolintlint, cyclop
+func (b *broadcast) Run(ctx context.Context, params StageParams) {
+	var (
+		waitGroup sync.WaitGroup
+		inCh      = make([]chan Payload, len(b.fifos))
+	)
+
+	// Start each FIFO in a go-routine. Each FIFO gets its own dedicated
+	// input channel and the shared output channel passed to Run.
+	for index := 0; index < len(b.fifos); index++ {
+		waitGroup.Add(1)
+
+		inCh[index] = make(chan Payload)
+
+		go func(fifoIndex int) {
+			fifoParams := &workerParams{
+				stage: params.StageIndex(),
+				inCh:  inCh[fifoIndex],
+				outCh: params.Output(),
+				errCh: params.Error(),
+			}
+			b.fifos[fifoIndex].Run(ctx, fifoParams)
+			waitGroup.Done()
+		}(index)
+	}
+
+done:
+	for {
+		// Read incoming payloads and pass them to each FIFO
+		select {
+		case <-ctx.Done():
+			break done
+		case payload, ok := <-params.Input():
+			if !ok {
+				break done
+			}
+			for index := len(b.fifos) - 1; index >= 0; index-- {
+				// As each FIFO might modify the payload, to
+				// avoid data races we need to make a copy of
+				// the payload for all FIFOs except the first.
+				fifoPayload := payload
+				if index != 0 {
+					fifoPayload = payload.Clone()
+				}
+				select {
+				case <-ctx.Done():
+					break done
+				case inCh[index] <- fifoPayload:
+					// payload sent to i_th FIFO
+				}
+			}
+		}
+	}
+
+	// Close input channels and wait for FIFOs to exit
+	for _, ch := range inCh {
+		close(ch)
+	}
+
+	waitGroup.Wait()
 }

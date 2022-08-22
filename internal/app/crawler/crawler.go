@@ -22,7 +22,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
-	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 	"golang.org/x/xerrors"
 )
@@ -91,32 +90,31 @@ type Config struct {
 // - Extract useful trading information from retrieved pages
 type crawlerImpl struct {
 	cfg       Config
-	extractor *textExtractor
+	broadcast *broadcastor
 	pipe      *pipeline.Pipeline
 }
 
 func New(cfg Config) Crawler {
-	extractor := newTextExtractor(
-		parser.New(parser.Config{Logger: cfg.Logger}),
-	)
+	broadcast := newBroadcastor()
 
 	return &crawlerImpl{
 		cfg:       cfg,
-		extractor: extractor,
-		pipe:      assembleCrawlerPipeline(cfg, extractor),
+		broadcast: broadcast,
+		pipe:      assembleCrawlerPipeline(cfg, broadcast),
 	}
 }
 
 // assembleCrawlerPipeline creates the various stages of a crawler pipeline
 // using the options in cfg and assembles them into a pipeline instance.
-func assembleCrawlerPipeline(cfg Config, extractor *textExtractor) *pipeline.Pipeline {
+func assembleCrawlerPipeline(cfg Config, broadcastor *broadcastor) *pipeline.Pipeline {
 	return pipeline.New(
 		pipeline.DynamicWorkerPool(
 			newLinkFetcher(cfg.URLGetter, cfg.Proxy, cfg.Logger),
 			cfg.FetchWorkers,
 			time.Duration(cfg.RateLimitInterval),
 		),
-		pipeline.FIFO(extractor),
+		pipeline.FIFO(newTextExtractor(cfg)),
+		pipeline.Broadcast(broadcastor),
 	)
 }
 
@@ -132,7 +130,7 @@ func (c *crawlerImpl) Crawl(
 	sink := new(countingSink)
 
 	if len(interceptChan) == 1 {
-		c.extractor.InterceptData(ctx, interceptChan[0])
+		c.broadcast.InterceptData(ctx, interceptChan[0])
 	}
 
 	err := c.pipe.Process(ctx, &linkSource{linkIt: linkIt}, sink)
