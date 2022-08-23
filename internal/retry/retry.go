@@ -18,7 +18,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 )
 
 // Retry mechanism
-func Retry(attempts int, sleep time.Duration, logger *zerolog.Logger, fnc func() error) error {
+func Retry(attempts int, sleep time.Duration, fnc func() error) error {
 	if err := fnc(); err != nil {
 		if errors.As(err, &Stop{}) {
 			return err
@@ -35,10 +35,10 @@ func Retry(attempts int, sleep time.Duration, logger *zerolog.Logger, fnc func()
 
 		attempts--
 		if attempts > 0 {
-			logger.Warn().Msgf("retry func error: %s. attempts #%d after %s.", err.Error(), attempts, sleep)
+			log.Warn().Msgf("retry func error: %s. attempts #%d after %s.", err.Error(), attempts, sleep)
 			time.Sleep(sleep)
 			// if continue to fail on retry, double the interval
-			return Retry(attempts, defaultRetryCount*sleep, logger, fnc)
+			return Retry(attempts, defaultRetryCount*sleep, fnc)
 		}
 
 		return err

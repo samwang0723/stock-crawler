@@ -73,6 +73,11 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		return nil, xerrors.Errorf("urlGetter.Do(): %w", err)
 	}
 
+	// Skip payloads for invalid http status codes.
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return nil, xerrors.Errorf("invalid http status code: %d", resp.StatusCode)
+	}
+
 	// copy stream from response body, although it consumes memory but
 	// better helps on concurrent handling in goroutine.
 	_, err = io.Copy(&payload.RawContent, resp.Body)
@@ -80,11 +85,6 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 
 	if err != nil {
 		return nil, xerrors.Errorf("io.Copy(): %w", err)
-	}
-
-	// Skip payloads for invalid http status codes.
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, xerrors.Errorf("invalid http status code: %d", resp.StatusCode)
 	}
 
 	//nolint:nolintlint, gomnd

@@ -96,6 +96,7 @@ func TestCrawl(t *testing.T) {
 
 	type args struct {
 		mockClient URLGetter
+		link       *graph.Link
 	}
 
 	tests := []struct {
@@ -107,6 +108,11 @@ func TestCrawl(t *testing.T) {
 			name: "regular http fetch",
 			args: args{
 				mockClient: &mockSuccessHTTPClient{},
+				link: &graph.Link{
+					URL:      "http://www.google.com",
+					Date:     "20220801",
+					Strategy: convert.TwseStockList,
+				},
 			},
 			wantErr: false,
 		},
@@ -114,6 +120,11 @@ func TestCrawl(t *testing.T) {
 			name: "error fetching from server",
 			args: args{
 				mockClient: &mockErrorHTTPClient{},
+				link: &graph.Link{
+					URL:      "https://www.yahoo.com",
+					Date:     "20210723",
+					Strategy: convert.TwseStockList,
+				},
 			},
 			wantErr: true,
 		},
@@ -134,11 +145,7 @@ func TestCrawl(t *testing.T) {
 				Logger:            &logger,
 			})
 			_, err := c.Crawl(context.TODO(), &testLinkIterator{links: []*graph.Link{
-				{
-					URL:      "http://www.google.com",
-					Date:     "20220801",
-					Strategy: convert.TwseStockList,
-				},
+				tt.args.link,
 			}})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Crawl() = %v, want %v, err: %v", err != nil, tt.wantErr, err)

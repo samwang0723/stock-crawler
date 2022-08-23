@@ -111,7 +111,7 @@ func assembleCrawlerPipeline(cfg Config, broadcastor *broadcastor) *pipeline.Pip
 		pipeline.DynamicWorkerPool(
 			newLinkFetcher(cfg.URLGetter, cfg.Proxy, cfg.Logger),
 			cfg.FetchWorkers,
-			time.Duration(cfg.RateLimitInterval),
+			time.Duration(cfg.RateLimitInterval)*time.Millisecond,
 		),
 		pipeline.FIFO(newTextExtractor(cfg)),
 		pipeline.Broadcast(broadcastor),

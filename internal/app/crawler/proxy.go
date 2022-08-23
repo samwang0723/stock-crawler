@@ -17,6 +17,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+
+	// this is to autoload the .env file
+	_ "github.com/joho/godotenv/autoload"
 )
 
 //nolint:nolintlint, revive, stylecheck

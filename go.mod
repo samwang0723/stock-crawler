@@ -10,6 +10,7 @@ require (
 	github.com/google/go-cmp v0.5.8
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/heptiolabs/healthcheck v0.0.0-20211123025425-613501dd5deb
+	github.com/joho/godotenv v1.4.0
 	github.com/json-iterator/go v1.1.12
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.27.0

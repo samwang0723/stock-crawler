@@ -18,7 +18,13 @@ import (
 	"sync"
 	"time"
 
+	"github.com/samwang0723/stock-crawler/internal/retry"
+
 	"golang.org/x/xerrors"
+)
+
+const (
+	defaultRetryTimes = 3
 )
 
 type fifo struct {
@@ -48,10 +54,7 @@ func (r fifo) Run(ctx context.Context, params StageParams) {
 			if err != nil {
 				wrappedErr := xerrors.Errorf("pipeline stage %d: %w", params.StageIndex(), err)
 				maybeEmitError(wrappedErr, params.Error())
-
-				return
 			}
-
 			// If the processor did not output a payload for the
 			// next stage there is nothing we need to do.
 			if payloadOut == nil {
@@ -115,7 +118,19 @@ stop:
 
 			go func(payloadIn Payload, token struct{}) {
 				defer func() { p.tokenPool <- token }()
-				payloadOut, err := p.proc.Process(ctx, payloadIn)
+
+				var payloadOut Payload
+
+				err := retry.Retry(defaultRetryTimes, p.interval, func() error {
+					out, procErr := p.proc.Process(ctx, payloadIn)
+					payloadOut = out
+
+					if procErr != nil {
+						return xerrors.Errorf("retry error: %w", procErr)
+					}
+
+					return nil
+				})
 				if err != nil {
 					wrappedErr := xerrors.Errorf("pipeline stage %d: %w", params.StageIndex(), err)
 					maybeEmitError(wrappedErr, params.Error())
@@ -136,10 +151,10 @@ stop:
 				case params.Output() <- payloadOut:
 				case <-ctx.Done():
 				}
-
-				// prevent rate limit
-				<-time.After(p.interval)
 			}(payloadIn, token)
+
+			// prevent rate limit
+			<-time.After(p.interval)
 		}
 	}
 
