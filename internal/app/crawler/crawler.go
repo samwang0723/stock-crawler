@@ -95,12 +95,9 @@ type crawlerImpl struct {
 }
 
 func New(cfg Config) Crawler {
-	broadcast := newBroadcastor()
-
 	return &crawlerImpl{
 		cfg:       cfg,
-		broadcast: broadcast,
-		pipe:      assembleCrawlerPipeline(cfg, broadcast),
+		broadcast: newBroadcastor(),
 	}
 }
 
@@ -127,6 +124,9 @@ func (c *crawlerImpl) Crawl(
 	linkIt graph.LinkIterator,
 	interceptChan ...chan convert.InterceptData,
 ) (int, error) {
+	// reconstruct pipeline every time as previous pipeline may be terminated
+	c.pipe = assembleCrawlerPipeline(c.cfg, c.broadcast)
+
 	sink := new(countingSink)
 
 	if len(interceptChan) == 1 {

@@ -147,7 +147,7 @@ func (s *server) Start(ctx context.Context) error {
 		}
 	}
 
-	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.0", helper.GetCurrentEnv())
+	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.1", helper.GetCurrentEnv())
 
 	//nolint:nolintlint, forbidigo
 	fmt.Println(signatureOut)
