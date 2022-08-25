@@ -218,14 +218,6 @@ func (s *server) Run(ctx context.Context) error {
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
 
-		// backfill failed concentration records
-		//
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "00 20 * * 1-5",
-			Types:    []convert.Source{convert.StakeConcentration},
-		})
-
 		<-ctx.Done()
 	}(ctx, s)
 	waitGroup.Wait()

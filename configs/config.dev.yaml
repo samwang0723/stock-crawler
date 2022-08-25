@@ -15,4 +15,4 @@ kafka:
 
 crawler:
   fetchWorkers: 30
-  rateLimit: 2000
+  rateLimit: 1000
