@@ -130,8 +130,6 @@ func (p *Pipeline) Process(ctx context.Context, source Source, sink Sink) error 
 	var err error
 	for pErr := range errCh {
 		err = multierror.Append(err, pErr)
-
-		ctxCancelFn()
 	}
 
 	if err != nil {

@@ -106,9 +106,9 @@ docker-amd64:
 release: changelog-gen changelog-commit deploy-dev gh-release ## create a new tag to release this module
 
 CAL_VER := v$(shell date "+%Y.%m.%d.%H%M")
-PRODUCTION_YAML = deploy/apro-app-main/kustomization.yaml
-STAGING_YAML = deploy/asta-app-main/kustomization.yaml
-DEV_YAML = deploy/adev-app-main-122/kustomization.yaml
+PRODUCTION_YAML = deploy/production/kustomization.yaml
+STAGING_YAML = deploy/staging/kustomization.yaml
+DEV_YAML = deploy/develop/kustomization.yaml
 
 deploy-dev:
 	sed -i '' "s/newTag:.*/newTag: $(CAL_VER)/" $(DEV_YAML)

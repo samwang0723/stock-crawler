@@ -22,6 +22,7 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 	"golang.org/x/xerrors"
@@ -108,7 +109,9 @@ func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
 	res, err := p.strategy.Parse(reader, additional...)
 	if err != nil {
 		// here we treat empty content as not an error, still continue
-		if errors.Is(err, ErrNoParseResults) {
+		if errors.Is(err, ErrNoParseResults) || errors.Is(err, ErrWrongConcentrationTitle) {
+			log.Error().Err(err).Msg("parser error occurred")
+
 			return nil
 		}
 
