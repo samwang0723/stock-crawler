@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/goleak"
 )
@@ -62,15 +61,13 @@ func TestRetry(t *testing.T) {
 		},
 	}
 
-	logger := log.With().Str("test", "retry").Logger()
-
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			attempts := new(int)
 			*attempts = 0
-			Retry(3, 10*time.Millisecond, &logger, func() error {
+			Retry(3, 10*time.Millisecond, func() error {
 				*attempts++
 
 				return tt.err

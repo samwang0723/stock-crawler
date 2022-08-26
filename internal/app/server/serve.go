@@ -147,7 +147,7 @@ func (s *server) Start(ctx context.Context) error {
 		}
 	}
 
-	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.0", helper.GetCurrentEnv())
+	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.1", helper.GetCurrentEnv())
 
 	//nolint:nolintlint, forbidigo
 	fmt.Println(signatureOut)
@@ -215,14 +215,6 @@ func (s *server) Run(ctx context.Context) error {
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
 			Schedule: "30 18 * * 1-5",
-			Types:    []convert.Source{convert.StakeConcentration},
-		})
-
-		// backfill failed concentration records
-		//
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "30 19 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
 

@@ -17,6 +17,8 @@ package entity
 import (
 	"strconv"
 	"sync"
+
+	"github.com/rs/zerolog/log"
 )
 
 //nolint:nolintlint, gochecknoglobals
@@ -44,15 +46,21 @@ func MapReduceStakeConcentration(objs []*StakeConcentration) *StakeConcentration
 		idx, err := strconv.Atoi(val.HiddenField)
 		// make sure to cover latest source of truth date's concentration data
 		if err == nil && idx == 0 {
-			res = val
+			res = val.Clone()
 		}
 
 		volumeDiff[idx] = int32(val.SumBuyShares - val.SumSellShares)
 	}
 
+	if res == nil {
+		log.Error().Msg("no latest source of truth date's concentration data")
+
+		return nil
+	}
+
 	res.Diff = volumeDiff
 
-	return res.Clone()
+	return res
 }
 
 func (sc *StakeConcentration) Clone() *StakeConcentration {

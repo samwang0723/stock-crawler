@@ -16,7 +16,7 @@ package parser
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"io"
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
@@ -24,6 +24,7 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -106,7 +107,12 @@ func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
 
 	res, err := p.strategy.Parse(reader, additional...)
 	if err != nil {
-		return fmt.Errorf("parser Execute(): %w", err)
+		// here we treat empty content as not an error, still continue
+		if errors.Is(err, ErrNoParseResults) {
+			return nil
+		}
+
+		return xerrors.Errorf("parser Execute(): %w", err)
 	}
 
 	*p.result = append(*p.result, res...)

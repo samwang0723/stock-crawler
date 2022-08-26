@@ -31,6 +31,7 @@ const (
 	StakeConcentrationV1 = "stakeconcentration-v1"
 )
 
+//go:generate mockgen -source=producer.go -destination=mocks/kafka.go -package=kafka
 type Kafka interface {
 	Close() error
 	WriteMessages(ctx context.Context, topic string, message []byte) error

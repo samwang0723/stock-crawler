@@ -5,7 +5,7 @@ help: ## show this help
 
 PROJECT_NAME?=core
 APP_NAME?=stock-crawler
-VERSION?=v2.0.0
+VERSION?=v2.0.1
 
 SHELL = /bin/bash
 

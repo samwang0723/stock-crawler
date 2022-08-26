@@ -51,7 +51,7 @@ func TestParseHtml(t *testing.T) {
 			name:    "wrong stock list html",
 			content: wrongDoc,
 			want:    0,
-			err:     ErrNoParseResults,
+			err:     nil,
 		},
 	}
 
@@ -68,7 +68,7 @@ func TestParseHtml(t *testing.T) {
 			err := res.Execute(*bytes.NewBuffer([]byte(tt.content)))
 
 			if got := len(*res.result); got != tt.want || !errors.Is(err, tt.err) {
-				t.Errorf("len(parser.result) = %v, want %v", got, tt.want)
+				t.Errorf("len(parser.result) = %v, want %v. err = %v, want = %v", got, tt.want, err, tt.err)
 			}
 		})
 	}

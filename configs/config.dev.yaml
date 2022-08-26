@@ -14,5 +14,5 @@ kafka:
   controller: "kafka-1:9092"
 
 crawler:
-  fetchWorkers: 10
-  rateLimit: 3000
+  fetchWorkers: 30
+  rateLimit: 1000

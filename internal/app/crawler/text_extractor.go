@@ -16,32 +16,20 @@ package crawler
 import (
 	"context"
 
-	"github.com/samwang0723/stock-crawler/internal/app/entity"
-	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
+
 	"golang.org/x/xerrors"
 )
 
-const (
-	stakeConcentrationTotalCount = 5
-)
-
 type textExtractor struct {
-	parser        parser.Parser
-	memCache      map[string][]*entity.StakeConcentration
-	interceptChan chan convert.InterceptData
+	parser parser.Parser
 }
 
-func newTextExtractor(pa parser.Parser) *textExtractor {
+func newTextExtractor(cfg Config) *textExtractor {
 	return &textExtractor{
-		parser:   pa,
-		memCache: make(map[string][]*entity.StakeConcentration),
+		parser: parser.New(parser.Config{Logger: cfg.Logger}),
 	}
-}
-
-func (te *textExtractor) InterceptData(ctx context.Context, interceptChan chan convert.InterceptData) {
-	te.interceptChan = interceptChan
 }
 
 func (te *textExtractor) Process(ctx context.Context, raw pipeline.Payload) (pipeline.Payload, error) {
@@ -57,46 +45,7 @@ func (te *textExtractor) Process(ctx context.Context, raw pipeline.Payload) (pip
 		return nil, xerrors.Errorf("parse error: %w", err)
 	}
 
-	te.broadcast(payload.Strategy, te.parser.Flush())
+	payload.ParsedContent = te.parser.Flush()
 
-	return raw, nil
-}
-
-func (te *textExtractor) broadcast(strategy convert.Source, data *[]interface{}) {
-	intercept := convert.InterceptData{}
-
-	if strategy == convert.StakeConcentration {
-		if st := te.cacheInMemory(data); st != nil {
-			intercept = convert.InterceptData{
-				Data: &[]interface{}{st},
-				Type: strategy,
-			}
-		}
-	} else {
-		intercept = convert.InterceptData{
-			Data: data,
-			Type: strategy,
-		}
-	}
-
-	if te.interceptChan != nil && intercept.Data != nil {
-		te.interceptChan <- intercept
-	}
-}
-
-func (te *textExtractor) cacheInMemory(data *[]interface{}) *entity.StakeConcentration {
-	for _, v := range *data {
-		if val, ok := v.(*entity.StakeConcentration); ok {
-			te.memCache[val.StockID] = append(te.memCache[val.StockID], val)
-
-			if len(te.memCache[val.StockID]) == stakeConcentrationTotalCount {
-				output := entity.MapReduceStakeConcentration(te.memCache[val.StockID])
-				delete(te.memCache, val.StockID)
-
-				return output
-			}
-		}
-	}
-
-	return nil
+	return payload, nil
 }

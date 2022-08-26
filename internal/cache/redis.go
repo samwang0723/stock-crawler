@@ -28,6 +28,7 @@ const (
 	CronjobLock = "cronjob-lock"
 )
 
+//go:generate mockgen -source=redis.go -destination=mocks/redis.go -package=cache
 type Redis interface {
 	SetExpire(ctx context.Context, key string, expired time.Time) error
 	SAdd(ctx context.Context, key string, value string) error
@@ -81,22 +82,26 @@ func (r *redisImpl) SAdd(ctx context.Context, key, value string) error {
 	err := r.instance.SAdd(ctx, key, value).Err()
 	if err != nil {
 		r.cfg.Logger.Error().Err(err).Msgf("redis SAdd(): key: %s, value: %s", key, value)
-	} else {
-		r.cfg.Logger.Info().Msgf("redis SAdd(): key: %s, value: %s", key, value)
+
+		return xerrors.Errorf("redis SAdd(): key: %s, value: %s, err: %w", key, value, err)
 	}
 
-	return xerrors.Errorf("redis SAdd(): key: %s, value: %s, err: %w", key, value, err)
+	r.cfg.Logger.Info().Msgf("redis SAdd(): key: %s, value: %s", key, value)
+
+	return nil
 }
 
 func (r *redisImpl) SMembers(ctx context.Context, key string) ([]string, error) {
 	res, err := r.instance.SMembers(ctx, key).Result()
 	if err != nil {
 		r.cfg.Logger.Error().Err(err).Msgf("redis SMembers(): res: %+v", res)
-	} else {
-		r.cfg.Logger.Info().Msgf("redis SMembers(): res: %+v", res)
+
+		return res, xerrors.Errorf("redis SMembers(): key: %s, err: %w", key, err)
 	}
 
-	return res, xerrors.Errorf("redis SMembers(): key: %s, err: %w", key, err)
+	r.cfg.Logger.Info().Msgf("redis SMembers(): res: %+v", res)
+
+	return res, nil
 }
 
 func (r *redisImpl) Close() error {
