@@ -71,7 +71,7 @@ upgrade: ## upgrade dependencies (beware, it can break everything)
 	go get -t -u ./... && \
 	go mod tidy
 
-build: lint test bench sec-scan docker-m1
+docker-build: lint test bench sec-scan docker-m1
 	@printf "\nyou can now deploy to your env of choice:\ncd deploy\nENV=dev make deploy-latest\n"
 
 docker-m1:
