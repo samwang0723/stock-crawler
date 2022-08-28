@@ -110,12 +110,12 @@ func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
 	if err != nil {
 		// here we treat empty content as not an error, still continue
 		if errors.Is(err, ErrNoParseResults) || errors.Is(err, ErrWrongConcentrationTitle) {
-			log.Error().Err(err).Msg("parser error occurred")
+			log.Error().Err(err).Msg("parser.Execute: failed + continue")
 
 			return nil
 		}
 
-		return xerrors.Errorf("parser Execute(): %w", err)
+		return xerrors.Errorf("parser.Execute: failed, err=%w;", err)
 	}
 
 	*p.result = append(*p.result, res...)

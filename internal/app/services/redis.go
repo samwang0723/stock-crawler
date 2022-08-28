@@ -37,11 +37,11 @@ type RedisConfig struct {
 
 func (cfg *RedisConfig) validate() error {
 	if cfg.Master == "" {
-		return xerrors.Errorf("invalid redis config value for master hostname")
+		return xerrors.Errorf("service.redis.validate: failed, reason: invalid master hostname")
 	}
 
 	if len(cfg.SentinelAddrs) == 0 {
-		return xerrors.Errorf("invalid redis config value for sentinel addresses")
+		return xerrors.Errorf("service.redis.validate: failed, reason: invalid sentinel addresses")
 	}
 
 	return nil
@@ -57,11 +57,11 @@ func (s *serviceImpl) ObtainLock(ctx context.Context, key string, expire time.Du
 
 func (s *serviceImpl) StopRedis() error {
 	if s.cache == nil {
-		return xerrors.Errorf("redis is not running")
+		return xerrors.Errorf("service.stopRedis: failed, reason: redis is not running")
 	}
 
 	if err := s.cache.Close(); err != nil {
-		return xerrors.Errorf("failed to stop redis: %w", err)
+		return xerrors.Errorf("service.stopRedis: failed, reason: cannot stop redis %w", err)
 	}
 
 	return nil

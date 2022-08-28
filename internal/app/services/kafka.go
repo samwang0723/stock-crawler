@@ -32,7 +32,7 @@ type KafkaConfig struct {
 
 func (cfg *KafkaConfig) validate() error {
 	if cfg.Controller == "" {
-		return xerrors.Errorf("invalid kafka config value for controller hostname")
+		return xerrors.Errorf("service.kafka.validate: failed, reason: invalid kafka config value for controller hostname")
 	}
 
 	return nil
@@ -40,12 +40,12 @@ func (cfg *KafkaConfig) validate() error {
 
 func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byte) error {
 	if s.producer == nil {
-		return xerrors.Errorf("kafka producer is not initialized")
+		return xerrors.Errorf("service.sendKafka: failed, reason: producer is not initialized")
 	}
 
 	err := s.producer.WriteMessages(ctx, topic, message)
 	if err != nil {
-		return xerrors.Errorf("failed to send kafka message: %w", err)
+		return xerrors.Errorf("service.sendKafka: failed, reason: cannot write message %w", err)
 	}
 
 	return nil
@@ -53,11 +53,11 @@ func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byt
 
 func (s *serviceImpl) StopKafka() error {
 	if s.producer == nil {
-		return xerrors.Errorf("kafka producer is not initialized")
+		return xerrors.Errorf("service.stopKafka: failed, reason: producer is not initialized")
 	}
 
 	if err := s.producer.Close(); err != nil {
-		return xerrors.Errorf("failed to close kafka producer: %w", err)
+		return xerrors.Errorf("service.stopKafka: failed, reason: cannot close producer %w", err)
 	}
 
 	return nil

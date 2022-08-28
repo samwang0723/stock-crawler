@@ -67,7 +67,7 @@ func (s *serviceImpl) Crawl(
 ) (int, error) {
 	count, err := s.crawler.Crawl(ctx, linkIt, interceptChan...)
 	if err != nil {
-		return 0, fmt.Errorf("server crawl failed: %w", err)
+		return 0, fmt.Errorf("service.crawl: failed, reason: %w", err)
 	}
 
 	return count, nil

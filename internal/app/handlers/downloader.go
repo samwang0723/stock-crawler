@@ -41,7 +41,7 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 		}
 	})
 	if err != nil {
-		return fmt.Errorf("handlers CronDownload(): %w", err)
+		return fmt.Errorf("handlers.CronDownload: failed, reason: %w", err)
 	}
 
 	return nil
@@ -76,11 +76,11 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 			// since its hard to predict how many records already been processed,
 			// sync.WaitGroup hard to apply in this scenario, use timeout instead
 			case <-time.After(cronTerminatedHour * time.Hour):
-				h.logger.Warn().Msg("batching download: timeout")
+				h.logger.Warn().Msg("handlers.batchingDownload: failed, reason: timeout")
 
 				return
 			case <-ctx.Done():
-				h.logger.Warn().Msg("batching download: context cancel")
+				h.logger.Warn().Msg("handlers.batchingDownload: failed, reason: context_cancel")
 
 				return
 			case obj, ok := <-interceptChan:
@@ -93,7 +93,7 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 
 	_, err := h.dataService.Crawl(ctx, &linkIterator{links: links}, interceptChan)
 	if err != nil {
-		h.logger.Error().Err(err).Msg("dataService crawl failed")
+		h.logger.Error().Err(err).Msg("handlers.batchingDownload: failed, reason: dataService crawl failed")
 	}
 }
 
@@ -110,7 +110,9 @@ func (h *handlerImpl) generateURLs(ctx context.Context, date string, source conv
 		urls, err = h.dataService.ListCrawlingConcentrationURLs(ctx, unifiedDate)
 
 		if err != nil {
-			h.logger.Error().Err(err).Msg("dataService list crawling concentration urls failed")
+			h.logger.Error().Err(err).Msg(
+				"handlers.generateURLs: failed, reason: dataService list crawling concentration urls failed",
+			)
 		}
 	case convert.TwseStockList, convert.TpexStockList:
 		urls = append(urls, crawler.TypeLinkMapping[source.String()])
@@ -152,6 +154,6 @@ func (h *handlerImpl) processData(ctx context.Context, obj convert.InterceptData
 	}
 
 	if err != nil {
-		h.logger.Error().Err(err).Msg(fmt.Sprintf("handler process data: %v", obj.Type))
+		h.logger.Error().Err(err).Msg(fmt.Sprintf("handlers.processData: failed, reason: unknown_type=%v;", obj.Type))
 	}
 }

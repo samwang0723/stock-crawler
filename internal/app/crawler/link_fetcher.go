@@ -47,7 +47,7 @@ func newLinkFetcher(urlGetter URLGetter, proxy *Proxy, logger *zerolog.Logger) *
 func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipeline.Payload, error) {
 	payload, ok := p.(*crawlerPayload)
 	if !ok {
-		return nil, xerrors.Errorf("invalid payload type: %T", p)
+		return nil, xerrors.Errorf("linkFetcher.Process: failed, payload_type=%T;", p)
 	}
 
 	uri := payload.URL
@@ -57,7 +57,7 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 
 	req, err := http.NewRequestWithContext(ctx, "GET", uri, http.NoBody)
 	if err != nil {
-		return nil, xerrors.Errorf("failed to create request: %w", err)
+		return nil, xerrors.Errorf("linkFetcher.Process: failed, err=%w;", err)
 	}
 
 	req.Header = http.Header{
@@ -66,7 +66,7 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		"Connection": []string{"close"},
 	}
 
-	lf.logger.Info().Msgf("download started: %s", uri)
+	lf.logger.Info().Msgf("linkFetcher.Process: success, reason: download started; url=%s;", uri)
 
 	resp, err := lf.urlGetter.Do(req)
 	if err != nil {
@@ -75,7 +75,7 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 
 	// Skip payloads for invalid http status codes.
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, xerrors.Errorf("invalid http status code: %d", resp.StatusCode)
+		return nil, xerrors.Errorf("linkFetcher.Process: failed, http_status_code=%d;", resp.StatusCode)
 	}
 
 	// copy stream from response body, although it consumes memory but
@@ -84,11 +84,12 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 	resp.Body.Close()
 
 	if err != nil {
-		return nil, xerrors.Errorf("io.Copy(): %w", err)
+		return nil, xerrors.Errorf("linkFetcher.Process: failed, err=%w;", err)
 	}
 
 	//nolint:nolintlint, gomnd
-	lf.logger.Info().Msgf("download completed (%s), URL: %s", helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
+	lf.logger.Info().Msgf("linkFetcher.Process: success, reason: download completed; size=%s; url=%s;",
+		helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
 
 	return payload, nil
 }

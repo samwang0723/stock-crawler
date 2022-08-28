@@ -40,7 +40,7 @@ func main() {
 		signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 		select {
 		case <-quit:
-			logger.Info().Msg("shutting down due to signal")
+			logger.Info().Msg("shutdown: started, reason: signal")
 			cancel()
 		case <-ctx.Done():
 		}
@@ -50,5 +50,5 @@ func main() {
 		logger.Error().Err(err).Msg("server.Serve failed")
 	}
 
-	logger.Info().Msg("shutdown completed")
+	logger.Info().Msg("shutdown: completed")
 }

@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 )
@@ -56,7 +57,8 @@ func (p *crawlerPayload) Clone() pipeline.Payload {
 
 	_, err := io.Copy(&newP.RawContent, &p.RawContent)
 	if err != nil {
-		panic(fmt.Sprintf("error cloning payload raw content: %v", err))
+		log.Error().Err(err).Msg("payload.Clone: failed, reason: copy raw content failed")
+		panic(fmt.Sprintf("payload.Clone: failed, err=%v;", err))
 	}
 
 	return newP

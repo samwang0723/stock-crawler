@@ -39,7 +39,7 @@ func (s *serviceImpl) StopCron() {
 func (s *serviceImpl) AddJob(ctx context.Context, spec string, job func()) error {
 	err := s.cronjob.AddJob(ctx, spec, job)
 	if err != nil {
-		return fmt.Errorf("service cron add job failed: %w", err)
+		return fmt.Errorf("service.cron: add_job_failed, reason: %w", err)
 	}
 
 	return nil

@@ -70,10 +70,10 @@ func New(cfg Config) Redis {
 func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time) error {
 	expire, err := r.instance.ExpireAt(ctx, key, expired).Result()
 	if err != nil {
-		return xerrors.Errorf("redis SetExpire(): key: %s, expired: %s, err: %w", key, expired, err)
+		return xerrors.Errorf("cache.SetExpire: failed, key=%s; expired=%s; err=%w;", key, expired, err)
 	}
 
-	r.cfg.Logger.Info().Msgf("redis SetExpire(): key: %s expired: %t", key, expire)
+	r.cfg.Logger.Info().Msgf("cache.SetExpire: success, key=%s; expired=%t;", key, expire)
 
 	return nil
 }
@@ -81,12 +81,10 @@ func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time
 func (r *redisImpl) SAdd(ctx context.Context, key, value string) error {
 	err := r.instance.SAdd(ctx, key, value).Err()
 	if err != nil {
-		r.cfg.Logger.Error().Err(err).Msgf("redis SAdd(): key: %s, value: %s", key, value)
-
-		return xerrors.Errorf("redis SAdd(): key: %s, value: %s, err: %w", key, value, err)
+		return xerrors.Errorf("cache.SAdd: failed, key=%s; value=%s; err=%w;", key, value, err)
 	}
 
-	r.cfg.Logger.Info().Msgf("redis SAdd(): key: %s, value: %s", key, value)
+	r.cfg.Logger.Info().Msgf("cache.SAdd: success, key=%s; value=%s;", key, value)
 
 	return nil
 }
@@ -94,19 +92,17 @@ func (r *redisImpl) SAdd(ctx context.Context, key, value string) error {
 func (r *redisImpl) SMembers(ctx context.Context, key string) ([]string, error) {
 	res, err := r.instance.SMembers(ctx, key).Result()
 	if err != nil {
-		r.cfg.Logger.Error().Err(err).Msgf("redis SMembers(): res: %+v", res)
-
-		return res, xerrors.Errorf("redis SMembers(): key: %s, err: %w", key, err)
+		return res, xerrors.Errorf("cache.SMembers: failed, key=%s; err=%w;", key, err)
 	}
 
-	r.cfg.Logger.Info().Msgf("redis SMembers(): res: %+v", res)
+	r.cfg.Logger.Info().Msgf("cache.SMembers: success, res=%+v;", res)
 
 	return res, nil
 }
 
 func (r *redisImpl) Close() error {
 	if err := r.instance.Close(); err != nil {
-		return xerrors.Errorf("redis Close(): err: %w", err)
+		return xerrors.Errorf("cache.Close: failed, err=%w;", err)
 	}
 
 	return nil
@@ -119,14 +115,14 @@ func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Dura
 	// Try to obtain lock.
 	lock, err := locker.Obtain(ctx, key, expire, nil)
 	if errors.Is(err, redislock.ErrNotObtained) {
-		r.cfg.Logger.Error().Err(err).Msg("redis ObtainLock(): Could not obtain lock!")
+		r.cfg.Logger.Error().Err(err).Msg("cache.ObtainLock: failed, could not obtain lock!")
 
 		return nil
 	} else if err != nil {
 		panic(err)
 	}
 
-	r.cfg.Logger.Debug().Msgf("redis ObtainLock(): (%s) lock obtained successfully!", key)
+	r.cfg.Logger.Debug().Msgf("cache.ObtainLock: success, key=%s;", key)
 
 	return lock
 }

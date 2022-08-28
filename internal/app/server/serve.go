@@ -110,12 +110,12 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 			dataService.StopCron()
 			err := dataService.StopRedis()
 			if err != nil {
-				return fmt.Errorf("data service stop redis failed: %w", err)
+				return fmt.Errorf("stop_redis: failed, reason: %w", err)
 			}
 
 			err = dataService.StopKafka()
 			if err != nil {
-				return fmt.Errorf("data service stop kafka failed: %w", err)
+				return fmt.Errorf("stop_kafka: failed, reason: %w", err)
 			}
 
 			return nil
@@ -123,7 +123,7 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 	)
 
 	if err := svc.Run(ctx); err != nil {
-		return fmt.Errorf("server run failed: %w", err)
+		return fmt.Errorf("server.serve: failed, reason: %w", err)
 	}
 
 	return nil
@@ -143,7 +143,7 @@ func newServer(opts ...Option) IServer {
 func (s *server) Start(ctx context.Context) error {
 	for _, fn := range s.opts.BeforeStart {
 		if err := fn(); err != nil {
-			return err
+			return fmt.Errorf("server.before_start: failed, reason: %w", err)
 		}
 	}
 
@@ -157,7 +157,7 @@ func (s *server) Start(ctx context.Context) error {
 	go func() {
 		// start healthcheck specific server
 		if err = s.HealthCheck().ListenAndServe(); err != nil {
-			err = fmt.Errorf("server healthcheck listen and serve failed: %w", err)
+			err = fmt.Errorf("server.healthcheck: failed, reason: listen and serve failed. %w", err)
 		}
 	}()
 
@@ -167,7 +167,7 @@ func (s *server) Start(ctx context.Context) error {
 func (s *server) Stop(ctx context.Context) error {
 	for _, fn := range s.opts.BeforeStop {
 		if err := fn(); err != nil {
-			return fmt.Errorf("server before stop failed: %w", err)
+			return fmt.Errorf("server.before_stop: failed, reason: %w", err)
 		}
 	}
 
@@ -177,7 +177,7 @@ func (s *server) Stop(ctx context.Context) error {
 
 	err := s.HealthCheck().Shutdown(sctx)
 	if err != nil {
-		return fmt.Errorf("server stop failed: %w", err)
+		return fmt.Errorf("server.stop: failed, reason: %w", err)
 	}
 
 	return nil

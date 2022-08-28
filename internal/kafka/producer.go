@@ -75,11 +75,11 @@ func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []b
 
 	err := k.instance.WriteMessages(ctx, msg)
 	if err != nil {
-		return xerrors.Errorf("kafka writeMessages(): %w", err)
+		return xerrors.Errorf("kafka.WriteMessages: failed, err=%w;", err)
 	}
 
 	k.cfg.Logger.Info().Msgf(
-		"kafka writeMessages(): written bytes: %d, topic: %s, data: %s",
+		"kafka.WriteMessages: success, bytes=%d; topic=%s; data=%s;",
 		len(message),
 		topic,
 		helper.Bytes2String(message),
@@ -89,13 +89,11 @@ func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []b
 }
 
 func (k *kafkaImpl) Close() error {
-	k.cfg.Logger.Info().Msg("kafka close()")
-
 	if err := k.instance.Close(); err != nil {
-		k.cfg.Logger.Error().Err(err).Msg("close failed")
-
-		return xerrors.Errorf("kafka close(): %w", err)
+		return xerrors.Errorf("kafka.Close: failed, err=%w;", err)
 	}
+
+	k.cfg.Logger.Info().Msg("kafka.Close: success")
 
 	return nil
 }

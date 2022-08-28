@@ -57,7 +57,7 @@ _______________________________________________
 func ReadFromFile(fileName string) (string, error) {
 	bs, err := os.ReadFile(fileName)
 	if err != nil {
-		return "", xerrors.Errorf("read file %s failed: %w", fileName, err)
+		return "", xerrors.Errorf("helper.ReadFromFile: failed, file=%s; err=%w;", fileName, err)
 	}
 
 	return string(bs), nil
@@ -69,7 +69,7 @@ func EncodeBig5(s []byte) ([]byte, error) {
 	data, e := io.ReadAll(O)
 
 	if e != nil {
-		return nil, xerrors.Errorf("encode big5 failed: %w", e)
+		return nil, xerrors.Errorf("helper.EncodeBig5: failed, err=%w;", e)
 	}
 
 	return data, nil

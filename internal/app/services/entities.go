@@ -44,15 +44,18 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 		if res, ok := val.(*entity.DailyClose); ok {
 			b, err := json.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("DailyCloseThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("service.dailyCloseThroughKafka: failed, reason: json marshal error %w", err)
 			}
 
 			err = s.sendKafka(ctx, kafka.DailyClosesV1, b)
 			if err != nil {
-				return xerrors.Errorf("DailyCloseThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("service.dailyCloseThroughKafka: failed, reason: send kafka error %w", err)
 			}
 		} else {
-			return xerrors.Errorf("Cannot cast interface to *dto.DailyClose: %v", reflect.TypeOf(val).Elem())
+			return xerrors.Errorf(
+				"service.dailyCloseThroughKafka: failed, reason: interface casting error %v",
+				reflect.TypeOf(val).Elem(),
+			)
 		}
 	}
 
@@ -64,15 +67,18 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 		if res, ok := val.(*entity.Stock); ok {
 			b, err := json.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("StockThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("service.stockThroughKafka: failed, reason: json marshal error %w", err)
 			}
 
 			err = s.sendKafka(ctx, kafka.StocksV1, b)
 			if err != nil {
-				return xerrors.Errorf("StockThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("service.stockThroughKafka: failed, reason: send kafka error %w", err)
 			}
 		} else {
-			return xerrors.Errorf("Cannot cast interface to *dto.Stock: %v", reflect.TypeOf(val).Elem())
+			return xerrors.Errorf(
+				"service.stockThroughKafka: failed, reason: interface casting error %v",
+				reflect.TypeOf(val).Elem(),
+			)
 		}
 	}
 
@@ -84,15 +90,18 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 		if res, ok := val.(*entity.ThreePrimary); ok {
 			b, err := json.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("ThreePrimaryThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("service.threePrimaryThroughKafka: failed, reason: json marshal error %w", err)
 			}
 
 			err = s.sendKafka(ctx, kafka.ThreePrimaryV1, b)
 			if err != nil {
-				return xerrors.Errorf("ThreePrimaryThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("service.threePrimaryThroughKafka: failed, send kafka error %w", err)
 			}
 		} else {
-			return xerrors.Errorf("Cannot cast interface to *dto.ThreePrimary: %v", reflect.TypeOf(val).Elem())
+			return xerrors.Errorf(
+				"service.threePrimaryThroughKafka: failed, reason: interface casting error %v",
+				reflect.TypeOf(val).Elem(),
+			)
 		}
 	}
 
@@ -104,23 +113,26 @@ func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *
 		if res, ok := val.(*entity.StakeConcentration); ok {
 			b, err := json.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("StakeConcentrationThroughKafka: json.Marshal failed: %w", err)
+				return xerrors.Errorf("service.stakeConcentrationThroughKafka: failed, reason: json marshal error %w", err)
 			}
 
 			err = s.sendKafka(ctx, kafka.StakeConcentrationV1, b)
 			if err != nil {
-				return xerrors.Errorf("StakeConcentrationThroughKafka: sendKafka failed: %w", err)
+				return xerrors.Errorf("service.stakeConcentrationThroughKafka: failed, reason: send kafka error %w", err)
 			}
 
 			// record parsed records to prevent duplicate parsing, default expire the key after 6 hours
 			err = s.cacheParsedConcentration(ctx, res.Date, res.StockID)
 			if err != nil {
-				return xerrors.Errorf("StakeConcentrationThroughKafka: cacheParsedConcentration failed: %w", err)
+				return xerrors.Errorf("service.stakeConcentrationThroughKafka: failed, reason: cache parsed stock_id error %w", err)
 			}
 
 			res.Recycle()
 		} else {
-			return xerrors.Errorf("Cannot cast interface to *dto.StakeConcentration: %v", reflect.TypeOf(val).Elem())
+			return xerrors.Errorf(
+				"service.stakeConcentrationThroughKafka: failed, reason: interface casting error: %v",
+				reflect.TypeOf(val).Elem(),
+			)
 		}
 	}
 
@@ -132,12 +144,12 @@ func (s *serviceImpl) cacheParsedConcentration(ctx context.Context, date, stockI
 
 	err := s.cache.SAdd(ctx, key, stockID)
 	if err != nil {
-		return xerrors.Errorf("cacheParsedConcentration: cache.SAdd failed: %w", err)
+		return xerrors.Errorf("service.cacheParsedConcentration: failed, reason: cache sadd error %w", err)
 	}
 
 	err = s.cache.SetExpire(ctx, key, time.Now().Add(defaultCacheExpire))
 	if err != nil {
-		return xerrors.Errorf("cacheParsedConcentration: cache.SetExpire failed: %w", err)
+		return xerrors.Errorf("service.cacheParsedConcentration: failed, reason: cache set_expire error %w", err)
 	}
 
 	return nil
@@ -146,12 +158,15 @@ func (s *serviceImpl) cacheParsedConcentration(ctx context.Context, date, stockI
 func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error) {
 	defaultList, err := listStocks()
 	if err != nil {
-		return nil, xerrors.Errorf("ListCrawlingConcentrationURLs: listStocks failed: %w", err)
+		return nil, xerrors.Errorf("service.listCrawlingConcentrationURLs: failed, reason: list_stocks error %w", err)
 	}
 
 	res, err := s.cache.SMembers(ctx, date)
 	if err != nil {
-		return nil, xerrors.Errorf("ListCrawlingConcentrationURLs: redis(SMembers) failed: %w", err)
+		return nil, xerrors.Errorf(
+			"service.listCrawlingConcentrationURLs: failed, reason: redis smembers listing cached stock ids error %w",
+			err,
+		)
 	}
 
 	var urls []string
@@ -176,14 +191,14 @@ func listStocks() ([]string, error) {
 	jsonFile, err := os.Open(sourceStockList)
 	// if we os.Open returns an error then handle it
 	if err != nil {
-		return nil, xerrors.Errorf("listStocks: os.Open failed: %w", err)
+		return nil, xerrors.Errorf("service.listStocks: failed, reason: os.open error %w", err)
 	}
 	// defer the closing of our jsonFile so that we can parse it later on
 	defer jsonFile.Close()
 
 	byteValue, err := io.ReadAll(jsonFile)
 	if err != nil {
-		return nil, xerrors.Errorf("listStocks: io.ReadAll failed: %w", err)
+		return nil, xerrors.Errorf("service.listStocks: failed, reason: io.read_all error %w", err)
 	}
 
 	// decode json stock list
@@ -193,7 +208,7 @@ func listStocks() ([]string, error) {
 
 	err = json.Unmarshal(byteValue, &list)
 	if err != nil {
-		return nil, xerrors.Errorf("listStocks: json.Unmarshal failed: %w", err)
+		return nil, xerrors.Errorf("service.listStocks: failed, reason: json unmarshal error %w", err)
 	}
 
 	return list.StockIds, nil
