@@ -44,7 +44,7 @@ type IServer interface {
 	Config() *config.SystemConfig
 	Run(context.Context) error
 	Start(context.Context) error
-	Stop(context.Context) error
+	Stop() error
 }
 
 type server struct {
@@ -164,7 +164,7 @@ func (s *server) Start(ctx context.Context) error {
 	return err
 }
 
-func (s *server) Stop(ctx context.Context) error {
+func (s *server) Stop() error {
 	for _, fn := range s.opts.BeforeStop {
 		if err := fn(); err != nil {
 			return fmt.Errorf("server.before_stop: failed, reason: %w", err)
@@ -172,13 +172,15 @@ func (s *server) Stop(ctx context.Context) error {
 	}
 
 	// shutdown healthcheck server
-	sctx, cancel := context.WithTimeout(ctx, gracefulShutdownPeriod)
+	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownPeriod)
 	defer cancel()
 
-	err := s.HealthCheck().Shutdown(sctx)
+	err := s.HealthCheck().Shutdown(ctx)
 	if err != nil {
 		return fmt.Errorf("server.stop: failed, reason: %w", err)
 	}
+
+	<-ctx.Done()
 
 	return nil
 }
@@ -222,7 +224,8 @@ func (s *server) Run(ctx context.Context) error {
 	}(ctx, s)
 	waitGroup.Wait()
 
-	return s.Stop(ctx)
+	//nolint:nolintlint, contextcheck
+	return s.Stop()
 }
 
 func (s *server) Name() string {
