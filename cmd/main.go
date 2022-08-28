@@ -47,7 +47,7 @@ func main() {
 	}()
 
 	if err := server.Serve(ctx, &logger); err != nil {
-		logger.Error().Err(err).Msg("server.Serve failed")
+		logger.Error().Err(err).Msg("server.Serve: failed")
 	}
 
 	logger.Info().Msg("shutdown: completed")
