@@ -159,6 +159,7 @@ func GetDateFromUTC(timestamp, format string) string {
 
 func GetDateFromOffset(offset int32, format string, input ...time.Time) string {
 	current := time.Now()
+
 	if len(input) > 0 {
 		current = input[0]
 	}

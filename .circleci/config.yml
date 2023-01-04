@@ -32,6 +32,16 @@ executors:
       image: ubuntu-2204:2022.04.1
       docker_layer_caching: true
     working_directory: << pipeline.parameters.workspace_directory >>
+  docker-publisher:
+    environment:
+      IMAGE_NAME: samwang0723/stock-crawler
+    docker: # Each job requires specifying an executor
+      # (either docker, macos, or machine), see
+      - image: circleci/node:latest
+    auth:
+      username: ${DOCKERHUB_USERNAME}
+      password: ${DOCKERHUB_PASSWORD}
+    working_directory: << pipeline.parameters.workspace_directory >>
 
 commands:
   docker-build:
@@ -52,13 +62,13 @@ commands:
         type: string
         description: can be a tag (v1.0.1) or a commit sha1 ("${CIRCLE_SHA1}") for example
     steps:
-      # TODO: not using aws-ecr v8.1.2 for now, there is a bug it didn't use the latest aws-cli will cause issue for getting the env for role arn, related issue https://github.com/CircleCI-Public/aws-ecr-orb/issues/203     
+      # TODO: not using aws-ecr v8.1.2 for now, there is a bug it didn't use the latest aws-cli will cause issue for getting the env for role arn, related issue https://github.com/CircleCI-Public/aws-ecr-orb/issues/203
       # - aws-ecr/ecr-login:
-      #     assume-web-identity: true 
+      #     assume-web-identity: true
       #     region: ${AWS_ECR_REGION}
       #     role-arn: ${AWS_ECR_ROLE_ARN}
       #     role-session-name: 'CircleCI-${CIRCLE_PROJECT_REPONAME}-${CIRCLE_BUILD_NUM}'
-      #     registry-id: AWS_ECR_REGISTRY_ID 
+      #     registry-id: AWS_ECR_REGISTRY_ID
       - aws-cli/setup:
           role-arn: ${AWS_ECR_ROLE_ARN}
           role-session-name: 'CircleCI-${CIRCLE_PROJECT_REPONAME}-${CIRCLE_BUILD_NUM}'
@@ -159,6 +169,16 @@ jobs:
           image-name: "<< parameters.ecr-repo-uri >>"
           image-tag: "${CIRCLE_TAG:-$CIRCLE_SHA1}"
 
+  docker-publish-to-hub:
+    executor: docker-publisher
+    steps:
+      - run:
+          name: publish docker image to DockerHub
+          command: |
+            echo “${DOCKERHUB_PASSWORD}” | docker login -u “${DOCKERHUB_USERNAME}” - password-stdio
+            docker build -t $IMAGE_NAME .
+            docker push ${IMAGE_NAME}:latest
+
 workflows:
   version: 2
   docker-build-tag-push-deploy:
@@ -193,14 +213,14 @@ workflows:
               only: /.*/
             branches:
               only:
-                - main
+                - master
       - path-filtering/filter:
           name: dynamic-workflows
-          base-revision: main
+          base-revision: master
           mapping: |
-            deploy/adev-app-main-122/.* dev-changed true
-            deploy/asta-app-main/.* sta-changed true
-            deploy/apro-app-main/.* pro-changed true
+            deploy/develop/.* dev-changed true
+            deploy/staging/.* sta-changed true
+            deploy/master/.* pro-changed true
             internal/docs/swagger.json api-changed true
           config-path: .circleci/dynamic-workflows.yaml
           filters:
