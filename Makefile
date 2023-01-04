@@ -1,4 +1,4 @@
-.PHONY: help test test-race test-leak bench bench-compare lint sec-scan upgrade changelog-gen changelog-commit
+.PHONY: help test test-race test-leak bench bench-compare lint sec-scan upgrade changelog-gen changelog-commit docker-build
 
 help: ## show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -71,7 +71,7 @@ upgrade: ## upgrade dependencies (beware, it can break everything)
 	go get -t -u ./... && \
 	go mod tidy
 
-docker-build: lint test bench sec-scan docker-m1
+docker-build: lint test bench sec-scan docker-m1 ## build docker image in M1 device
 	@printf "\nyou can now deploy to your env of choice:\ncd deploy\nENV=dev make deploy-latest\n"
 
 docker-m1:
@@ -165,5 +165,5 @@ changelog-commit:
 #  mock   #
 ###########
 
-mock-gen:
+mock-gen: ## generate mocks
 	go generate ./...
