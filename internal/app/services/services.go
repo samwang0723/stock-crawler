@@ -40,6 +40,7 @@ type IService interface {
 	StopKafka() error
 	ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error)
 	Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error)
+	IsHoliday(ctx context.Context, date string) bool
 }
 
 type serviceImpl struct {

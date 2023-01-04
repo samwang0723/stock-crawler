@@ -207,7 +207,9 @@ func UnifiedDateFormatToTwse(input string) string {
 		return resNew
 	}
 
-	return input
+	unifiedDate := strings.ReplaceAll(input, "-", "")
+
+	return unifiedDate
 }
 
 //nolint:nolintlint, cyclop

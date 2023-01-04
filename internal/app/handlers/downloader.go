@@ -59,6 +59,14 @@ func (h *handlerImpl) batchingDownload(ctx context.Context, rewind int32, types 
 
 	for _, strategy := range types {
 		date := formatQueryDate(rewind, strategy)
+
+		// skip holiday if within redis cache
+		if h.dataService.IsHoliday(ctx, date) {
+			h.logger.Warn().Msg(fmt.Sprintf("handlers.batchingDownload: skip holiday, date=%s;", date))
+
+			continue
+		}
+
 		urls := h.generateURLs(ctx, date, strategy)
 
 		for _, l := range urls {

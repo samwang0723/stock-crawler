@@ -211,6 +211,63 @@ func Test_FormalizeValidTimeWithLocation(t *testing.T) {
 	}
 }
 
+func Test_UnifiedDateFormatToTwse(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "concentration date",
+			input: "2021-12-23",
+			want:  "20211223",
+		},
+		{
+			name:  "tpex date",
+			input: "110/12/23",
+			want:  "20211223",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := UnifiedDateFormatToTwse(tt.input)
+			assert.Equal(t, got, tt.want)
+		})
+	}
+}
+
+func Test_UnifiedDateFormatToTpex(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "tpex date",
+			input: "2021/12/23",
+			want:  "110/12/23",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := UnifiedDateFormatToTpex(tt.input)
+			assert.Equal(t, got, tt.want)
+		})
+	}
+}
+
 func Test_GetDateFromUTC(t *testing.T) {
 	t.Parallel()
 
@@ -237,6 +294,12 @@ func Test_GetDateFromUTC(t *testing.T) {
 			val:    "",
 			format: TpexDateFormat,
 			want:   "",
+		},
+		{
+			name:   "convert concentration timestamp",
+			val:    "1641323046",
+			format: StakeConcentrationFormat,
+			want:   "2022-01-05",
 		},
 	}
 
@@ -338,7 +401,7 @@ func Test_StringNBytes(t *testing.T) {
 	assert.Equal(t, "abcde", Bytes2String([]byte("abcde")))
 }
 
-func Test_Difference(t *testing.T) {
+func Test_Diff(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {

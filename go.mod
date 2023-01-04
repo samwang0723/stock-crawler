@@ -1,6 +1,6 @@
 module github.com/samwang0723/stock-crawler
 
-go 1.17
+go 1.18
 
 require (
 	github.com/bsm/redislock v0.7.2
@@ -17,8 +17,9 @@ require (
 	github.com/segmentio/kafka-go v0.4.31
 	github.com/stretchr/testify v1.7.1
 	go.uber.org/goleak v1.1.12
-	golang.org/x/net v0.0.0-20220722155237-a158d28d115b
-	golang.org/x/text v0.3.7
+	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
+	golang.org/x/net v0.1.0
+	golang.org/x/text v0.4.0
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 )
@@ -42,9 +43,8 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
-	golang.org/x/tools v0.1.12 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/DATA-DOG/go-sqlmock.v1 v1.3.0 // indirect
 )
