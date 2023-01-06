@@ -25,7 +25,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//go:generate mockgen -source=cronjob.go -destination=mocks/cronjobs.go -package=cronjor
+//go:generate mockgen -source=cronjob.go -destination=mocks/cronjobs.go -package=cronjob
 type Cronjob interface {
 	Start()
 	Stop()
