@@ -272,7 +272,7 @@ func TestStock(t *testing.T) {
 		{
 			name: "convert Stock",
 			val: &Data{
-				RawData: []string{"2330　ABC", "", "", "", "XXX", "", ""},
+				RawData: []string{"2330　ABC", "", "", "上櫃", "XXX", "", ""},
 				Target:  TwseStockList,
 			},
 			exp: &entity.Stock{
@@ -280,6 +280,7 @@ func TestStock(t *testing.T) {
 				Name:     "ABC",
 				Country:  "TW",
 				Category: "XXX",
+				Market:   "otc",
 			},
 		},
 		{

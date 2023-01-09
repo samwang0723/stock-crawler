@@ -32,11 +32,19 @@ func (c *stockImpl) Execute(data *Data) interface{} {
 		return output
 	}
 
-	s := strings.Split(data.RawData[0], "　")
+	str := strings.Split(data.RawData[0], "　")
+	t := strings.TrimSpace(data.RawData[3])
+
+	market := "tse"
+	if strings.Contains(t, "上櫃") {
+		market = "otc"
+	}
+
 	output = &entity.Stock{
-		StockID:  strings.TrimSpace(s[0]),
-		Name:     strings.TrimSpace(s[1]),
+		StockID:  strings.TrimSpace(str[0]),
+		Name:     strings.TrimSpace(str[1]),
 		Country:  "TW",
+		Market:   market,
 		Category: strings.TrimSpace(data.RawData[4]),
 	}
 

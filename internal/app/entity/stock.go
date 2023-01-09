@@ -18,4 +18,5 @@ type Stock struct {
 	Name     string `json:"name"`
 	Country  string `json:"country"`
 	Category string `json:"category"`
+	Market   string `json:"market"`
 }
