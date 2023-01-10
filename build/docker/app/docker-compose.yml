@@ -7,10 +7,10 @@ services:
       - "8086:8086"
     env_file:
       - .env
-    logging:
-      driver: "sumologic"
-      options:
-        sumo-url: "https://collectors.jp.sumologic.com/receiver/v1/http/${SUMO_KEY}"
+#    logging:
+#        driver: "sumologic"
+#        options:
+#        sumo-url: "https://collectors.jp.sumologic.com/receiver/v1/http/${SUMO_KEY}"
     networks:
       - default
       - kafka_jarvis-infra

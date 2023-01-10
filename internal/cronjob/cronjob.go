@@ -73,8 +73,11 @@ func (c Config) Error(err error, msg string, keysAndValues ...interface{}) {
 
 func (c *cronjobImpl) AddJob(ctx context.Context, spec string, job func()) error {
 	_, err := c.instance.AddFunc(spec, job)
+	if err != nil {
+		return xerrors.Errorf("cronjob.AddJob: failed, spec=%s, err=%w", spec, err)
+	}
 
-	return xerrors.Errorf("cronjob.AddJob: failed, err=%w;", err)
+	return nil
 }
 
 func (c *cronjobImpl) Start() {
