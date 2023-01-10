@@ -202,29 +202,6 @@ func (s *server) Run(ctx context.Context) error {
 		// by default starting cronjob for regular daily updates pulling
 		// cronjob using redis distrubted lock to prevent multiple instances
 		// pulling same content
-		//
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "30 17 * * 1-5",
-			Types: []convert.Source{
-				convert.TwseDailyClose,
-				convert.TwseThreePrimary,
-				convert.TpexDailyClose,
-				convert.TpexThreePrimary,
-			},
-		})
-
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "30 19 * * 1-5",
-			Types:    []convert.Source{convert.StakeConcentration},
-		})
-
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "00 21 * * 1-5",
-			Types:    []convert.Source{convert.StakeConcentration},
-		})
 
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
@@ -233,6 +210,36 @@ func (s *server) Run(ctx context.Context) error {
 				convert.TpexStockList,
 				convert.TwseStockList,
 			},
+		})
+
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 15 * * 1-5",
+			Types: []convert.Source{
+				convert.TwseDailyClose,
+				convert.TpexDailyClose,
+			},
+		})
+
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "00 17 * * 1-5",
+			Types: []convert.Source{
+				convert.TwseThreePrimary,
+				convert.TpexThreePrimary,
+			},
+		})
+
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "30 17 * * 1-5",
+			Types:    []convert.Source{convert.StakeConcentration},
+		})
+
+		//nolint:nolintlint, errcheck
+		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
+			Schedule: "00 20 * * 1-5",
+			Types:    []convert.Source{convert.StakeConcentration},
 		})
 
 		<-ctx.Done()

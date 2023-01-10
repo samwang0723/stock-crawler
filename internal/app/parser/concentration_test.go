@@ -43,7 +43,7 @@ func TestParseConcentration(t *testing.T) {
 	t.Parallel()
 
 	wrongDoc := "<html><body><table><tr><td>WRONG</td></tr></table></body></html>"
-	correctDoc, _ := helper.ReadFromFile(".testfiles/concentration.html")
+	correctDoc, _ := helper.ReadFromFile(".testfiles/concentration_fubon.html")
 
 	b, _ := helper.EncodeBig5([]byte(correctDoc))
 	tests := []struct {
@@ -60,11 +60,11 @@ func TestParseConcentration(t *testing.T) {
 			name:    "normal concentration html",
 			content: string(b),
 			want:    true,
-			shares:  []uint64{12449, 40221},
-			price:   []float32{63.45, 63.53},
-			stockID: "6727",
+			shares:  []uint64{5610, 2180},
+			price:   []float32{38.19, 38.09},
+			stockID: "3704",
 			hidden:  "0",
-			date:    "20211029",
+			date:    "20230110",
 		},
 		{
 			name:    "wrong concentration html",
@@ -82,8 +82,8 @@ func TestParseConcentration(t *testing.T) {
 			res := &parserImpl{
 				result: &[]interface{}{},
 			}
-			res.SetStrategy(convert.StakeConcentration, "2021-10-29")
-			res.Execute(*bytes.NewBuffer([]byte(tt.content)), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_2330_1.djhtm")
+			res.SetStrategy(convert.StakeConcentration, "2023-01-10")
+			res.Execute(*bytes.NewBuffer([]byte(tt.content)), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_3704_1.djhtm")
 
 			respLen := len(*res.result)
 			if respLen > 0 != tt.want {

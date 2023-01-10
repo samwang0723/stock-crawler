@@ -74,7 +74,7 @@ func Test_ConfigLoad(t *testing.T) {
 					RateLimit    int64 "yaml:\"rateLimit\""
 				}{
 					FetchWorkers: 30,
-					RateLimit:    1000,
+					RateLimit:    500,
 				},
 			},
 		},
