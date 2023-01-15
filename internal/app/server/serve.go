@@ -223,7 +223,7 @@ func (s *server) Run(ctx context.Context) error {
 
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "00 17 * * 1-5",
+			Schedule: "00 18 * * 1-5",
 			Types: []convert.Source{
 				convert.TwseThreePrimary,
 				convert.TpexThreePrimary,
@@ -238,7 +238,7 @@ func (s *server) Run(ctx context.Context) error {
 
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "00 20 * * 1-5",
+			Schedule: "00 19 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
 
