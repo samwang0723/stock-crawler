@@ -119,7 +119,7 @@ func TestDailyClose(t *testing.T) {
 			name: "convert TwseDailyClose",
 			val: &Data{
 				ParseDate: "20220525",
-				RawData:   []string{"2330", "", "1,000", "1,000", "1,000", "100", "101", "105", "98", "-", "12", "", "", "", "", "", ""},
+				RawData:   []string{"2330", "", "1,000", "1,000", "1,000", "100", "101", "1,005", "98", "-", "12", "", "", "", "", "", ""},
 				Target:    TwseDailyClose,
 			},
 			exp: &entity.DailyClose{
@@ -131,7 +131,7 @@ func TestDailyClose(t *testing.T) {
 				Open:         100,
 				Close:        98,
 				High:         101,
-				Low:          105,
+				Low:          1005,
 				PriceDiff:    -12,
 			},
 		},

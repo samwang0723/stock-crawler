@@ -43,10 +43,10 @@ func (c *dailyCloseImpl) Execute(data *Data) interface{} {
 			TradedShares: helper.ToUint64(strings.ReplaceAll(data.RawData[8], ",", "")),
 			Transactions: helper.ToUint64(strings.ReplaceAll(data.RawData[10], ",", "")),
 			Turnover:     helper.ToUint64(strings.ReplaceAll(data.RawData[9], ",", "")),
-			Open:         helper.ToFloat32(data.RawData[4]),
-			High:         helper.ToFloat32(data.RawData[5]),
-			Low:          helper.ToFloat32(data.RawData[6]),
-			Close:        helper.ToFloat32(data.RawData[2]),
+			Open:         helper.ToFloat32(strings.ReplaceAll(data.RawData[4], ",", "")),
+			High:         helper.ToFloat32(strings.ReplaceAll(data.RawData[5], ",", "")),
+			Low:          helper.ToFloat32(strings.ReplaceAll(data.RawData[6], ",", "")),
+			Close:        helper.ToFloat32(strings.ReplaceAll(data.RawData[2], ",", "")),
 			PriceDiff:    helper.ToFloat32(data.RawData[3]),
 		}
 	case TwseDailyClose:
@@ -56,10 +56,10 @@ func (c *dailyCloseImpl) Execute(data *Data) interface{} {
 			TradedShares: helper.ToUint64(strings.ReplaceAll(data.RawData[2], ",", "")),
 			Transactions: helper.ToUint64(strings.ReplaceAll(data.RawData[3], ",", "")),
 			Turnover:     helper.ToUint64(strings.ReplaceAll(data.RawData[4], ",", "")),
-			Open:         helper.ToFloat32(data.RawData[5]),
-			High:         helper.ToFloat32(data.RawData[6]),
-			Low:          helper.ToFloat32(data.RawData[7]),
-			Close:        helper.ToFloat32(data.RawData[8]),
+			Open:         helper.ToFloat32(strings.ReplaceAll(data.RawData[5], ",", "")),
+			High:         helper.ToFloat32(strings.ReplaceAll(data.RawData[6], ",", "")),
+			Low:          helper.ToFloat32(strings.ReplaceAll(data.RawData[7], ",", "")),
+			Close:        helper.ToFloat32(strings.ReplaceAll(data.RawData[8], ",", "")),
 			PriceDiff:    helper.ToFloat32(fmt.Sprintf("%s%s", data.RawData[9], data.RawData[10])),
 		}
 	}
