@@ -205,7 +205,7 @@ func (s *server) Run(ctx context.Context) error {
 
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "40 09 * * 1-5",
+			Schedule: "30 08 * * 1-5",
 			Types: []convert.Source{
 				convert.TpexStockList,
 				convert.TwseStockList,
