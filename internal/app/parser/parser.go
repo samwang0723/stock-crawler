@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	StockCap            = 6
+	StockCap            = 5
 	DailyCloseCap       = 17
 	TwseThreePrimaryCap = 19
 	TpexThreePrimaryCap = 24

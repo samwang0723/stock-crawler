@@ -22,13 +22,15 @@ import (
 
 type stockImpl struct{}
 
+const maxLength = 5
+
 func Stock() IConvert {
 	return &stockImpl{}
 }
 
 func (c *stockImpl) Execute(data *Data) interface{} {
 	var output *entity.Stock
-	if data == nil || len(data.RawData) < 6 {
+	if data == nil || len(data.RawData) < maxLength {
 		return output
 	}
 
@@ -38,6 +40,10 @@ func (c *stockImpl) Execute(data *Data) interface{} {
 	market := "tse"
 	if strings.Contains(t, "上櫃") {
 		market = "otc"
+	}
+
+	if len(data.RawData) == maxLength {
+		data.RawData[4] = "臺灣存託憑證(TDR)"
 	}
 
 	output = &entity.Stock{

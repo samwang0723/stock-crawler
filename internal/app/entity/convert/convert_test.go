@@ -291,7 +291,7 @@ func TestStock(t *testing.T) {
 		{
 			name: "missing elements in ConvertData",
 			val: &Data{
-				RawData: []string{"", "", "1000", "1000", "1000"},
+				RawData: []string{"", "", "1000", "1000"},
 				Target:  TwseStockList,
 			},
 			exp: nil,

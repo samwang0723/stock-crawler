@@ -27,7 +27,7 @@ const (
 	WebScraping    = "WEB_SCRAPING"
 	WebScrapingUrl = "https://api.webscrapingapi.com/v1?api_key=%s"
 	ProxyCrawl     = "PROXY_CRAWL"
-	ProxyCrawlUrl  = "https://api.proxycrawl.com/?token=%s"
+	ProxyCrawlUrl  = "https://api.crawlbase.com/?token=%s"
 )
 
 type Proxy struct {

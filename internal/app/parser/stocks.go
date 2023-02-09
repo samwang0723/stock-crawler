@@ -28,7 +28,7 @@ type htmlStrategy struct {
 	source    convert.Source
 }
 
-//nolint:nolintlint, cyclop
+//nolint:nolintlint, cyclop, gocognit
 func (s *htmlStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
 	var output []interface{}
 
@@ -47,22 +47,6 @@ func (s *htmlStrategy) Parse(input io.Reader, additional ...string) ([]interface
 			t := tokenizer.Token()
 			isColumn = t.Data == "td"
 			isBold = t.Data == "b"
-
-			if t.Data == "tr" {
-				if s.capacity == len(records) {
-					// flush the temporary cache into output queue
-					res := s.converter.Execute(&convert.Data{
-						Target:  s.source,
-						RawData: records,
-					})
-
-					if res != nil {
-						output = append(output, res)
-					}
-				}
-				// reset the buffer to parse next row
-				records = []string{}
-			}
 		case html.TextToken:
 			t := tokenizer.Token()
 			content := strings.TrimSpace(t.Data)
@@ -77,7 +61,7 @@ func (s *htmlStrategy) Parse(input io.Reader, additional ...string) ([]interface
 					records = append(records, content)
 				}
 			case isBold:
-				startParsing = content == "股票"
+				startParsing = tagToStart(content)
 			}
 		case html.ErrorToken:
 			if len(output) == 0 {
@@ -85,6 +69,27 @@ func (s *htmlStrategy) Parse(input io.Reader, additional ...string) ([]interface
 			}
 
 			return output, nil
+		case html.EndTagToken:
+			t := tokenizer.Token()
+			if t.Data == "tr" {
+				if s.capacity <= len(records) {
+					// flush the temporary cache into output queue
+					res := s.converter.Execute(&convert.Data{
+						Target:  s.source,
+						RawData: records,
+					})
+
+					if res != nil {
+						output = append(output, res)
+					}
+				}
+				// reset the buffer to parse next row
+				records = []string{}
+			}
 		}
 	}
+}
+
+func tagToStart(content string) bool {
+	return content == "股票" || content == "臺灣存託憑證(TDR)"
 }

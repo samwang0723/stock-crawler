@@ -44,7 +44,7 @@ func TestParseHtml(t *testing.T) {
 		{
 			name:    "normal stock list html",
 			content: string(correctBytes),
-			want:    4,
+			want:    5,
 			err:     nil,
 		},
 		{
