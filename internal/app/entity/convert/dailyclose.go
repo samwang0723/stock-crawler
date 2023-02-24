@@ -60,7 +60,9 @@ func (c *dailyCloseImpl) Execute(data *Data) interface{} {
 			High:         helper.ToFloat32(strings.ReplaceAll(data.RawData[6], ",", "")),
 			Low:          helper.ToFloat32(strings.ReplaceAll(data.RawData[7], ",", "")),
 			Close:        helper.ToFloat32(strings.ReplaceAll(data.RawData[8], ",", "")),
-			PriceDiff:    helper.ToFloat32(fmt.Sprintf("%s%s", data.RawData[9], data.RawData[10])),
+			PriceDiff: helper.ToFloat32(
+				fmt.Sprintf("%s%s", strings.TrimSpace(data.RawData[9]), strings.TrimSpace(data.RawData[10])),
+			),
 		}
 	}
 
