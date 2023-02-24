@@ -47,7 +47,7 @@ func (c *dailyCloseImpl) Execute(data *Data) interface{} {
 			High:         helper.ToFloat32(strings.ReplaceAll(data.RawData[5], ",", "")),
 			Low:          helper.ToFloat32(strings.ReplaceAll(data.RawData[6], ",", "")),
 			Close:        helper.ToFloat32(strings.ReplaceAll(data.RawData[2], ",", "")),
-			PriceDiff:    helper.ToFloat32(data.RawData[3]),
+			PriceDiff:    helper.ToFloat32(strings.TrimSpace(data.RawData[3])),
 		}
 	case TwseDailyClose:
 		output = &entity.DailyClose{
