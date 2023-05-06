@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### Bug Fixes
+
+- Correct make docker-build
+- Ignore parser error and continue to parse
+- Modify docker-compose env
+- Use new context to shutdown as main context cancelled already
+- Adjust pulling timing
+- Enhance the missing crawl timing
+- Skip holiday
+- Adjust makefile
+- Correct generate package name for cronjob
+- Remove CircleCI due to security reason
+- Add stock market indicator
+- Remove sumologic logging and fix cronjob addJob always return error
+- Update the concerntration source and adjust the parsing performance
+- Update crawling url
+- Support TDR stock parsing
+- Solve 1,000 price parsing issue
+- Adjust stock list pulling time
+- Solve price_diff space trim
+- Trim all space for price diff
+- Always restart docker image
+
+### Features
+
+- Add CHANGELOG.md
+- Refine logging format and add sumo logic support
+- Support kafka channel to trigger download manually
+
 ## [2.0.1] - 2022-08-26
 
 ### Bug Fixes
