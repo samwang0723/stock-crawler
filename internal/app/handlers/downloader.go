@@ -32,6 +32,10 @@ const (
 	cronTerminatedHour = 8
 )
 
+func (h *handlerImpl) ListeningDownloadRequest(ctx context.Context, requestChan chan *dto.StartCronjobRequest) {
+	h.dataService.ListeningDownloadRequest(ctx, requestChan)
+}
+
 func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error {
 	err := h.dataService.AddJob(ctx, req.Schedule, func() {
 		// since we will have multiple daemonSet in nodes, need to make sure same cronjob
@@ -48,7 +52,7 @@ func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobReq
 }
 
 func (h *handlerImpl) Download(ctx context.Context, req *dto.StartCronjobRequest) {
-	h.batchingDownload(ctx, 0, req.Types)
+	h.batchingDownload(ctx, int32(req.Rewind), req.Types)
 }
 
 // batching download all the historical stock data

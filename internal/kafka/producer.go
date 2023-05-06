@@ -29,12 +29,20 @@ const (
 	StocksV1             = "stocks-v1"
 	ThreePrimaryV1       = "threeprimary-v1"
 	StakeConcentrationV1 = "stakeconcentration-v1"
+	DownloadV1           = "download-v1"
+	queueCapacity        = 1024
+	sessionTimeout       = 10 * time.Second
+	rebalanceTimeout     = 5 * time.Second
+	maxWait              = 1 * time.Second
+	minBytes             = 1    // 1B
+	maxBytes             = 10e6 // 10MB
 )
 
 //go:generate mockgen -source=producer.go -destination=mocks/kafka.go -package=kafka
 type Kafka interface {
 	Close() error
 	WriteMessages(ctx context.Context, topic string, message []byte) error
+	ReadMessage(ctx context.Context) (*ReceivedMessage, error)
 }
 
 // Config encapsulates the settings for configuring the kafka service.
@@ -42,20 +50,30 @@ type Config struct {
 	// Kafka controller DNS hostname
 	Controller string
 
+	GroupID string
+	Brokers []string
+	Topics  []string
+
 	// The logger to use. If not defined an output-discarding logger will
 	// be used instead.
 	Logger *zerolog.Logger
 }
 
+type ReceivedMessage struct {
+	Topic   string
+	Message []byte
+}
+
 type kafkaImpl struct {
-	cfg      Config
-	instance *kafkago.Writer
+	cfg          *Config
+	instance     *kafkago.Writer
+	readInstance *kafkago.Reader
 }
 
 // NewKafka creates a new kafka service.
 //
 //nolint:nolintlint, gomnd
-func New(cfg Config) Kafka {
+func New(cfg *Config) Kafka {
 	return &kafkaImpl{
 		cfg: cfg,
 		instance: &kafkago.Writer{
@@ -64,7 +82,32 @@ func New(cfg Config) Kafka {
 			BatchSize:    100,
 			BatchTimeout: 100 * time.Millisecond,
 		},
+		readInstance: kafkago.NewReader(kafkago.ReaderConfig{
+			Brokers:          cfg.Brokers,
+			GroupTopics:      cfg.Topics,
+			GroupID:          cfg.GroupID, // having consumer group id to prevent duplication of message consumption
+			QueueCapacity:    queueCapacity,
+			SessionTimeout:   sessionTimeout,
+			RebalanceTimeout: rebalanceTimeout,
+			MaxWait:          maxWait,
+			MinBytes:         minBytes,
+			MaxBytes:         maxBytes,
+		}),
 	}
+}
+
+func (k *kafkaImpl) ReadMessage(ctx context.Context) (*ReceivedMessage, error) {
+	msg, err := k.readInstance.ReadMessage(ctx)
+	k.cfg.Logger.Info().Msgf("kafka.ReadMessage: read data: %s, err: %s", helper.Bytes2String(msg.Value), err)
+
+	if err != nil {
+		return nil, xerrors.Errorf("kafka.ReadMessage: failed, err=%w;", err)
+	}
+
+	return &ReceivedMessage{
+		Topic:   msg.Topic,
+		Message: msg.Value,
+	}, nil
 }
 
 func (k *kafkaImpl) WriteMessages(ctx context.Context, topic string, message []byte) error {

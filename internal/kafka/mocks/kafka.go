@@ -9,6 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
+	kafka "github.com/samwang0723/stock-crawler/internal/kafka"
 )
 
 // MockKafka is a mock of Kafka interface.
@@ -46,6 +47,21 @@ func (m *MockKafka) Close() error {
 func (mr *MockKafkaMockRecorder) Close() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockKafka)(nil).Close))
+}
+
+// ReadMessage mocks base method.
+func (m *MockKafka) ReadMessage(ctx context.Context) (*kafka.ReceivedMessage, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadMessage", ctx)
+	ret0, _ := ret[0].(*kafka.ReceivedMessage)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadMessage indicates an expected call of ReadMessage.
+func (mr *MockKafkaMockRecorder) ReadMessage(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadMessage", reflect.TypeOf((*MockKafka)(nil).ReadMessage), ctx)
 }
 
 // WriteMessages mocks base method.

@@ -18,4 +18,5 @@ import "github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 type StartCronjobRequest struct {
 	Schedule string           `json:"schedule"`
 	Types    []convert.Source `json:"types"`
+	Rewind   int              `json:"rewind"`
 }

@@ -31,14 +31,18 @@ func WithCronJob(cfg CronjobConfig) Option {
 	}
 }
 
+//nolint:nolintlint,gocritic
 func WithKafka(cfg KafkaConfig) Option {
 	return func(i *serviceImpl) {
 		if err := cfg.validate(); err != nil {
 			return
 		}
 
-		i.producer = kafka.New(kafka.Config{
+		i.producer = kafka.New(&kafka.Config{
 			Controller: cfg.Controller,
+			Topics:     cfg.Topics,
+			GroupID:    cfg.GroupID,
+			Brokers:    cfg.Brokers,
 			Logger:     cfg.Logger,
 		})
 	}

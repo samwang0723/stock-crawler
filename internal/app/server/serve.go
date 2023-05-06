@@ -61,6 +61,9 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 		}),
 		services.WithKafka(services.KafkaConfig{
 			Controller: cfg.Kafka.Controller,
+			Topics:     cfg.Kafka.Topics,
+			GroupID:    cfg.Kafka.GroupID,
+			Brokers:    cfg.Kafka.Brokers,
 			Logger:     logger,
 		}),
 		services.WithRedis(services.RedisConfig{
@@ -241,6 +244,22 @@ func (s *server) Run(ctx context.Context) error {
 			Schedule: "00 19 * * 1-5",
 			Types:    []convert.Source{convert.StakeConcentration},
 		})
+
+		requestChan := make(chan *dto.StartCronjobRequest)
+		svc.Handler().ListeningDownloadRequest(ctx, requestChan)
+
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case req, ok := <-requestChan:
+					if ok {
+						svc.Handler().Download(ctx, req)
+					}
+				}
+			}
+		}()
 
 		<-ctx.Done()
 	}(ctx, s)

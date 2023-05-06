@@ -14,6 +14,8 @@ services:
       - CLUSTER_ID=5Yr1SIgYQz-b-dgRabWx4g
       - BROKER_ID=1
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+    volumes:
+      - kafka-1-data:/var/lib/kafka/data
   kafka-2:
     restart: unless-stopped
     image: debezium/kafka:1.9.2.Final
@@ -28,6 +30,8 @@ services:
       - CLUSTER_ID=5Yr1SIgYQz-b-dgRabWx4g
       - BROKER_ID=2
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data
   kafka-3:
     restart: unless-stopped
     image: debezium/kafka:1.9.2.Final
@@ -42,6 +46,12 @@ services:
       - CLUSTER_ID=5Yr1SIgYQz-b-dgRabWx4g
       - BROKER_ID=3
       - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+    volumes:
+      - kafka-3-data:/var/lib/kafka/data
 networks:
   jarvis-infra:
     driver: bridge
+volumes:
+  kafka-1-data:
+  kafka-2-data:
+  kafka-3-data:
