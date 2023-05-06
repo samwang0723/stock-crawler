@@ -17,6 +17,8 @@ import (
 	"context"
 
 	"github.com/rs/zerolog"
+	"github.com/samwang0723/stock-crawler/internal/app/dto"
+	"github.com/samwang0723/stock-crawler/internal/kafka"
 	"golang.org/x/xerrors"
 )
 
@@ -24,6 +26,10 @@ import (
 type KafkaConfig struct {
 	// Kafka controller DNS hostname
 	Controller string
+
+	GroupID string
+	Brokers []string
+	Topics  []string
 
 	// The logger to use. If not defined an output-discarding logger will
 	// be used instead.
@@ -36,6 +42,29 @@ func (cfg *KafkaConfig) validate() error {
 	}
 
 	return nil
+}
+
+//nolint:nolintlint, cyclop
+func (s *serviceImpl) ListeningDownloadRequest(ctx context.Context, downloadChan chan *dto.StartCronjobRequest) {
+	go func() {
+		for {
+			msg, err := s.producer.ReadMessage(ctx)
+			if err != nil {
+				continue
+			}
+
+			request, err := unmarshalMessage(msg)
+			if err == nil {
+				downloadChan <- request
+			}
+
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+		}
+	}()
 }
 
 func (s *serviceImpl) sendKafka(ctx context.Context, topic string, message []byte) error {
@@ -61,4 +90,20 @@ func (s *serviceImpl) StopKafka() error {
 	}
 
 	return nil
+}
+
+func unmarshalMessage(msg *kafka.ReceivedMessage) (*dto.StartCronjobRequest, error) {
+	var err error
+
+	var output dto.StartCronjobRequest
+
+	if msg.Topic == kafka.DownloadV1 {
+		err = json.Unmarshal(msg.Message, &output)
+	}
+
+	if err != nil {
+		return nil, xerrors.Errorf("unmarshalMessage: failed, reason: %w", err)
+	}
+
+	return &output, nil
 }

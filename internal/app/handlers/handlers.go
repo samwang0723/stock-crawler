@@ -25,6 +25,7 @@ import (
 type IHandler interface {
 	CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error
 	Download(ctx context.Context, req *dto.StartCronjobRequest)
+	ListeningDownloadRequest(ctx context.Context, requestChan chan *dto.StartCronjobRequest)
 }
 
 type handlerImpl struct {

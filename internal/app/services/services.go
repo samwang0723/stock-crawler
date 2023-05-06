@@ -20,6 +20,7 @@ import (
 
 	"github.com/bsm/redislock"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
+	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/cache"
@@ -41,6 +42,7 @@ type IService interface {
 	ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error)
 	Crawl(ctx context.Context, linkIt graph.LinkIterator, interceptChan ...chan convert.InterceptData) (int, error)
 	IsHoliday(ctx context.Context, date string) bool
+	ListeningDownloadRequest(ctx context.Context, downloadChan chan *dto.StartCronjobRequest)
 }
 
 type serviceImpl struct {

@@ -27,7 +27,10 @@ type SystemConfig struct {
 		SentinelAddrs []string `yaml:"sentinelAddrs"`
 	} `yaml:"redis"`
 	Kafka struct {
-		Controller string `yaml:"controller"`
+		Controller string   `yaml:"controller"`
+		GroupID    string   `yaml:"groupId"`
+		Brokers    []string `yaml:"brokers"`
+		Topics     []string `yaml:"topics"`
 	} `yaml:"kafka"`
 	Server struct {
 		Name         string `yaml:"name"`
