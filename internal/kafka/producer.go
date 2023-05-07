@@ -92,6 +92,12 @@ func New(cfg *Config) Kafka {
 			MaxWait:          maxWait,
 			MinBytes:         minBytes,
 			MaxBytes:         maxBytes,
+			Dialer: &kafkago.Dialer{
+				Timeout:       10 * time.Second,
+				KeepAlive:     30 * time.Second,
+				DualStack:     true,
+				FallbackDelay: 10 * time.Millisecond,
+			},
 		}),
 	}
 }
