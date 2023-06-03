@@ -70,6 +70,7 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 			Master:        cfg.RedisCache.Master,
 			SentinelAddrs: cfg.RedisCache.SentinelAddrs,
 			Logger:        logger,
+			Password:      cfg.RedisCache.Password,
 		}),
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      cfg.Crawler.FetchWorkers,

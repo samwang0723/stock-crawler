@@ -7,17 +7,13 @@ server:
   dnsLatency: 200
 
 redis:
-  sentinelAddrs:
-    [
-      "redis-sentinel-1:26379",
-      "redis-sentinel-2:26380",
-      "redis-sentinel-3:26381"
-    ]
-  master: "redis-master"
+  sentinelAddrs: [ "redis-sentinel-headless:26379" ]
+  master: "redis-sentinel"
+  port: 6379
 
 kafka:
-  controller: "kafka-1:9092"
-  brokers: [ "kafka-1:9092", "kafka-2:9092", "kafka-3:9092" ]
+  controller: "kafka:9092"
+  brokers: [ "kafka-headless:9092" ]
   topics: [ "download-v1" ]
   groupId: "jarvis"
 

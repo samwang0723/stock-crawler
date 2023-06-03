@@ -48,6 +48,8 @@ type Config struct {
 	// The logger to use. If not defined an output-discarding logger will
 	// be used instead.
 	Logger *zerolog.Logger
+
+	Password string
 }
 
 type redisImpl struct {
@@ -61,6 +63,7 @@ func New(cfg Config) Redis {
 		instance: redis.NewFailoverClient(&redis.FailoverOptions{
 			MasterName:    cfg.Master,
 			SentinelAddrs: cfg.SentinelAddrs,
+			Password:      cfg.Password,
 		}),
 	}
 

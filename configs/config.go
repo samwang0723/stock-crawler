@@ -21,10 +21,16 @@ import (
 	yaml "gopkg.in/yaml.v3"
 )
 
+const (
+	RedisPassword = "REDIS_PASSWD"
+)
+
 type SystemConfig struct {
 	RedisCache struct {
 		Master        string   `yaml:"master"`
 		SentinelAddrs []string `yaml:"sentinelAddrs"`
+		Password      string   `yaml:"password"`
+		Port          int      `yaml:"port"`
 	} `yaml:"redis"`
 	Kafka struct {
 		Controller string   `yaml:"controller"`
@@ -69,6 +75,10 @@ func Load(loc ...string) {
 
 	if err != nil {
 		panic(err)
+	}
+
+	if redisPasswd := os.Getenv(RedisPassword); len(redisPasswd) > 0 {
+		instance.RedisCache.Password = redisPasswd
 	}
 }
 

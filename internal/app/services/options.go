@@ -58,6 +58,7 @@ func WithRedis(cfg RedisConfig) Option {
 			Master:        cfg.Master,
 			SentinelAddrs: cfg.SentinelAddrs,
 			Logger:        cfg.Logger,
+			Password:      cfg.Password,
 		})
 	}
 }

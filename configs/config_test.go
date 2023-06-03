@@ -47,9 +47,13 @@ func Test_ConfigLoad(t *testing.T) {
 				RedisCache: struct {
 					Master        string   "yaml:\"master\""
 					SentinelAddrs []string "yaml:\"sentinelAddrs\""
+					Password      string   "yaml:\"password\""
+					Port          int      "yaml:\"port\""
 				}{
-					Master:        "redis-master",
-					SentinelAddrs: []string{"redis-sentinel-1:26379", "redis-sentinel-2:26380", "redis-sentinel-3:26381"},
+					Master:        "redis-sentinel",
+					SentinelAddrs: []string{"redis-sentinel-headless:26379"},
+					Password:      "",
+					Port:          6379,
 				},
 				Kafka: struct {
 					Controller string   "yaml:\"controller\""
@@ -57,9 +61,9 @@ func Test_ConfigLoad(t *testing.T) {
 					Brokers    []string "yaml:\"brokers\""
 					Topics     []string "yaml:\"topics\""
 				}{
-					Controller: "kafka-1:9092",
+					Controller: "kafka:9092",
 					GroupID:    "jarvis",
-					Brokers:    []string{"kafka-1:9092", "kafka-2:9092", "kafka-3:9092"},
+					Brokers:    []string{"kafka-headless:9092"},
 					Topics:     []string{"download-v1"},
 				},
 				Server: struct {

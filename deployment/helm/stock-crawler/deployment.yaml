@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-crawler
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: stock-crawler
+  template:
+    metadata:
+      labels:
+        app: stock-crawler
+    spec:
+      containers:
+      - name: application
+        image: samwang0723/stock-crawler:v2.0.1
+        imagePullPolicy: Always
+        # define a liveness probe that checks every 5 seconds, starting after 5 seconds
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 8086
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+        - name: MY_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: ENVIRONMENT
+          value: "development"
+        - name: WEB_SCRAPING
+          valueFrom:
+            secretKeyRef:
+              name: proxy-secret-webscraping
+              key: token
+        - name: PROXY_CRAWL
+          valueFrom:
+            secretKeyRef:
+              name: proxy-secret-proxycrawl
+              key: token
+        - name: REDIS_PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: redis-secret
+              key: redis-password
