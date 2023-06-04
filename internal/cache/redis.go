@@ -61,9 +61,10 @@ func New(cfg Config) Redis {
 	impl := &redisImpl{
 		cfg: cfg,
 		instance: redis.NewFailoverClient(&redis.FailoverOptions{
-			MasterName:    cfg.Master,
-			SentinelAddrs: cfg.SentinelAddrs,
-			Password:      cfg.Password,
+			MasterName:       cfg.Master,
+			SentinelAddrs:    cfg.SentinelAddrs,
+			Password:         cfg.Password,
+			SentinelPassword: cfg.Password,
 		}),
 	}
 

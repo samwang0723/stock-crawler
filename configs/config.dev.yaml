@@ -8,7 +8,7 @@ server:
 
 redis:
   sentinelAddrs: [ "redis-sentinel-headless:26379" ]
-  master: "redis-sentinel"
+  master: "mymaster"
   port: 6379
 
 kafka:

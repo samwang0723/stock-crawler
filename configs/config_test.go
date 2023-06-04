@@ -50,7 +50,7 @@ func Test_ConfigLoad(t *testing.T) {
 					Password      string   "yaml:\"password\""
 					Port          int      "yaml:\"port\""
 				}{
-					Master:        "redis-sentinel",
+					Master:        "mymaster",
 					SentinelAddrs: []string{"redis-sentinel-headless:26379"},
 					Password:      "",
 					Port:          6379,
