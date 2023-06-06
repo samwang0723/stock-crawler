@@ -65,6 +65,7 @@ func New(cfg Config) Redis {
 			SentinelAddrs:    cfg.SentinelAddrs,
 			Password:         cfg.Password,
 			SentinelPassword: cfg.Password,
+			DB:               0,
 		}),
 	}
 
@@ -126,7 +127,7 @@ func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Dura
 		panic(err)
 	}
 
-	r.cfg.Logger.Debug().Msgf("cache.ObtainLock: success, key=%s;", key)
+	r.cfg.Logger.Debug().Msgf("cache.ObtainLock: success, key=%s, lock:%+v;", key, lock)
 
 	return lock
 }

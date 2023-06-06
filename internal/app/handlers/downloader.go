@@ -39,7 +39,7 @@ func (h *handlerImpl) ListeningDownloadRequest(ctx context.Context, requestChan 
 func (h *handlerImpl) CronDownload(ctx context.Context, req *dto.StartCronjobRequest) error {
 	err := h.dataService.AddJob(ctx, req.Schedule, func() {
 		// since we will have multiple daemonSet in nodes, need to make sure same cronjob
-		// only running once at a time, here we use distrubted lock through Redis.
+		// only running once at a time, here we use distributed lock through Redis.
 		if h.dataService.ObtainLock(ctx, cache.CronjobLock, cronLockPeriod*time.Minute) != nil {
 			h.batchingDownload(ctx, 0, req.Types)
 		}
