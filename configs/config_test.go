@@ -50,10 +50,14 @@ func Test_ConfigLoad(t *testing.T) {
 					Password      string   "yaml:\"password\""
 					Port          int      "yaml:\"port\""
 				}{
-					Master:        "mymaster",
-					SentinelAddrs: []string{"redis-sentinel-headless:26379"},
-					Password:      "",
-					Port:          6379,
+					Master: "mymaster",
+					SentinelAddrs: []string{
+						"redis-sentinel-node-0.redis-sentinel-headless.default.svc.cluster.local:26379",
+						"redis-sentinel-node-1.redis-sentinel-headless.default.svc.cluster.local:26379",
+						"redis-sentinel-node-2.redis-sentinel-headless.default.svc.cluster.local:26379",
+					},
+					Password: "",
+					Port:     6379,
 				},
 				Kafka: struct {
 					Controller string   "yaml:\"controller\""
