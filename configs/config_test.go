@@ -52,9 +52,7 @@ func Test_ConfigLoad(t *testing.T) {
 				}{
 					Master: "mymaster",
 					SentinelAddrs: []string{
-						"redis-sentinel-node-0.redis-sentinel-headless.default.svc.cluster.local:26379",
-						"redis-sentinel-node-1.redis-sentinel-headless.default.svc.cluster.local:26379",
-						"redis-sentinel-node-2.redis-sentinel-headless.default.svc.cluster.local:26379",
+						"redis-sentinel-headless.default.svc.cluster.local:26379",
 					},
 					Password: "",
 					Port:     6379,

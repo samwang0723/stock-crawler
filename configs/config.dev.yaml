@@ -9,9 +9,7 @@ server:
 redis:
   sentinelAddrs:
     [
-      "redis-sentinel-node-0.redis-sentinel-headless.default.svc.cluster.local:26379",
-      "redis-sentinel-node-1.redis-sentinel-headless.default.svc.cluster.local:26379",
-      "redis-sentinel-node-2.redis-sentinel-headless.default.svc.cluster.local:26379"
+      "redis-sentinel-headless.default.svc.cluster.local:26379",
     ]
   master: "mymaster"
   port: 6379
