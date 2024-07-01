@@ -20,7 +20,6 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-
 	"golang.org/x/net/html"
 )
 
@@ -31,8 +30,12 @@ type concentrationStrategy struct {
 	capacity  int
 }
 
-//nolint:nolintlint, cyclop, gocognit
-func (s *concentrationStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
+//
+//nolint:nolintlint, cyclop, gocognit, cyclo
+func (s *concentrationStrategy) Parse(
+	input io.Reader,
+	additional ...string,
+) ([]interface{}, error) {
 	var records []string
 
 	var output []interface{}

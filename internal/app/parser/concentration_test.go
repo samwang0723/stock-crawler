@@ -23,7 +23,6 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-
 	"go.uber.org/goleak"
 )
 

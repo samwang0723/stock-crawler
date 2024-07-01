@@ -17,11 +17,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/samwang0723/stock-crawler/internal/helper"
-	"golang.org/x/xerrors"
-
 	"github.com/rs/zerolog"
+	"github.com/samwang0723/stock-crawler/internal/helper"
 	kafkago "github.com/segmentio/kafka-go"
+	"golang.org/x/xerrors"
 )
 
 const (

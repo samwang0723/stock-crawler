@@ -8,15 +8,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/mock/gomock"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	cache "github.com/samwang0723/stock-crawler/internal/cache/mocks"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
 	kafkamock "github.com/samwang0723/stock-crawler/internal/kafka/mocks"
-	"golang.org/x/xerrors"
-
-	"github.com/golang/mock/gomock"
 	"go.uber.org/goleak"
+	"golang.org/x/xerrors"
 )
+
+//nolint:nolintlint, gochecknoglobals
+var jsonTest = jsoniter.ConfigCompatibleWithStandardLibrary
+var ErrFailed = errors.New("failed")
 
 func TestMain(m *testing.M) {
 	leak := flag.Bool("leak", false, "use leak detector")
@@ -84,7 +88,7 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 						StockID: "2330",
 					},
 				},
-				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", ErrFailed),
 			},
 			wantErr: true,
 		},
@@ -105,11 +109,14 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 
 			for _, val := range *tt.args.data {
 				if res, ok := val.(*entity.DailyClose); ok {
-					b, err := json.Marshal(res)
+					b, err := jsonTest.Marshal(res)
 					if err != nil {
-						t.Errorf("service DailyCloseThroughKafka: json.Marshal failed: %v", err)
+						t.Errorf("service DailyCloseThroughKafka: jsonTest.Marshal failed: %v", err)
 					}
-					mockKafka.EXPECT().WriteMessages(ctx, kafka.DailyClosesV1, b).Return(tt.args.expectReturn).Times(1)
+					mockKafka.EXPECT().
+						WriteMessages(ctx, kafka.DailyClosesV1, b).
+						Return(tt.args.expectReturn).
+						Times(1)
 				}
 			}
 
@@ -172,7 +179,7 @@ func TestStockThroughKafka(t *testing.T) {
 						Name:    "Test",
 					},
 				},
-				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", ErrFailed),
 			},
 			wantErr: true,
 		},
@@ -193,11 +200,14 @@ func TestStockThroughKafka(t *testing.T) {
 
 			for _, val := range *tt.args.data {
 				if res, ok := val.(*entity.Stock); ok {
-					b, err := json.Marshal(res)
+					b, err := jsonTest.Marshal(res)
 					if err != nil {
-						t.Errorf("service StockThroughKafka: json.Marshal failed: %v", err)
+						t.Errorf("service StockThroughKafka: jsonTest.Marshal failed: %v", err)
 					}
-					mockKafka.EXPECT().WriteMessages(ctx, kafka.StocksV1, b).Return(tt.args.expectReturn).Times(1)
+					mockKafka.EXPECT().
+						WriteMessages(ctx, kafka.StocksV1, b).
+						Return(tt.args.expectReturn).
+						Times(1)
 				}
 			}
 
@@ -258,7 +268,7 @@ func TestThreePrimaryThroughKafka(t *testing.T) {
 						StockID: "2330",
 					},
 				},
-				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", ErrFailed),
 			},
 			wantErr: true,
 		},
@@ -279,11 +289,17 @@ func TestThreePrimaryThroughKafka(t *testing.T) {
 
 			for _, val := range *tt.args.data {
 				if res, ok := val.(*entity.ThreePrimary); ok {
-					b, err := json.Marshal(res)
+					b, err := jsonTest.Marshal(res)
 					if err != nil {
-						t.Errorf("service ThreePrimaryThroughKafka: json.Marshal failed: %v", err)
+						t.Errorf(
+							"service ThreePrimaryThroughKafka: jsonTest.Marshal failed: %v",
+							err,
+						)
 					}
-					mockKafka.EXPECT().WriteMessages(ctx, kafka.ThreePrimaryV1, b).Return(tt.args.expectReturn).Times(1)
+					mockKafka.EXPECT().
+						WriteMessages(ctx, kafka.ThreePrimaryV1, b).
+						Return(tt.args.expectReturn).
+						Times(1)
 				}
 			}
 
@@ -350,7 +366,7 @@ func TestStakeConcentrationThroughKafka(t *testing.T) {
 					},
 				},
 				date:         "20220820",
-				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", errors.New("failed")),
+				expectReturn: xerrors.Errorf("kafka writeMessages(): %w", ErrFailed),
 			},
 			wantErr: true,
 		},
@@ -372,13 +388,22 @@ func TestStakeConcentrationThroughKafka(t *testing.T) {
 
 			for _, val := range *tt.args.data {
 				if res, ok := val.(*entity.StakeConcentration); ok {
-					b, err := json.Marshal(res)
+					b, err := jsonTest.Marshal(res)
 					if err != nil {
-						t.Errorf("service StakeConcentrationThroughKafka: json.Marshal failed: %v", err)
+						t.Errorf(
+							"service StakeConcentrationThroughKafka: jsonTest.Marshal failed: %v",
+							err,
+						)
 					}
-					mockKafka.EXPECT().WriteMessages(ctx, kafka.StakeConcentrationV1, b).Return(tt.args.expectReturn).Times(1)
+					mockKafka.EXPECT().
+						WriteMessages(ctx, kafka.StakeConcentrationV1, b).
+						Return(tt.args.expectReturn).
+						Times(1)
 					mockRedis.EXPECT().SAdd(ctx, res.Date, res.StockID).Return(nil).AnyTimes()
-					mockRedis.EXPECT().SetExpire(ctx, res.Date, gomock.AssignableToTypeOf(time.Now())).Return(nil).AnyTimes()
+					mockRedis.EXPECT().
+						SetExpire(ctx, res.Date, gomock.AssignableToTypeOf(time.Now())).
+						Return(nil).
+						AnyTimes()
 				}
 			}
 

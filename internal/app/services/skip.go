@@ -17,7 +17,6 @@ import (
 	"context"
 
 	"github.com/samwang0723/stock-crawler/internal/helper"
-
 	"golang.org/x/exp/slices"
 )
 

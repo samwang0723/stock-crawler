@@ -16,10 +16,9 @@ package handlers
 import (
 	"context"
 
+	"github.com/rs/zerolog"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
-
-	"github.com/rs/zerolog"
 )
 
 type IHandler interface {

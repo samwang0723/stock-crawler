@@ -21,16 +21,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/heptiolabs/healthcheck"
 	"github.com/rs/zerolog"
 	config "github.com/samwang0723/stock-crawler/configs"
-	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/dto"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/handlers"
 	"github.com/samwang0723/stock-crawler/internal/app/services"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-
-	"github.com/heptiolabs/healthcheck"
 )
 
 const (
@@ -75,7 +73,7 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 		services.WithCrawler(services.CrawlerConfig{
 			FetchWorkers:      cfg.Crawler.FetchWorkers,
 			RateLimitInterval: cfg.Crawler.RateLimit,
-			Proxy:             &crawler.Proxy{Type: crawler.WebScraping},
+			Proxy:             nil,
 			Logger:            logger,
 		}),
 	)
@@ -85,7 +83,10 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 	// health check
 	health := healthcheck.NewHandler()
 	// our app is not happy if we've got more than 10k goroutines running.
-	health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(cfg.Server.MaxGoroutine))
+	health.AddLivenessCheck(
+		"goroutine-threshold",
+		healthcheck.GoroutineCountCheck(cfg.Server.MaxGoroutine),
+	)
 	// our app is not ready if we can't resolve our upstream dependency in DNS.
 	health.AddReadinessCheck(
 		"upstream-redis-dns",
@@ -144,7 +145,7 @@ func newServer(opts ...Option) IServer {
 	}
 }
 
-func (s *server) Start(ctx context.Context) error {
+func (s *server) Start(_ context.Context) error {
 	for _, fn := range s.opts.BeforeStart {
 		if err := fn(); err != nil {
 			return fmt.Errorf("server.before_start: failed, reason: %w", err)
@@ -227,7 +228,7 @@ func (s *server) Run(ctx context.Context) error {
 
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "00 18 * * 1-5",
+			Schedule: "30 17 * * 1-5",
 			Types: []convert.Source{
 				convert.TwseThreePrimary,
 				convert.TpexThreePrimary,
@@ -236,14 +237,11 @@ func (s *server) Run(ctx context.Context) error {
 
 		//nolint:nolintlint, errcheck
 		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "30 17 * * 1-5",
-			Types:    []convert.Source{convert.StakeConcentration},
-		})
-
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "00 19 * * 1-5",
-			Types:    []convert.Source{convert.StakeConcentration},
+			Schedule: "40 18 * * 1-5",
+			Types: []convert.Source{
+				convert.TwseThreePrimary,
+				convert.TpexThreePrimary,
+			},
 		})
 
 		requestChan := make(chan *dto.StartCronjobRequest)

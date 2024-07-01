@@ -19,10 +19,9 @@ import (
 	"errors"
 	"io"
 
-	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
-
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/transform"
 	"golang.org/x/xerrors"

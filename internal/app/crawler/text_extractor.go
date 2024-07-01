@@ -18,7 +18,6 @@ import (
 
 	"github.com/samwang0723/stock-crawler/internal/app/parser"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
-
 	"golang.org/x/xerrors"
 )
 
@@ -32,7 +31,10 @@ func newTextExtractor(cfg Config) *textExtractor {
 	}
 }
 
-func (te *textExtractor) Process(ctx context.Context, raw pipeline.Payload) (pipeline.Payload, error) {
+func (te *textExtractor) Process(
+	_ context.Context,
+	raw pipeline.Payload,
+) (pipeline.Payload, error) {
 	payload, ok := raw.(*crawlerPayload)
 	if !ok {
 		return nil, xerrors.New("invalid payload")

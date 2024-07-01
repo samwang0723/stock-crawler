@@ -31,7 +31,7 @@ const (
 //go:generate mockgen -source=redis.go -destination=mocks/redis.go -package=cache
 type Redis interface {
 	SetExpire(ctx context.Context, key string, expired time.Time) error
-	SAdd(ctx context.Context, key string, value string) error
+	SAdd(ctx context.Context, key, value string) error
 	SMembers(ctx context.Context, key string) ([]string, error)
 	Close() error
 	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
@@ -74,7 +74,12 @@ func New(cfg Config) Redis {
 func (r *redisImpl) SetExpire(ctx context.Context, key string, expired time.Time) error {
 	expire, err := r.instance.ExpireAt(ctx, key, expired).Result()
 	if err != nil {
-		return xerrors.Errorf("cache.SetExpire: failed, key=%s; expired=%s; err=%w;", key, expired, err)
+		return xerrors.Errorf(
+			"cache.SetExpire: failed, key=%s; expired=%s; err=%w;",
+			key,
+			expired,
+			err,
+		)
 	}
 
 	r.cfg.Logger.Info().Msgf("cache.SetExpire: success, key=%s; expired=%t;", key, expire)
@@ -112,7 +117,11 @@ func (r *redisImpl) Close() error {
 	return nil
 }
 
-func (r *redisImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
+func (r *redisImpl) ObtainLock(
+	ctx context.Context,
+	key string,
+	expire time.Duration,
+) *redislock.Lock {
 	// Create a new lock client.
 	locker := redislock.New(r.instance)
 

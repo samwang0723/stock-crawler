@@ -38,14 +38,20 @@ type KafkaConfig struct {
 
 func (cfg *KafkaConfig) validate() error {
 	if cfg.Controller == "" {
-		return xerrors.Errorf("service.kafka.validate: failed, reason: invalid kafka config value for controller hostname")
+		return xerrors.Errorf(
+			"service.kafka.validate: failed, reason: invalid kafka config value for controller hostname",
+		)
 	}
 
 	return nil
 }
 
+//
 //nolint:nolintlint, cyclop
-func (s *serviceImpl) ListeningDownloadRequest(ctx context.Context, downloadChan chan *dto.StartCronjobRequest) {
+func (s *serviceImpl) ListeningDownloadRequest(
+	ctx context.Context,
+	downloadChan chan *dto.StartCronjobRequest,
+) {
 	go func() {
 		for {
 			msg, err := s.producer.ReadMessage(ctx)
@@ -98,7 +104,7 @@ func unmarshalMessage(msg *kafka.ReceivedMessage) (*dto.StartCronjobRequest, err
 	var output dto.StartCronjobRequest
 
 	if msg.Topic == kafka.DownloadV1 {
-		err = json.Unmarshal(msg.Message, &output)
+		err = jsoni.Unmarshal(msg.Message, &output)
 	}
 
 	if err != nil {

@@ -24,11 +24,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/rs/zerolog/log"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
 	"github.com/samwang0723/stock-crawler/internal/helper"
-
-	"github.com/rs/zerolog/log"
 	"go.uber.org/goleak"
 )
 
@@ -63,7 +62,7 @@ func (i *testLinkIterator) Link() *graph.Link {
 // mock HTTP client
 type mockSuccessHTTPClient struct{}
 
-func (ms *mockSuccessHTTPClient) Do(req *http.Request) (*http.Response, error) {
+func (ms *mockSuccessHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 	correctDoc, err := helper.ReadFromFile("../parser/.testfiles/stocks.html")
 	correctBytes, _ := helper.EncodeBig5([]byte(correctDoc))
 
@@ -75,7 +74,7 @@ func (ms *mockSuccessHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 type mockErrorHTTPClient struct{}
 
-func (mf *mockErrorHTTPClient) Do(req *http.Request) (*http.Response, error) {
+func (mf *mockErrorHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 	return nil, os.ErrInvalid
 }
 

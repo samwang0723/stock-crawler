@@ -22,12 +22,11 @@ import (
 	"strings"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	"github.com/samwang0723/stock-crawler/internal/kafka"
-
-	jsoniter "github.com/json-iterator/go"
 	"golang.org/x/xerrors"
 )
 
@@ -37,19 +36,25 @@ const (
 )
 
 //nolint:nolintlint, gochecknoglobals
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
+var jsoni = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interface{}) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.DailyClose); ok {
-			b, err := json.Marshal(res)
+			b, err := jsoni.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("service.dailyCloseThroughKafka: failed, reason: json marshal error %w", err)
+				return xerrors.Errorf(
+					"service.dailyCloseThroughKafka: failed, reason: json marshal error %w",
+					err,
+				)
 			}
 
 			err = s.sendKafka(ctx, kafka.DailyClosesV1, b)
 			if err != nil {
-				return xerrors.Errorf("service.dailyCloseThroughKafka: failed, reason: send kafka error %w", err)
+				return xerrors.Errorf(
+					"service.dailyCloseThroughKafka: failed, reason: send kafka error %w",
+					err,
+				)
 			}
 		} else {
 			return xerrors.Errorf(
@@ -65,14 +70,20 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.Stock); ok {
-			b, err := json.Marshal(res)
+			b, err := jsoni.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("service.stockThroughKafka: failed, reason: json marshal error %w", err)
+				return xerrors.Errorf(
+					"service.stockThroughKafka: failed, reason: json marshal error %w",
+					err,
+				)
 			}
 
 			err = s.sendKafka(ctx, kafka.StocksV1, b)
 			if err != nil {
-				return xerrors.Errorf("service.stockThroughKafka: failed, reason: send kafka error %w", err)
+				return xerrors.Errorf(
+					"service.stockThroughKafka: failed, reason: send kafka error %w",
+					err,
+				)
 			}
 		} else {
 			return xerrors.Errorf(
@@ -88,14 +99,20 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]interface{}) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.ThreePrimary); ok {
-			b, err := json.Marshal(res)
+			b, err := jsoni.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("service.threePrimaryThroughKafka: failed, reason: json marshal error %w", err)
+				return xerrors.Errorf(
+					"service.threePrimaryThroughKafka: failed, reason: json marshal error %w",
+					err,
+				)
 			}
 
 			err = s.sendKafka(ctx, kafka.ThreePrimaryV1, b)
 			if err != nil {
-				return xerrors.Errorf("service.threePrimaryThroughKafka: failed, send kafka error %w", err)
+				return xerrors.Errorf(
+					"service.threePrimaryThroughKafka: failed, send kafka error %w",
+					err,
+				)
 			}
 		} else {
 			return xerrors.Errorf(
@@ -108,23 +125,35 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 	return nil
 }
 
-func (s *serviceImpl) StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error {
+func (s *serviceImpl) StakeConcentrationThroughKafka(
+	ctx context.Context,
+	objs *[]interface{},
+) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.StakeConcentration); ok {
-			b, err := json.Marshal(res)
+			b, err := jsoni.Marshal(res)
 			if err != nil {
-				return xerrors.Errorf("service.stakeConcentrationThroughKafka: failed, reason: json marshal error %w", err)
+				return xerrors.Errorf(
+					"service.stakeConcentrationThroughKafka: failed, reason: json marshal error %w",
+					err,
+				)
 			}
 
 			err = s.sendKafka(ctx, kafka.StakeConcentrationV1, b)
 			if err != nil {
-				return xerrors.Errorf("service.stakeConcentrationThroughKafka: failed, reason: send kafka error %w", err)
+				return xerrors.Errorf(
+					"service.stakeConcentrationThroughKafka: failed, reason: send kafka error %w",
+					err,
+				)
 			}
 
 			// record parsed records to prevent duplicate parsing, default expire the key after 6 hours
 			err = s.cacheParsedConcentration(ctx, res.Date, res.StockID)
 			if err != nil {
-				return xerrors.Errorf("service.stakeConcentrationThroughKafka: failed, reason: cache parsed stock_id error %w", err)
+				return xerrors.Errorf(
+					"service.stakeConcentrationThroughKafka: failed, reason: cache parsed stock_id error %w",
+					err,
+				)
 			}
 
 			res.Recycle()
@@ -144,21 +173,33 @@ func (s *serviceImpl) cacheParsedConcentration(ctx context.Context, date, stockI
 
 	err := s.cache.SAdd(ctx, key, stockID)
 	if err != nil {
-		return xerrors.Errorf("service.cacheParsedConcentration: failed, reason: cache sadd error %w", err)
+		return xerrors.Errorf(
+			"service.cacheParsedConcentration: failed, reason: cache sadd error %w",
+			err,
+		)
 	}
 
 	err = s.cache.SetExpire(ctx, key, time.Now().Add(defaultCacheExpire))
 	if err != nil {
-		return xerrors.Errorf("service.cacheParsedConcentration: failed, reason: cache set_expire error %w", err)
+		return xerrors.Errorf(
+			"service.cacheParsedConcentration: failed, reason: cache set_expire error %w",
+			err,
+		)
 	}
 
 	return nil
 }
 
-func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date string) ([]string, error) {
+func (s *serviceImpl) ListCrawlingConcentrationURLs(
+	ctx context.Context,
+	date string,
+) ([]string, error) {
 	defaultList, err := listStocks()
 	if err != nil {
-		return nil, xerrors.Errorf("service.listCrawlingConcentrationURLs: failed, reason: list_stocks error %w", err)
+		return nil, xerrors.Errorf(
+			"service.listCrawlingConcentrationURLs: failed, reason: list_stocks error %w",
+			err,
+		)
 	}
 
 	res, err := s.cache.SMembers(ctx, date)
@@ -171,9 +212,9 @@ func (s *serviceImpl) ListCrawlingConcentrationURLs(ctx context.Context, date st
 
 	var urls []string
 
-	stockIds := helper.Diff(res, defaultList)
+	stockIDs := helper.Diff(res, defaultList)
 
-	for _, sid := range stockIds {
+	for _, sid := range stockIDs {
 		// in order to get accurate data, we must query each page
 		// https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_6598_6.djhtm
 		// as the top 15 brokers may different from day to day and not possible to store all detailed daily data
@@ -203,13 +244,16 @@ func listStocks() ([]string, error) {
 
 	// decode json stock list
 	var list struct {
-		StockIds []string `json:"stockIds"`
+		StockIDs []string `json:"stockIds"`
 	}
 
-	err = json.Unmarshal(byteValue, &list)
+	err = jsoni.Unmarshal(byteValue, &list)
 	if err != nil {
-		return nil, xerrors.Errorf("service.listStocks: failed, reason: json unmarshal error %w", err)
+		return nil, xerrors.Errorf(
+			"service.listStocks: failed, reason: json unmarshal error %w",
+			err,
+		)
 	}
 
-	return list.StockIds, nil
+	return list.StockIDs, nil
 }

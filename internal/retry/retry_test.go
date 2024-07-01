@@ -24,6 +24,8 @@ import (
 	"go.uber.org/goleak"
 )
 
+var ErrRetry = errors.New("no retry")
+
 func TestMain(m *testing.M) {
 	leak := flag.Bool("leak", false, "use leak detector")
 
@@ -51,12 +53,12 @@ func TestRetry(t *testing.T) {
 		},
 		{
 			name:  "NoRetry with error func",
-			err:   NoRetryError(errors.New("No retry")),
+			err:   NoRetryError(ErrRetry),
 			count: 1,
 		},
 		{
 			name:  "Retry with error func",
-			err:   errors.New("Need retry"),
+			err:   ErrRetry,
 			count: 3,
 		},
 	}

@@ -174,7 +174,7 @@ type countingSink struct {
 	count int
 }
 
-func (s *countingSink) Consume(_ context.Context, p pipeline.Payload) error {
+func (s *countingSink) Consume(_ context.Context, _ pipeline.Payload) error {
 	s.count++
 
 	return nil

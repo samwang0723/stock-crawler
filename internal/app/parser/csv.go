@@ -32,7 +32,7 @@ type csvStrategy struct {
 }
 
 //nolint:nolintlint, cyclop
-func (s *csvStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
+func (s *csvStrategy) Parse(input io.Reader, _ ...string) ([]interface{}, error) {
 	if s.date == "" {
 		return nil, ErrParseDayMissing
 	}

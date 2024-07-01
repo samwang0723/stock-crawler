@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/samwang0723/stock-crawler/internal/retry"
-
 	"golang.org/x/xerrors"
 )
 

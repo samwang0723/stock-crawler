@@ -29,7 +29,7 @@ type htmlStrategy struct {
 }
 
 //nolint:nolintlint, cyclop, gocognit
-func (s *htmlStrategy) Parse(input io.Reader, additional ...string) ([]interface{}, error) {
+func (s *htmlStrategy) Parse(input io.Reader, _ ...string) ([]interface{}, error) {
 	var output []interface{}
 
 	var records []string

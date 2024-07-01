@@ -19,9 +19,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/samwang0723/stock-crawler/internal/app/server"
-
 	"github.com/rs/zerolog/log"
+	"github.com/samwang0723/stock-crawler/internal/app/server"
 )
 
 //nolint:nolintlint, gochecknoglobals

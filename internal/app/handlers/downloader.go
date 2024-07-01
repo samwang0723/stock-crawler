@@ -120,7 +120,6 @@ func (h *handlerImpl) generateURLs(ctx context.Context, date string, source conv
 		// align the date format to be 20220107, but remains the query date as 2022-01-07
 		unifiedDate := strings.ReplaceAll(date, "-", "")
 		urls, err = h.dataService.ListCrawlingConcentrationURLs(ctx, unifiedDate)
-
 		if err != nil {
 			h.logger.Error().Err(err).Msg(
 				"handlers.generateURLs: failed, reason: dataService list crawling concentration urls failed",

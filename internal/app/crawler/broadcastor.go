@@ -6,7 +6,6 @@ import (
 	"github.com/samwang0723/stock-crawler/internal/app/entity"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
-
 	"golang.org/x/xerrors"
 )
 
@@ -25,11 +24,11 @@ func newBroadcastor() *broadcastor {
 	}
 }
 
-func (b *broadcastor) InterceptData(ctx context.Context, interceptChan chan convert.InterceptData) {
+func (b *broadcastor) InterceptData(_ context.Context, interceptChan chan convert.InterceptData) {
 	b.interceptChan = interceptChan
 }
 
-func (b *broadcastor) Process(ctx context.Context, pipe pipeline.Payload) (pipeline.Payload, error) {
+func (b *broadcastor) Process(_ context.Context, pipe pipeline.Payload) (pipeline.Payload, error) {
 	payload, ok := pipe.(*crawlerPayload)
 	if !ok {
 		return nil, xerrors.New("invalid payload")

@@ -5,9 +5,16 @@ metadata:
   name: stock-crawler
 spec:
   replicas: 2
+  revisionHistoryLimit: 10
   selector:
     matchLabels:
       app: stock-crawler
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
   template:
     metadata:
       labels:
@@ -24,6 +31,11 @@ spec:
             port: 8086
           initialDelaySeconds: 5
           periodSeconds: 5
+        resources:
+          limits:
+            memory: "256Mi"
+          requests:
+            memory: "128Mi"
         env:
         - name: MY_IP
           valueFrom:

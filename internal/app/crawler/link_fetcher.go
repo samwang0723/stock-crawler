@@ -18,12 +18,11 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/rs/zerolog"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/pipeline"
 	"github.com/samwang0723/stock-crawler/internal/helper"
 	"golang.org/x/xerrors"
-
-	"github.com/rs/zerolog"
 )
 
 var _ pipeline.Processor = (*linkFetcher)(nil)
@@ -55,7 +54,7 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 		uri = lf.proxy.URI(payload.URL)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", uri, http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, uri, http.NoBody)
 	if err != nil {
 		return nil, xerrors.Errorf("linkFetcher.Process: failed, err=%w;", err)
 	}
@@ -75,7 +74,10 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 
 	// Skip payloads for invalid http status codes.
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return nil, xerrors.Errorf("linkFetcher.Process: failed, http_status_code=%d;", resp.StatusCode)
+		return nil, xerrors.Errorf(
+			"linkFetcher.Process: failed, http_status_code=%d;",
+			resp.StatusCode,
+		)
 	}
 
 	// copy stream from response body, although it consumes memory but
@@ -88,8 +90,9 @@ func (lf *linkFetcher) Process(ctx context.Context, p pipeline.Payload) (pipelin
 	}
 
 	//nolint:nolintlint, gomnd
-	lf.logger.Info().Msgf("linkFetcher.Process: success, reason: download completed; size=%s; url=%s;",
-		helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
+	lf.logger.Info().
+		Msgf("linkFetcher.Process: success, reason: download completed; size=%s; url=%s;",
+			helper.GetReadableSize(payload.RawContent.Len(), 2), uri)
 
 	return payload, nil
 }

@@ -1,31 +1,25 @@
 [service]
-golangci-lint-version =  "1.46"
+golangci-lint-version =  "1.51.2"
 
 [linters]
 disable-all = true
-enable = [
-    "deadcode",
-    "errcheck",
-    "gosimple",
-    "govet",
-    "ineffassign",
-    "staticcheck",
-    "structcheck",
-    "typecheck",
-    "unused",
-    "varcheck",
 
+enable = [
+    # "asasalint", workaround
     "asciicheck",
     "bidichk",
     "bodyclose",
     "containedctx",
     "contextcheck",
     "cyclop",
+    # "deadcode", deprecated
     "decorder",
-    "depguard",
+    # "depguard",
     "dogsled",
     "dupl",
+    "dupword",
     "durationcheck",
+    "errcheck",
     "errchkjson",
     "errname",
     "errorlint",
@@ -37,18 +31,18 @@ enable = [
     "forbidigo",
     "forcetypeassert",
     # "funlen", the complexity is covering most of issues
-    # "gci", it's hard to make gofumpt play well with gci
+    "gci",
     "gochecknoglobals",
     "gochecknoinits",
     "gocognit",
     "goconst",
-    "gocritic",
+    #"gocritic",
     "gocyclo",
     # "godot", the dot is not always easy to add (multiline for ex)
-    "godox",
+    # "godox", workaround
     "goerr113",
     "gofmt",
-    # "gofumpt", does not run properly: https://github.com/golangci/golangci-lint/issues/2711
+    "gofumpt",
     "goheader",
     "goimports",
     # "golint", deprecated
@@ -57,12 +51,17 @@ enable = [
     "gomodguard",
     "goprintffuncname",
     "gosec",
+    "gosimple",
+    "govet",
     "grouper",
-    "ifshort",
+    # "ifshort", deprecated
     "importas",
-    # "interfacer", deprecated
-    # "ireturn",
+    "ineffassign",
+    # "interfacebloat", workaround
+    # "interfacer" [deprecated]: Linter that suggests narrower interface types [fast: false, auto-fix: false]
+    # "ireturn", workaround
     "lll",
+    "loggercheck",
     "maintidx",
     "makezero",
     # "maligned", deprecated
@@ -74,29 +73,38 @@ enable = [
     "nlreturn",
     "noctx",
     "nolintlint",
-    "nonamedreturns",
+    # "nonamedreturns", workaround
+    # "nosnakecase", deprecated
     "nosprintfhostport",
     "paralleltest",
     "prealloc",
     "predeclared",
     "promlinter",
+    "reassign",
     "revive",
     "rowserrcheck",
-    # "scopelint" , deprecated
+    # "scopelint", deprecated
     "sqlclosecheck",
-    "stylecheck",
-    # "tagliatelle", we don't want to force tags on all structs
+    "staticcheck",
+    # "structcheck", deprecated
+    # "stylecheck",
+    # "tagliatelle",
     "tenv",
-    # "testpackage", we don't want to force the use of a test package
+    "testableexamples",
+    # "testpackage",
     "thelper",
     "tparallel",
+    "typecheck",
     "unconvert",
     "unparam",
-    "varnamelen",
+    "unused",
+    "usestdlibvars",
+    # "varcheck", deprecated
+    # "varnamelen", workaround
     "wastedassign",
     "whitespace",
-    "wrapcheck",
-    "wsl",
+    # "wrapcheck", workaround
+    # "wsl", workaround
 ]
 
 [linters-settings.errcheck]
@@ -123,7 +131,7 @@ enabled-tags = [
     "style",
 ]
 disabled-checks = [
-      "whyNoLint",
+    "whyNoLint",
 ]
 
 [linters-settings.errorlint]
@@ -143,3 +151,21 @@ linters = ["funlen", "goconst", "interfacer", "dupl", "lll", "goerr113", "varnam
 [[issues.exclude-rules]]
 path = 'sqlc\.go'
 linters = ["wrapcheck"]
+
+[[issues.exclude-rules]]
+source = "^//go:generate "
+linters = ["lll"]
+
+[run]
+# which dirs to skip: issues from them won't be reported;
+# can use regexp here: generated.*, regexp is applied on full path;
+# default value is empty list, but default dirs are skipped independently
+# from this option's value (see skip-dirs-use-default).
+# "/" will be replaced by current OS file path separator to properly work
+# on Windows.
+skip-dirs = [
+    "third_party.*",
+    "api.*",
+    "tools.*",
+    "pb.*",
+]

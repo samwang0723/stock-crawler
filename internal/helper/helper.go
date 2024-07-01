@@ -29,7 +29,7 @@ import (
 	"golang.org/x/xerrors"
 )
 
-//nolint:nolintlint, varnamelen
+//nolint:nolintlint, varnamelen, dupword
 const (
 	TB                       = 1000000000000
 	GB                       = 1000000000

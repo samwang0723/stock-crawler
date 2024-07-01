@@ -72,7 +72,6 @@ func Load(loc ...string) {
 
 	decoder := yaml.NewDecoder(file)
 	err = decoder.Decode(&instance)
-
 	if err != nil {
 		panic(err)
 	}

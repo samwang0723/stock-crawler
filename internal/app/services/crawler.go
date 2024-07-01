@@ -17,11 +17,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rs/zerolog"
 	"github.com/samwang0723/stock-crawler/internal/app/crawler"
 	"github.com/samwang0723/stock-crawler/internal/app/entity/convert"
 	"github.com/samwang0723/stock-crawler/internal/app/graph"
-
-	"github.com/rs/zerolog"
 )
 
 // Config encapsulates the settings for configuring the web-crawler service.
