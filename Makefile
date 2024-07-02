@@ -35,10 +35,10 @@ test-leak: ## launch all tests with leak detection (if possible)
 	go test $(SOURCE_LIST)  -leak
 
 test-coverage-ci:
-	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=covprofile
+	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=coverage.out
 
 test-coverage-report:
-	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=./coverage.out
+	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
 ########
