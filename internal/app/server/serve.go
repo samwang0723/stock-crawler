@@ -131,6 +131,10 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 		return fmt.Errorf("server.serve: failed, reason: %w", err)
 	}
 
+	// print server start message with name, version and env
+	logger.Info().
+		Msgf("Server [%s] started. Version: (%s). Environment: (%s)", cfg.Server.Name, cfg.Server.Version, helper.GetCurrentEnv())
+
 	return nil
 }
 
@@ -151,11 +155,6 @@ func (s *server) Start(_ context.Context) error {
 			return fmt.Errorf("server.before_start: failed, reason: %w", err)
 		}
 	}
-
-	signatureOut := fmt.Sprintf(helper.Signature, "v2.0.1", helper.GetCurrentEnv())
-
-	//nolint:nolintlint, forbidigo
-	fmt.Println(signatureOut)
 
 	var err error
 

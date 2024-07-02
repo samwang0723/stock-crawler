@@ -176,9 +176,9 @@ func Test_FormalizeValidTimeWithLocation(t *testing.T) {
 	testTime := time.Date(2021, time.December, 23, 12, 0, 0, 0, l)
 	expTime := time.Date(2021, time.December, 22, 12, 0, 0, 0, l)
 	tests := []struct {
-		name   string
 		ti     time.Time
 		want   *time.Time
+		name   string
 		offset int
 	}{
 		{

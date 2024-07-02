@@ -46,16 +46,18 @@ func Test_ConfigLoad(t *testing.T) {
 			want: SystemConfig{
 				RedisCache: struct {
 					Master        string   "yaml:\"master\""
-					SentinelAddrs []string "yaml:\"sentinelAddrs\""
 					Password      string   "yaml:\"password\""
 					Port          int      "yaml:\"port\""
+					SentinelAddrs []string "yaml:\"sentinelAddrs\""
 				}{
-					Master: "mymaster",
-					SentinelAddrs: []string{
-						"redis-sentinel-headless.default.svc.cluster.local:26379",
-					},
+					Master:   "redis-master",
 					Password: "",
 					Port:     6379,
+					SentinelAddrs: []string{
+						"redis-sentinel-1:26379",
+						"redis-sentinel-2:26380",
+						"redis-sentinel-3:26381",
+					},
 				},
 				Kafka: struct {
 					Controller string   "yaml:\"controller\""
@@ -63,7 +65,7 @@ func Test_ConfigLoad(t *testing.T) {
 					Brokers    []string "yaml:\"brokers\""
 					Topics     []string "yaml:\"topics\""
 				}{
-					Controller: "kafka:9092",
+					Controller: "kafka-1:9092",
 					GroupID:    "jarvis",
 					Brokers:    []string{"kafka-headless:9092"},
 					Topics:     []string{"download-v1"},
@@ -72,12 +74,14 @@ func Test_ConfigLoad(t *testing.T) {
 					Name         string "yaml:\"name\""
 					Host         string "yaml:\"host\""
 					Port         int    "yaml:\"port\""
+					Version      string "yaml:\"version\""
 					MaxGoroutine int    "yaml:\"maxGoroutine\""
 					DNSLatency   int64  "yaml:\"dnsLatency\""
 				}{
 					Name:         "stock-crawler",
 					Host:         "0.0.0.0",
 					Port:         8086,
+					Version:      "vx.x.x",
 					MaxGoroutine: 20000,
 					DNSLatency:   200,
 				},
@@ -85,8 +89,8 @@ func Test_ConfigLoad(t *testing.T) {
 					FetchWorkers int   "yaml:\"fetchWorkers\""
 					RateLimit    int64 "yaml:\"rateLimit\""
 				}{
-					FetchWorkers: 40,
-					RateLimit:    500,
+					FetchWorkers: 10,
+					RateLimit:    3000,
 				},
 			},
 		},
@@ -98,7 +102,7 @@ func Test_ConfigLoad(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			Load("config.dev.yaml")
+			Load("config.template.yaml")
 			cfg := GetCurrentConfig()
 			if cmp.Equal(*cfg, tt.want) == false {
 				t.Errorf("config.Load() = %+v, want %+v", *cfg, tt.want)

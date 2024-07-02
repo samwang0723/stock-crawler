@@ -20,9 +20,9 @@ import (
 )
 
 type linkIterator struct {
-	mu       sync.RWMutex
 	links    []*graph.Link
 	curIndex int
+	mu       sync.RWMutex
 }
 
 // Next implements graph.LinkIterator.

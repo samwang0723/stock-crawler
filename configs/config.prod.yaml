@@ -2,6 +2,7 @@
 server:
   name: "stock-crawler"
   host: "0.0.0.0"
+  version: "v2.0.1"
   port: 8086
   maxGoroutine: 20000
   dnsLatency: 200
@@ -14,6 +15,7 @@ redis:
       "redis-sentinel-3:26381"
     ]
   master: "redis-master"
+  port: 6379
 
 kafka:
   controller: "kafka-1:9092"

@@ -31,12 +31,10 @@ const (
 var _ StageParams = (*workerParams)(nil)
 
 type workerParams struct {
-	stage int
-
-	// Channels for the worker's input, output and errors.
 	inCh  <-chan Payload
 	outCh chan<- Payload
 	errCh chan<- error
+	stage int
 }
 
 func (p *workerParams) StageIndex() int        { return p.stage }
