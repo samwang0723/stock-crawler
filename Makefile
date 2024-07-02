@@ -7,7 +7,7 @@ APP_NAME?=stock-crawler
 VERSION?=v2.0.1
 
 SHELL = /bin/bash
-SOURCE_LIST = $$(go list ./... | grep -v /third_party/ | grep -v /internal/app/pb)
+SOURCE_LIST = $$(go list ./... | grep -v /cmd | grep -v /internal/cronjob | grep -v /internal/kafka)
 
 ###########
 # install #
