@@ -1,4 +1,4 @@
-iname: Coverage
+name: Coverage
 on: [push, pull_request]
 jobs:
   test:
