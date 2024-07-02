@@ -15,8 +15,8 @@ func TestInterceptData(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
 		args args
+		name string
 		isEq bool
 	}{
 		{
@@ -37,7 +37,11 @@ func TestInterceptData(t *testing.T) {
 			b := newBroadcastor()
 			b.InterceptData(context.Background(), tt.args.mockChan)
 			if (b.interceptChan == tt.args.mockChan) != tt.isEq {
-				t.Errorf("InterceptData() set channel faield: %v != %v", b.interceptChan, tt.args.mockChan)
+				t.Errorf(
+					"InterceptData() set channel faield: %v != %v",
+					b.interceptChan,
+					tt.args.mockChan,
+				)
 			}
 		})
 	}

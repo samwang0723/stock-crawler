@@ -39,9 +39,9 @@ func TestConcentration(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
 		val  *Data
 		exp  *entity.StakeConcentration
+		name string
 	}{
 		{
 			name: "convert StakeConcentration",
@@ -111,16 +111,34 @@ func TestDailyClose(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
 		val  *Data
 		exp  *entity.DailyClose
+		name string
 	}{
 		{
 			name: "convert TwseDailyClose",
 			val: &Data{
 				ParseDate: "20220525",
-				RawData:   []string{"2330", "", "1,000", "1,000", "1,000", "100", "101", "1,005", "98", "-", "12", "", "", "", "", "", ""},
-				Target:    TwseDailyClose,
+				RawData: []string{
+					"2330",
+					"",
+					"1,000",
+					"1,000",
+					"1,000",
+					"100",
+					"101",
+					"1,005",
+					"98",
+					"-",
+					"12",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+				},
+				Target: TwseDailyClose,
 			},
 			exp: &entity.DailyClose{
 				StockID:      "2330",
@@ -139,8 +157,26 @@ func TestDailyClose(t *testing.T) {
 			name: "convert TpexDailyClose",
 			val: &Data{
 				ParseDate: "20220525",
-				RawData:   []string{"2330", "", "98", "-12", "100", "101", "105", "", "1,000", "1,000", "1,000", "", "", "", "", "", ""},
-				Target:    TpexDailyClose,
+				RawData: []string{
+					"2330",
+					"",
+					"98",
+					"-12",
+					"100",
+					"101",
+					"105",
+					"",
+					"1,000",
+					"1,000",
+					"1,000",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+				},
+				Target: TpexDailyClose,
 			},
 			exp: &entity.DailyClose{
 				StockID:      "2330",
@@ -192,16 +228,37 @@ func TestThreePrimary(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
 		val  *Data
 		exp  *entity.ThreePrimary
+		name string
 	}{
 		{
 			name: "convert TpexThreePrimary",
 			val: &Data{
 				ParseDate: "20220525",
-				RawData:   []string{"2330", "", "", "", "", "", "", "", "", "", "500", "", "", "1,300", "", "", "1,600", "", "", "2,000"},
-				Target:    TpexThreePrimary,
+				RawData: []string{
+					"2330",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"500",
+					"",
+					"",
+					"1,300",
+					"",
+					"",
+					"1,600",
+					"",
+					"",
+					"2,000",
+				},
+				Target: TpexThreePrimary,
 			},
 			exp: &entity.ThreePrimary{
 				StockID:            "2330",
@@ -216,8 +273,29 @@ func TestThreePrimary(t *testing.T) {
 			name: "convert TwseThreePrimary",
 			val: &Data{
 				ParseDate: "20220525",
-				RawData:   []string{"2330", "", "", "", "500", "", "", "", "", "", "1,300", "", "", "", "1,600", "", "", "2,000", "", ""},
-				Target:    TwseThreePrimary,
+				RawData: []string{
+					"2330",
+					"",
+					"",
+					"",
+					"500",
+					"",
+					"",
+					"",
+					"",
+					"",
+					"1,300",
+					"",
+					"",
+					"",
+					"1,600",
+					"",
+					"",
+					"2,000",
+					"",
+					"",
+				},
+				Target: TwseThreePrimary,
 			},
 			exp: &entity.ThreePrimary{
 				StockID:            "2330",
@@ -265,9 +343,9 @@ func TestStock(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
 		val  *Data
 		exp  *entity.Stock
+		name string
 	}{
 		{
 			name: "convert Stock",

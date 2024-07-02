@@ -32,9 +32,9 @@ import (
 )
 
 type testLinkIterator struct {
-	mu       sync.RWMutex
 	links    []*graph.Link
 	curIndex int
+	mu       sync.RWMutex
 }
 
 func (i *testLinkIterator) Next() bool {
@@ -99,8 +99,8 @@ func TestCrawl(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
 		args    args
+		name    string
 		wantErr bool
 	}{
 		{

@@ -2,6 +2,7 @@
 server:
   name: "stock-crawler"
   host: "0.0.0.0"
+  version: "vx.x.x"
   port: 8086
   maxGoroutine: 20000
   dnsLatency: 200
@@ -14,10 +15,11 @@ redis:
       "redis-sentinel-3:26381"
     ]
   master: "redis-master"
+  port: 6379
 
 kafka:
   controller: "kafka-1:9092"
-  brokers: [ "kafka-1:9092", "kafka-2:9092", "kafka-3:9092" ]
+  brokers: [ "kafka-headless:9092" ]
   topics: [ "download-v1" ]
   groupId: "jarvis"
 

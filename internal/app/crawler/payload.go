@@ -35,12 +35,12 @@ var (
 )
 
 type crawlerPayload struct {
+	RetrievedAt   time.Time
+	ParsedContent *[]interface{}
 	URL           string
 	Date          string
-	Strategy      convert.Source
-	RetrievedAt   time.Time
 	RawContent    bytes.Buffer
-	ParsedContent *[]interface{}
+	Strategy      convert.Source
 }
 
 func (p *crawlerPayload) Clone() pipeline.Payload {

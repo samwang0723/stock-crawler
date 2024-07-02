@@ -28,9 +28,9 @@ const (
 type SystemConfig struct {
 	RedisCache struct {
 		Master        string   `yaml:"master"`
-		SentinelAddrs []string `yaml:"sentinelAddrs"`
 		Password      string   `yaml:"password"`
 		Port          int      `yaml:"port"`
+		SentinelAddrs []string `yaml:"sentinelAddrs"`
 	} `yaml:"redis"`
 	Kafka struct {
 		Controller string   `yaml:"controller"`
@@ -42,6 +42,7 @@ type SystemConfig struct {
 		Name         string `yaml:"name"`
 		Host         string `yaml:"host"`
 		Port         int    `yaml:"port"`
+		Version      string `yaml:"version"`
 		MaxGoroutine int    `yaml:"maxGoroutine"`
 		DNSLatency   int64  `yaml:"dnsLatency"`
 	} `yaml:"server"`
