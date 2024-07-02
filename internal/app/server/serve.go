@@ -127,13 +127,13 @@ func Serve(ctx context.Context, logger *zerolog.Logger) error {
 		}),
 	)
 
-	if err := svc.Run(ctx); err != nil {
-		return fmt.Errorf("server.serve: failed, reason: %w", err)
-	}
-
 	// print server start message with name, version and env
 	logger.Info().
 		Msgf("Server [%s] started. Version: (%s). Environment: (%s)", cfg.Server.Name, cfg.Server.Version, helper.GetCurrentEnv())
+
+	if err := svc.Run(ctx); err != nil {
+		return fmt.Errorf("server.serve: failed, reason: %w", err)
+	}
 
 	return nil
 }

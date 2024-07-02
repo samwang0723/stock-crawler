@@ -114,7 +114,7 @@ build:
 	@echo "[go build] build executable binary for development"
 	@go build -o stock-crawler cmd/main.go
 
-docker-build: lint test bench sec-scan docker-m1 ## build docker image in M1 device
+docker-build: lint test bench docker-m1 ## build docker image in M1 device
 	@printf "\nyou can now deploy to your env of choice:\nENV=dev make deploy\n"
 
 docker-m1:
@@ -124,6 +124,7 @@ docker-m1:
 		--build-arg LAST_MAIN_COMMIT_HASH=$(LAST_MAIN_COMMIT_HASH) \
 		--build-arg LAST_MAIN_COMMIT_TIME=$(LAST_MAIN_COMMIT_TIME) \
 		-f build/docker/app/Dockerfile.local .
+	@docker push samwang0723/$(APP_NAME):$(VERSION)
 
 docker-amd64-deps:
 	@echo "[docker buildx] install buildx depedency"
