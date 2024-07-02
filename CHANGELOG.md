@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [2.0.3] - 2024-07-02
 
 ### Bug Fixes
 
@@ -26,12 +26,26 @@ All notable changes to this project will be documented in this file.
 - Solve price_diff space trim
 - Trim all space for price diff
 - Always restart docker image
+- Support kafka keep alive
+- Use password on sentinel
+- Debugging redis sentinel
+- Update sentinel addresses
+- Update redis sentinel master issue
+- Update TWSE three primary endpoint change
+- Update k8s resouces and update linter config, fix lint issues
+- Update coverage upload ([#5](https://github.com/samwang0723/stock-crawler/issues/5))
+- Update push branch
 
 ### Features
 
 - Add CHANGELOG.md
 - Refine logging format and add sumo logic support
-- Support kafka channel to trigger download manually
+- Support kafka channel to trigger download manually ([#3](https://github.com/samwang0723/stock-crawler/issues/3))
+- Support k8s deployment
+
+### Chroe
+
+- Update operational files and update Makefile
 
 ## [2.0.1] - 2022-08-26
 
