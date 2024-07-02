@@ -7,7 +7,7 @@ APP_NAME?=stock-crawler
 VERSION?=v2.0.1
 
 SHELL = /bin/bash
-SOURCE_LIST = $$(go list ./... | grep -v /third_party/ | grep -v /internal/app/pb)
+SOURCE_LIST = $$(go list ./... | grep -v /cmd | grep -v /internal/cronjob | grep -v /internal/kafka)
 
 ###########
 # install #
@@ -26,7 +26,7 @@ vendor:
 # test #
 ########
 
-test: test-race test-leak test-coverage-report ## launch all tests
+test: test-race test-leak test-coverage-ci ## launch all tests
 
 test-race: ## launch all tests with race detection
 	go test $(SOURCE_LIST)  -cover -race
@@ -34,8 +34,11 @@ test-race: ## launch all tests with race detection
 test-leak: ## launch all tests with leak detection (if possible)
 	go test $(SOURCE_LIST)  -leak
 
+test-coverage-ci:
+	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=coverage.out
+
 test-coverage-report:
-	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=./coverage.out
+	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=coverage.out
 	go tool cover -html=coverage.out
 
 ########
