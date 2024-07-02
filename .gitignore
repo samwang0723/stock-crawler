@@ -1,9 +1,29 @@
+# Ignore all
+*
+
+# Unignore all with extensions
+!*.*
+
+# Unignore all dirs
+!*/
+
+# Exept Makefile
+!Makefile
+
+### Above combination will ignore all files without extension ###
+
 # Binaries for programs and plugins
+# bin/
+output/
 *.exe
 *.exe~
 *.dll
 *.so
 *.dylib
+*.syso
+
+# Astilectron bundler files
+bind_*.go
 
 # Test binary, built with `go test -c`
 *.test
@@ -14,17 +34,20 @@
 # Dependency directories (remove the comment below to include it)
 vendor/
 
-# Local develop file
-postgres-data/
-.idea
-.vscode
-.env
-local.yml
+# Editor/IDE files
+.idea/
+.vscode/
 
-.DS_Store
+# Log folder
+logs/
 
+# Project customized files
+config.dev.yaml
+config.prod.yaml
+secrets.yaml
+
+# Generated files
+coverage.txt
+coverage.out
 bench.txt
-benchmarks/
 
-.github_personal_access_token
-.pre-commit-config.yaml

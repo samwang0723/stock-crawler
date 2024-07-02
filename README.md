@@ -47,7 +47,7 @@ $ docker exec -it kafka-1 bash
 ### Build image for Mac M1
 
 ```
-$ make build
+$ make docker-build
 ```
 
 ### Start stock-crawler container

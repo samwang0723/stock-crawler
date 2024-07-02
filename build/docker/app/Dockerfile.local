@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.19-alpine AS build_base
+FROM golang:1.22-alpine AS build_base
 
 # Add Maintainer Info
 LABEL maintainer="Sam Wang <sam.wang.0723@gmail.com>"

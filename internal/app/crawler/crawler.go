@@ -70,19 +70,11 @@ type URLGetter interface {
 }
 
 type Config struct {
-	// A URLGetter instance to fetch links.
-	URLGetter URLGetter
-
-	// A Proxy instance for avoiding remote rate limiting
-	Proxy *Proxy
-
-	// The number of concurrent workers used for retrieving links.
-	FetchWorkers int
-
-	// Rate limit interval to prevent remote site blocking
+	URLGetter         URLGetter
+	Proxy             *Proxy
+	Logger            *zerolog.Logger
+	FetchWorkers      int
 	RateLimitInterval int64
-
-	Logger *zerolog.Logger
 }
 
 // crawlerImpl implements a stock information crawling pipeline consisting of following stages:
@@ -90,9 +82,9 @@ type Config struct {
 // - Given an URL, retrieve content from remote server
 // - Extract useful trading information from retrieved pages
 type crawlerImpl struct {
-	cfg       Config
 	broadcast *broadcastor
 	pipe      *pipeline.Pipeline
+	cfg       Config
 }
 
 func New(cfg Config) Crawler {
@@ -119,7 +111,7 @@ func assembleCrawlerPipeline(cfg Config, broadcastor *broadcastor) *pipeline.Pip
 // Crawl iterates linkIt and sends each link through the crawler pipeline
 // returning the total count of links that went through the pipeline. Calls to
 // Crawl block until the link iterator is exhausted, an error occurs or the
-// context is cancelled.
+// context is canceled.
 func (c *crawlerImpl) Crawl(
 	ctx context.Context,
 	linkIt graph.LinkIterator,

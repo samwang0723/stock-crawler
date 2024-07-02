@@ -49,7 +49,11 @@ func (cfg *RedisConfig) validate() error {
 	return nil
 }
 
-func (s *serviceImpl) ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock {
+func (s *serviceImpl) ObtainLock(
+	ctx context.Context,
+	key string,
+	expire time.Duration,
+) *redislock.Lock {
 	if s.cache == nil {
 		return nil
 	}

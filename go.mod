@@ -1,6 +1,6 @@
 module github.com/samwang0723/stock-crawler
 
-go 1.18
+go 1.22
 
 require (
 	github.com/bsm/redislock v0.7.2

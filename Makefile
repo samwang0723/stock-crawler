@@ -1,66 +1,98 @@
-.PHONY: help test test-race test-leak bench bench-compare lint sec-scan upgrade changelog-gen changelog-commit docker-build
+.PHONY: test lint bench lint-skip-fix migrate proto build build-docker install vendor deploy rollback
 
 help: ## show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-PROJECT_NAME?=core
 APP_NAME?=stock-crawler
 VERSION?=v2.0.1
 
 SHELL = /bin/bash
+SOURCE_LIST = $$(go list ./... | grep -v /third_party/ | grep -v /internal/app/pb)
+
+###########
+# install #
+###########
+## install: Install go dependencies
+install:
+	go mod tidy
+	go mod download
+	go get ./...
+
+# vendor: Vendor go modules
+vendor:
+	go mod vendor
 
 ########
 # test #
 ########
 
-test: test-race test-leak ## launch all tests
+test: test-race test-leak test-coverage-report ## launch all tests
 
 test-race: ## launch all tests with race detection
-	go test ./... -cover -race
+	go test $(SOURCE_LIST)  -cover -race
 
 test-leak: ## launch all tests with leak detection (if possible)
-	go test ./internal/app/... -leak
-	go test ./internal/cache/... -leak
-	go test ./internal/cronjob/... -leak
-	go test ./internal/helper/... -leak
-	go test ./internal/kafka/... -leak
-	go test ./internal/retry/... -leak
-	go test ./configs/... -leak
+	go test $(SOURCE_LIST)  -leak
 
 test-coverage-report:
-	go test -v  ./... -cover -race -covermode=atomic -coverprofile=./coverage.out
+	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=./coverage.out
 	go tool cover -html=coverage.out
 
 ########
 # lint #
 ########
 
-lint: ## lints the entire codebase
-	@golangci-lint run ./... --config=./.golangci.toml && \
-	if [ $$(gofumpt -e -l ./ | wc -l) = "0" ] ; \
+lint: lint-check-deps ## lints the entire codebase
+	@golangci-lint run ./... --config=./.golangci.yaml --timeout=15m && \
+	if [ $$(gofumpt -e -l --extra cmd/ | wc -l) = "0" ] && \
+		[ $$(gofumpt -e -l --extra internal/ | wc -l) = "0" ] && \
+		[ $$(gofumpt -e -l --extra configs/ | wc -l) = "0" ] ; \
 		then exit 0; \
 	else \
 		echo "these files needs to be gofumpt-ed"; \
-		gofumpt -e -l ./; \
-		exit 1; \
+		gofumpt -e -l --extra cmd/; \
+		gofumpt -e -l --extra internal/; \
+		gofumpt -e -l --extra configs/; \
 	fi
+
+lint-check-deps:
+	@if [ -z `which golangci-lint` ]; then \
+		echo "[go get] installing golangci-lint";\
+		GO111MODULE=on go get -u github.com/golangci/golangci-lint/cmd/golangci-lint;\
+	fi
+
+lint-skip-fix: ## skip linting the system generate files
+	@git checkout head internal/app/pb
+	@git checkout head third_party/
 
 #############
 # benchmark #
 #############
 
-bench: ## launch benchs
-	go test ./... -bench=. -benchmem | tee ./bench.txt
+bench: ## launch benches
+	go test $(SOURCE_LIST) -bench=. -benchmem | tee ./bench.txt
 
-bench-compare: ## compare benchs results
+bench-compare: ## compare benches results
 	benchstat ./bench.txt
 
 #######
 # sec #
 #######
 
-sec-scan: ## scan for sec issues with trivy (trivy binary needed)
+sec-scan: trivy-scan vuln-scan ## scan for security and vulnerabilities
+
+trivy-scan: ## scan for sec issues with trivy (trivy binary needed)
 	trivy fs --exit-code 1 --no-progress --severity CRITICAL ./
+
+vuln-scan: ## scan for vuln issues with trivy (trivy binary needed)
+	govulncheck ./...
+
+###########
+#  mock   #
+###########
+
+mock-gen: ## generate mocks
+	go generate $(SOURCE_LIST)
 
 ############
 # upgrades #
@@ -71,8 +103,16 @@ upgrade: ## upgrade dependencies (beware, it can break everything)
 	go get -t -u ./... && \
 	go mod tidy
 
+##############
+#   build    #
+##############
+
+build:
+	@echo "[go build] build executable binary for development"
+	@go build -o stock-crawler cmd/main.go
+
 docker-build: lint test bench sec-scan docker-m1 ## build docker image in M1 device
-	@printf "\nyou can now deploy to your env of choice:\ncd deploy\nENV=dev make deploy-latest\n"
+	@printf "\nyou can now deploy to your env of choice:\nENV=dev make deploy\n"
 
 docker-m1:
 	@echo "[docker build] build local docker image on Mac M1"
@@ -98,52 +138,15 @@ docker-amd64:
 		--build-arg LAST_MAIN_COMMIT_TIME=$(LAST_MAIN_COMMIT_TIME) \
 		-f build/docker/app/Dockerfile .
 
+##################
+# k8s Deployment #
+##################
+deploy:
+	@kubectl apply -f deployments/helm/stock-crawler/deployment.yaml
+	@kubectl rollout status deployment/stock-crawler
 
-###########
-# release #
-###########
-
-release: changelog-gen changelog-commit deploy-dev gh-release ## create a new tag to release this module
-
-CAL_VER := v$(shell date "+%Y.%m.%d.%H%M")
-PRODUCTION_YAML = deploy/production/kustomization.yaml
-STAGING_YAML = deploy/staging/kustomization.yaml
-DEV_YAML = deploy/develop/kustomization.yaml
-
-deploy-dev:
-	sed -i '' "s/newTag:.*/newTag: $(CAL_VER)/" $(DEV_YAML)
-	git commit -S -m "ci: deploy tag $(CAL_VER) to adev" $(DEV_YAML)
-	git tag $(CAL_VER)
-	git push --atomic origin $(CAL_VER)
-
-deploy-staging: ## deploy to staging env with a release tag
-	@( \
-	printf "Select a tag to deploy to staging:\n"; \
-	select tag in `git tag --sort=-committerdate | head -n 10` ; do	\
-		sed -i '' "s/newTag:.*/newTag: $$tag/" $(STAGING_YAML); \
-		git commit -S -m "ci: deploy tag $$tag to staging" $(STAGING_YAML); \
-		git push origin main; \
-		break; \
-	done )
-
-deploy-production: confirm_deployment ## deploy to production env with a release tag
-	@( \
-	printf "Select a tag to deploy to production:\n"; \
-	select tag in `git tag --sort=-committerdate | head -n 10` ; do	\
-		sed -i '' "s/newTag:.*/newTag: $$tag/" $(PRODUCTION_YAML); \
-		git commit -S -m "ci: deploy tag $$tag to production" $(PRODUCTION_YAML); \
-		git push origin main; \
-		break; \
-	done )
-
-confirm_deployment:
-	@echo -n "Are you sure to deploy in production env? [y/N] " && read ans && [ $${ans:-N} = y ]
-
-gh-release:
-	@( \
-	TAG=`git tag --sort=-committerdate | head -1` && \
-	git cliff --latest --date-order | gh release create $$TAG -F - \
-	)
+rollback:
+	@kubectl rollout undo deployment/stock-crawler
 
 #############
 # changelog #
@@ -160,10 +163,3 @@ changelog-gen: ## generates the changelog in CHANGELOG.md
 
 changelog-commit:
 	git commit -m $(MESSAGE_CHANGELOG_COMMIT) ./CHANGELOG.md
-
-###########
-#  mock   #
-###########
-
-mock-gen: ## generate mocks
-	go generate ./...
