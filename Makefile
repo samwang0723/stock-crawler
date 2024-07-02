@@ -26,13 +26,16 @@ vendor:
 # test #
 ########
 
-test: test-race test-leak test-coverage-report ## launch all tests
+test: test-race test-leak test-coverage-ci ## launch all tests
 
 test-race: ## launch all tests with race detection
 	go test $(SOURCE_LIST)  -cover -race
 
 test-leak: ## launch all tests with leak detection (if possible)
 	go test $(SOURCE_LIST)  -leak
+
+test-coverage-ci:
+	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=covprofile
 
 test-coverage-report:
 	go test -v $(SOURCE_LIST) -cover -race -covermode=atomic -coverprofile=./coverage.out
