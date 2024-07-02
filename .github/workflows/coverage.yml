@@ -22,7 +22,7 @@ jobs:
     - name: Send coverage
       env:
         COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
-      run: goveralls -coverprofile=covprofile -service=github
+      run: goveralls -coverprofile=coverage.out -service=github
     # or use shogo82148/actions-goveralls
     # - name: Send coverage
     #   uses: shogo82148/actions-goveralls@v1
