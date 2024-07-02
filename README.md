@@ -1,6 +1,5 @@
 # stock-crawler
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/samwang0723/stock-crawler/tree/develop.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/samwang0723/stock-crawler/tree/develop)
-[![Coverage Status](https://coveralls.io/repos/github/samwang0723/stock-crawler/badge.svg?branch=develop)](https://coveralls.io/github/samwang0723/stock-crawler?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/samwang0723/stock-crawler/badge.svg?branch=main)](https://coveralls.io/github/samwang0723/stock-crawler?branch=main)
 
 
 Taiwan stock crawling service
