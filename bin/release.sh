@@ -49,7 +49,7 @@ make changelog-commit
 
 # Push the new tag to the remote repository
 git push origin $new_tag
-git push origin master
+git push origin main
 
 echo "New tag $new_tag created and changelogs generated."
 
