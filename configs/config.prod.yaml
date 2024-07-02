@@ -2,7 +2,7 @@
 server:
   name: "stock-crawler"
   host: "0.0.0.0"
-  version: "v2.0.1"
+  version: "v2.0.2"
   port: 8086
   maxGoroutine: 20000
   dnsLatency: 200

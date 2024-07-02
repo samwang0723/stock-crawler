@@ -4,7 +4,7 @@ help: ## show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z0-9_-]+:.*?## / {sub("\\\\n",sprintf("\n%22c"," "), $$2);printf "\033[36m%-25s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 APP_NAME?=stock-crawler
-VERSION?=v2.0.1
+VERSION?=v2.0.2
 
 SHELL = /bin/bash
 SOURCE_LIST = $$(go list ./... | grep -v /cmd | grep -v /internal/cronjob | grep -v /internal/kafka)
