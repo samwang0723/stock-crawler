@@ -74,7 +74,7 @@ func TestParseCsv(t *testing.T) {
 			t.Parallel()
 
 			res := &parserImpl{
-				result: &[]interface{}{},
+				result: &[]any{},
 			}
 
 			res.SetStrategy(tt.target, "20211130")

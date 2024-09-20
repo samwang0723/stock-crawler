@@ -23,7 +23,7 @@ import (
 
 //nolint:nolintlint, gochecknoglobals
 var concentrationPool = sync.Pool{
-	New: func() interface{} { return new(StakeConcentration) },
+	New: func() any { return new(StakeConcentration) },
 }
 
 type StakeConcentration struct {

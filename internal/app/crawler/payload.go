@@ -30,13 +30,13 @@ var (
 	_ pipeline.Payload = (*crawlerPayload)(nil)
 
 	payloadPool = sync.Pool{
-		New: func() interface{} { return new(crawlerPayload) },
+		New: func() any { return new(crawlerPayload) },
 	}
 )
 
 type crawlerPayload struct {
 	RetrievedAt   time.Time
-	ParsedContent *[]interface{}
+	ParsedContent *[]any
 	URL           string
 	Date          string
 	RawContent    bytes.Buffer

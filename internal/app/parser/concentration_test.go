@@ -79,7 +79,7 @@ func TestParseConcentration(t *testing.T) {
 			t.Parallel()
 
 			res := &parserImpl{
-				result: &[]interface{}{},
+				result: &[]any{},
 			}
 			res.SetStrategy(convert.StakeConcentration, "2023-01-10")
 			res.Execute(*bytes.NewBuffer([]byte(tt.content)), "https://stockchannelnew.sinotrade.com.tw/z/zc/zco/zco_3704_1.djhtm")

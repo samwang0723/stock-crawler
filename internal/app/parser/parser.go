@@ -38,11 +38,11 @@ const (
 type Parser interface {
 	SetStrategy(source convert.Source, additional ...string)
 	Execute(in bytes.Buffer, additional ...string) error
-	Flush() *[]interface{}
+	Flush() *[]any
 }
 
 type Strategy interface {
-	Parse(in io.Reader, additional ...string) ([]interface{}, error)
+	Parse(in io.Reader, additional ...string) ([]any, error)
 }
 
 type Config struct {
@@ -52,13 +52,13 @@ type Config struct {
 type parserImpl struct {
 	cfg      Config
 	strategy Strategy
-	result   *[]interface{}
+	result   *[]any
 }
 
 func New(cfg Config) Parser {
 	res := &parserImpl{
 		cfg:    cfg,
-		result: &[]interface{}{},
+		result: &[]any{},
 	}
 
 	return res
@@ -122,9 +122,9 @@ func (p *parserImpl) Execute(in bytes.Buffer, additional ...string) error {
 	return nil
 }
 
-func (p *parserImpl) Flush() *[]interface{} {
+func (p *parserImpl) Flush() *[]any {
 	res := *p.result
-	p.result = &[]interface{}{}
+	p.result = &[]any{}
 
 	return &res
 }

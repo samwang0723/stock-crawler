@@ -27,7 +27,7 @@ func ThreePrimary() IConvert {
 	return &threePrimaryImpl{}
 }
 
-func (c *threePrimaryImpl) Execute(data *Data) interface{} {
+func (c *threePrimaryImpl) Execute(data *Data) any {
 	var output *entity.ThreePrimary
 	if data == nil || len(data.RawData) < 19 {
 		return output

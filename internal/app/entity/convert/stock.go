@@ -28,7 +28,7 @@ func Stock() IConvert {
 	return &stockImpl{}
 }
 
-func (c *stockImpl) Execute(data *Data) interface{} {
+func (c *stockImpl) Execute(data *Data) any {
 	var output *entity.Stock
 	if data == nil || len(data.RawData) < maxLength {
 		return output

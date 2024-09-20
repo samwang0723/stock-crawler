@@ -62,7 +62,7 @@ func TestParseHtml(t *testing.T) {
 			t.Parallel()
 
 			res := &parserImpl{
-				result: &[]interface{}{},
+				result: &[]any{},
 			}
 			res.SetStrategy(convert.TwseStockList)
 			err := res.Execute(*bytes.NewBuffer([]byte(tt.content)))

@@ -1,6 +1,6 @@
 package convert
 
 type InterceptData struct {
-	Data *[]interface{}
+	Data *[]any
 	Type Source
 }

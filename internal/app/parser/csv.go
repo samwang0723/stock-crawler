@@ -32,12 +32,12 @@ type csvStrategy struct {
 }
 
 //nolint:nolintlint, cyclop
-func (s *csvStrategy) Parse(input io.Reader, _ ...string) ([]interface{}, error) {
+func (s *csvStrategy) Parse(input io.Reader, _ ...string) ([]any, error) {
 	if s.date == "" {
 		return nil, ErrParseDayMissing
 	}
 
-	var output []interface{}
+	var output []any
 
 	reader := csv.NewReader(input)
 	reader.Comma = ','

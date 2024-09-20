@@ -28,7 +28,7 @@ func DailyClose() IConvert {
 	return &dailyCloseImpl{}
 }
 
-func (c *dailyCloseImpl) Execute(data *Data) interface{} {
+func (c *dailyCloseImpl) Execute(data *Data) any {
 	var output *entity.DailyClose
 	if data == nil || len(data.RawData) < 17 {
 		return output

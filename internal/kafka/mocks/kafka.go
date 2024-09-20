@@ -59,7 +59,7 @@ func (m *MockKafka) ReadMessage(ctx context.Context) (*kafka.ReceivedMessage, er
 }
 
 // ReadMessage indicates an expected call of ReadMessage.
-func (mr *MockKafkaMockRecorder) ReadMessage(ctx interface{}) *gomock.Call {
+func (mr *MockKafkaMockRecorder) ReadMessage(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadMessage", reflect.TypeOf((*MockKafka)(nil).ReadMessage), ctx)
 }
@@ -73,7 +73,7 @@ func (m *MockKafka) WriteMessages(ctx context.Context, topic string, message []b
 }
 
 // WriteMessages indicates an expected call of WriteMessages.
-func (mr *MockKafkaMockRecorder) WriteMessages(ctx, topic, message interface{}) *gomock.Call {
+func (mr *MockKafkaMockRecorder) WriteMessages(ctx, topic, message any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteMessages", reflect.TypeOf((*MockKafka)(nil).WriteMessages), ctx, topic, message)
 }

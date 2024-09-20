@@ -216,33 +216,6 @@ func (s *server) Run(ctx context.Context) error {
 			},
 		})
 
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "30 15 * * 1-5",
-			Types: []convert.Source{
-				convert.TwseDailyClose,
-				convert.TpexDailyClose,
-			},
-		})
-
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "30 17 * * 1-5",
-			Types: []convert.Source{
-				convert.TwseThreePrimary,
-				convert.TpexThreePrimary,
-			},
-		})
-
-		//nolint:nolintlint, errcheck
-		svc.Handler().CronDownload(ctx, &dto.StartCronjobRequest{
-			Schedule: "40 18 * * 1-5",
-			Types: []convert.Source{
-				convert.TwseThreePrimary,
-				convert.TpexThreePrimary,
-			},
-		})
-
 		requestChan := make(chan *dto.StartCronjobRequest)
 		svc.Handler().ListeningDownloadRequest(ctx, requestChan)
 

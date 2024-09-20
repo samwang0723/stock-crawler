@@ -35,5 +35,5 @@ type Data struct {
 
 // Use strategy pattern to convert entities from parser
 type IConvert interface {
-	Execute(data *Data) interface{}
+	Execute(data *Data) any
 }

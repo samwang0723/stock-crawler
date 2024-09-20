@@ -39,7 +39,7 @@ func (b *broadcastor) Process(_ context.Context, pipe pipeline.Payload) (pipelin
 	if payload.Strategy == convert.StakeConcentration {
 		if st := b.cacheInMemory(payload.ParsedContent); st != nil {
 			intercept = convert.InterceptData{
-				Data: &[]interface{}{st},
+				Data: &[]any{st},
 				Type: payload.Strategy,
 			}
 		}
@@ -57,7 +57,7 @@ func (b *broadcastor) Process(_ context.Context, pipe pipeline.Payload) (pipelin
 	return pipe, nil
 }
 
-func (b *broadcastor) cacheInMemory(data *[]interface{}) *entity.StakeConcentration {
+func (b *broadcastor) cacheInMemory(data *[]any) *entity.StakeConcentration {
 	for _, v := range *data {
 		if val, ok := v.(*entity.StakeConcentration); ok {
 			b.memCache[val.StockID] = append(b.memCache[val.StockID], val)

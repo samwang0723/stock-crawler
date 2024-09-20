@@ -43,7 +43,7 @@ func (m *MockCronjob) AddJob(ctx context.Context, spec string, job func()) error
 }
 
 // AddJob indicates an expected call of AddJob.
-func (mr *MockCronjobMockRecorder) AddJob(ctx, spec, job interface{}) *gomock.Call {
+func (mr *MockCronjobMockRecorder) AddJob(ctx, spec, job any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddJob", reflect.TypeOf((*MockCronjob)(nil).AddJob), ctx, spec, job)
 }

@@ -15,7 +15,7 @@ package entity
 
 type ThreePrimary struct {
 	StockID            string `json:"stockId"`
-	Date               string `json:"exchangeDate"`
+	Date               string `json:"date"`
 	ForeignTradeShares int64  `json:"foreignTradeShares"`
 	TrustTradeShares   int64  `json:"trustTradeShares"`
 	DealerTradeShares  int64  `json:"dealerTradeShares"`

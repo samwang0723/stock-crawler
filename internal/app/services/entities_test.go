@@ -38,7 +38,7 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		data         *[]interface{}
+		data         *[]any
 		expectReturn error
 	}
 
@@ -50,7 +50,7 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 		{
 			name: "successfully send daily close data through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.DailyClose{
 						StockID:      "2330",
 						Date:         "20200101",
@@ -71,7 +71,7 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 		{
 			name: "failed to send correct data format through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.StakeConcentration{
 						StockID: "2330",
 					},
@@ -83,7 +83,7 @@ func TestDailyCloseThroughKafka(t *testing.T) {
 		{
 			name: "failed to send daily close data due to kafka error",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.DailyClose{
 						StockID: "2330",
 					},
@@ -136,7 +136,7 @@ func TestStockThroughKafka(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		data         *[]interface{}
+		data         *[]any
 		expectReturn error
 	}
 
@@ -148,7 +148,7 @@ func TestStockThroughKafka(t *testing.T) {
 		{
 			name: "successfully send stock data through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.Stock{
 						StockID: "2330",
 						Name:    "Test",
@@ -161,7 +161,7 @@ func TestStockThroughKafka(t *testing.T) {
 		{
 			name: "failed to send correct data format through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.StakeConcentration{
 						StockID: "2330",
 					},
@@ -173,7 +173,7 @@ func TestStockThroughKafka(t *testing.T) {
 		{
 			name: "failed to send stock data due to kafka error",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.Stock{
 						StockID: "2330",
 						Name:    "Test",
@@ -227,7 +227,7 @@ func TestThreePrimaryThroughKafka(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		data         *[]interface{}
+		data         *[]any
 		expectReturn error
 	}
 
@@ -239,7 +239,7 @@ func TestThreePrimaryThroughKafka(t *testing.T) {
 		{
 			name: "successfully send three primary data through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.ThreePrimary{
 						StockID: "2330",
 					},
@@ -251,7 +251,7 @@ func TestThreePrimaryThroughKafka(t *testing.T) {
 		{
 			name: "failed to send correct data format through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.StakeConcentration{
 						StockID: "2330",
 					},
@@ -263,7 +263,7 @@ func TestThreePrimaryThroughKafka(t *testing.T) {
 		{
 			name: "failed to send three primary due to kafka error",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.ThreePrimary{
 						StockID: "2330",
 					},
@@ -319,7 +319,7 @@ func TestStakeConcentrationThroughKafka(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		data         *[]interface{}
+		data         *[]any
 		date         string
 		expectReturn error
 	}
@@ -332,7 +332,7 @@ func TestStakeConcentrationThroughKafka(t *testing.T) {
 		{
 			name: "successfully send stake concentration data through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.StakeConcentration{
 						StockID: "2330",
 						Date:    "20220820",
@@ -346,7 +346,7 @@ func TestStakeConcentrationThroughKafka(t *testing.T) {
 		{
 			name: "failed to send correct data format through kafka",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.Stock{
 						StockID: "2330",
 					},
@@ -359,7 +359,7 @@ func TestStakeConcentrationThroughKafka(t *testing.T) {
 		{
 			name: "failed to send stake concentration due to kafka error",
 			args: args{
-				data: &[]interface{}{
+				data: &[]any{
 					&entity.StakeConcentration{
 						StockID: "2330",
 						Date:    "20220820",

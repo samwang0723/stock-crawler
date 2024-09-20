@@ -26,7 +26,7 @@ func Concentration() IConvert {
 	return &concentrationImpl{}
 }
 
-func (c *concentrationImpl) Execute(data *Data) interface{} {
+func (c *concentrationImpl) Execute(data *Data) any {
 	var output *entity.StakeConcentration
 	if data == nil || len(data.RawData) < 7 {
 		return output

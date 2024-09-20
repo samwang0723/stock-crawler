@@ -32,10 +32,10 @@ type IService interface {
 	StartCron()
 	StopCron()
 	AddJob(ctx context.Context, spec string, job func()) error
-	DailyCloseThroughKafka(ctx context.Context, objs *[]interface{}) error
-	StockThroughKafka(ctx context.Context, objs *[]interface{}) error
-	ThreePrimaryThroughKafka(ctx context.Context, objs *[]interface{}) error
-	StakeConcentrationThroughKafka(ctx context.Context, objs *[]interface{}) error
+	DailyCloseThroughKafka(ctx context.Context, objs *[]any) error
+	StockThroughKafka(ctx context.Context, objs *[]any) error
+	ThreePrimaryThroughKafka(ctx context.Context, objs *[]any) error
+	StakeConcentrationThroughKafka(ctx context.Context, objs *[]any) error
 	ObtainLock(ctx context.Context, key string, expire time.Duration) *redislock.Lock
 	StopRedis() error
 	StopKafka() error

@@ -35,10 +35,10 @@ type concentrationStrategy struct {
 func (s *concentrationStrategy) Parse(
 	input io.Reader,
 	additional ...string,
-) ([]interface{}, error) {
+) ([]any, error) {
 	var records []string
 
-	var output []interface{}
+	var output []any
 
 	var isColumn, isTitle, startParsing bool
 

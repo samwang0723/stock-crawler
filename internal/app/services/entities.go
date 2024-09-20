@@ -38,7 +38,7 @@ const (
 //nolint:nolintlint, gochecknoglobals
 var jsoni = jsoniter.ConfigCompatibleWithStandardLibrary
 
-func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interface{}) error {
+func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]any) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.DailyClose); ok {
 			b, err := jsoni.Marshal(res)
@@ -67,7 +67,7 @@ func (s *serviceImpl) DailyCloseThroughKafka(ctx context.Context, objs *[]interf
 	return nil
 }
 
-func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}) error {
+func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]any) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.Stock); ok {
 			b, err := jsoni.Marshal(res)
@@ -96,7 +96,7 @@ func (s *serviceImpl) StockThroughKafka(ctx context.Context, objs *[]interface{}
 	return nil
 }
 
-func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]interface{}) error {
+func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]any) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.ThreePrimary); ok {
 			b, err := jsoni.Marshal(res)
@@ -127,7 +127,7 @@ func (s *serviceImpl) ThreePrimaryThroughKafka(ctx context.Context, objs *[]inte
 
 func (s *serviceImpl) StakeConcentrationThroughKafka(
 	ctx context.Context,
-	objs *[]interface{},
+	objs *[]any,
 ) error {
 	for _, val := range *objs {
 		if res, ok := val.(*entity.StakeConcentration); ok {

@@ -59,7 +59,7 @@ func (m *MockRedis) ObtainLock(ctx context.Context, key string, expire time.Dura
 }
 
 // ObtainLock indicates an expected call of ObtainLock.
-func (mr *MockRedisMockRecorder) ObtainLock(ctx, key, expire interface{}) *gomock.Call {
+func (mr *MockRedisMockRecorder) ObtainLock(ctx, key, expire any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ObtainLock", reflect.TypeOf((*MockRedis)(nil).ObtainLock), ctx, key, expire)
 }
@@ -73,7 +73,7 @@ func (m *MockRedis) SAdd(ctx context.Context, key, value string) error {
 }
 
 // SAdd indicates an expected call of SAdd.
-func (mr *MockRedisMockRecorder) SAdd(ctx, key, value interface{}) *gomock.Call {
+func (mr *MockRedisMockRecorder) SAdd(ctx, key, value any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SAdd", reflect.TypeOf((*MockRedis)(nil).SAdd), ctx, key, value)
 }
@@ -88,7 +88,7 @@ func (m *MockRedis) SMembers(ctx context.Context, key string) ([]string, error) 
 }
 
 // SMembers indicates an expected call of SMembers.
-func (mr *MockRedisMockRecorder) SMembers(ctx, key interface{}) *gomock.Call {
+func (mr *MockRedisMockRecorder) SMembers(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SMembers", reflect.TypeOf((*MockRedis)(nil).SMembers), ctx, key)
 }
@@ -102,7 +102,7 @@ func (m *MockRedis) SetExpire(ctx context.Context, key string, expired time.Time
 }
 
 // SetExpire indicates an expected call of SetExpire.
-func (mr *MockRedisMockRecorder) SetExpire(ctx, key, expired interface{}) *gomock.Call {
+func (mr *MockRedisMockRecorder) SetExpire(ctx, key, expired any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetExpire", reflect.TypeOf((*MockRedis)(nil).SetExpire), ctx, key, expired)
 }

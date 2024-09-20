@@ -58,13 +58,13 @@ func New(cfg Config) Cronjob {
 	return job
 }
 
-func (c Config) Info(_ string, keysAndValues ...interface{}) {
+func (c Config) Info(_ string, keysAndValues ...any) {
 	if len(keysAndValues) > 0 {
 		c.Logger.Info().Msgf("cronjob.Run: success, data=%+v;", keysAndValues)
 	}
 }
 
-func (c Config) Error(_ error, _ string, keysAndValues ...interface{}) {
+func (c Config) Error(_ error, _ string, keysAndValues ...any) {
 	if len(keysAndValues) > 0 {
 		c.Logger.Warn().Msgf("cronjob.Run: failed, data=%+v;", keysAndValues)
 	}
