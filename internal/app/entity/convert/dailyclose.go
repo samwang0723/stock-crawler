@@ -40,9 +40,9 @@ func (c *dailyCloseImpl) Execute(data *Data) any {
 		output = &entity.DailyClose{
 			StockID:      data.RawData[0],
 			Date:         data.ParseDate,
-			TradedShares: helper.ToUint64(strings.ReplaceAll(data.RawData[8], ",", "")),
-			Transactions: helper.ToUint64(strings.ReplaceAll(data.RawData[10], ",", "")),
-			Turnover:     helper.ToUint64(strings.ReplaceAll(data.RawData[9], ",", "")),
+			TradedShares: helper.ToUint64(strings.ReplaceAll(data.RawData[7], ",", "")),
+			Transactions: helper.ToUint64(strings.ReplaceAll(data.RawData[9], ",", "")),
+			Turnover:     helper.ToUint64(strings.ReplaceAll(data.RawData[8], ",", "")),
 			Open:         helper.ToFloat32(strings.ReplaceAll(data.RawData[4], ",", "")),
 			High:         helper.ToFloat32(strings.ReplaceAll(data.RawData[5], ",", "")),
 			Low:          helper.ToFloat32(strings.ReplaceAll(data.RawData[6], ",", "")),
@@ -61,7 +61,11 @@ func (c *dailyCloseImpl) Execute(data *Data) any {
 			Low:          helper.ToFloat32(strings.ReplaceAll(data.RawData[7], ",", "")),
 			Close:        helper.ToFloat32(strings.ReplaceAll(data.RawData[8], ",", "")),
 			PriceDiff: helper.ToFloat32(
-				fmt.Sprintf("%s%s", strings.TrimSpace(data.RawData[9]), strings.TrimSpace(data.RawData[10])),
+				fmt.Sprintf(
+					"%s%s",
+					strings.TrimSpace(data.RawData[9]),
+					strings.TrimSpace(data.RawData[10]),
+				),
 			),
 		}
 	}
