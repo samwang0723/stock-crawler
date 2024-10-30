@@ -30,7 +30,7 @@ import (
 const (
 	TwseDailyClose   = "https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=%s&type=ALLBUT0999"
 	TwseThreePrimary = "https://www.twse.com.tw/rwd/zh/fund/T86?response=csv&date=%s&selectType=ALLBUT0999"
-	TpexDailyClose   = "https://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_download.php?l=zh-tw&d=%s&s=0,asc,0"
+	TpexDailyClose   = "https://wwwov.tpex.org.tw/web/stock/aftertrading/otc_quotes_no1430/stk_wn1430_result.php?l=zh-tw&o=csv&d=%s&se=EW&s=0,asc,0"
 	TpexThreePrimary = "https://www.tpex.org.tw/web/stock/3insti/daily_trade/3itrade_hedge_result.php?l=zh-tw&o=csv&se=EW&t=D&d=%s"
 	TWSEStocks       = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=2"
 	TPEXStocks       = "https://isin.twse.com.tw/isin/C_public.jsp?strMode=4"
